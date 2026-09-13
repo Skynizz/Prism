@@ -238,27 +238,33 @@ public sealed class Dlss5Service
 
         var renodx = option?.Backend == Dlss5Backend.RenoDxDlss5;
 
-        // Streamline charge ses plugins et les DLL NGX a cote de sl.interposer.dll : un runtime
-        // present ailleurs dans le dossier du jeu n'est jamais charge.
+        // L'addon RenoDX charge nvngx_dlssnr.dll a cote de l'executable ; Streamline charge les DLL
+        // NGX a cote de sl.interposer.dll. Absent de l'un d'eux, le runtime du pilote prend le
+        // relais et echoue sur RTX 20 a 40 (0xBAD0000B).
         var runtimeDirs = Dlss5PackageInstaller.RuntimeDirectories(game);
-        var inPlace = runtimeDirs.All(d => File.Exists(Path.Combine(d, NeuralRuntime)));
+        var neuralDirs = Dlss5PackageInstaller.NeuralRuntimeDirectories(game);
+        var inPlace = neuralDirs.All(d => File.Exists(Path.Combine(d, NeuralRuntime)));
+        // Une copie modifiee ou d'origine inconnue est chargee, puis echoue (0xBAD00005).
+        var untrusted = renodx && inPlace && !neuralDirs.All(d => IsTrustedNeural(Path.Combine(d, NeuralRuntime)));
         var misplaced = renodx && game.HasNeuralRuntime && !inPlace;
-        var inGame = renodx ? inPlace : game.HasNeuralRuntime;
+        var inGame = renodx ? inPlace && !untrusted : game.HasNeuralRuntime;
         var inDriver = NeuralRuntimeInDriverStore();
 
         checks.Add(new PrereqCheck
         {
             Label = "NEURAL RT",
             State = inGame ? UiStatus.Ready
-                  : misplaced ? UiStatus.Error
+                  : misplaced || untrusted ? UiStatus.Error
                   : renodx ? UiStatus.Warning : UiStatus.Error,
-            Detail = inGame ? (renodx ? Dlss5PackageInstaller.Describe(game, runtimeDirs) : Loc.T("dlss5.nr.in_game"))
+            Detail = inGame ? (renodx ? Dlss5PackageInstaller.Describe(game, neuralDirs) : Loc.T("dlss5.nr.in_game"))
+                   : untrusted ? Loc.T("dlss5.nr.untrusted_detail")
                    : misplaced ? Loc.T("dlss5.nr.misplaced_detail")
                    : renodx ? Loc.T("dlss5.nr.in_package")
                    : inDriver ? Loc.T("dlss5.nr.in_driver") : Loc.T("common.absent"),
             Fix = renodx ? PrereqFix.InstallDlss5Addon
                 : inDriver ? PrereqFix.AdoptNeuralRuntime : PrereqFix.None,
             Hint = inGame ? null
+                 : untrusted ? Loc.T("dlss5.nr.untrusted")
                  : misplaced ? Loc.T("dlss5.nr.misplaced")
                  : renodx ? Loc.T("dlss5.nr.hint_package")
                  : inDriver ? Loc.T("dlss5.nr.hint_driver") : Loc.T("dlss5.nr.hint_absent")
@@ -499,6 +505,14 @@ public sealed class Dlss5Service
             return new InstallResult(false, Loc.T("err.launch_failed", ex.Message));
         }
     }
+
+    /// <summary>
+    /// Runtime neural epingle, ou signe NVIDIA et intact. L'empreinte (mise en cache) passe
+    /// avant la signature, plus couteuse a verifier sur un fichier de 160 Mo.
+    /// </summary>
+    private static bool IsTrustedNeural(string path)
+        => File.Exists(path)
+           && (NeuralRuntimePins.IsKnown(DownloadService.Sha256Cached(path)) || Authenticode.Verify(path).IsNvidia);
 
     public static InstallResult RemoveBridge(GameInfo game)
     {

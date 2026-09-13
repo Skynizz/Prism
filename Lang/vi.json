@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "Trò chơi có nvngx_dlssnr.dll nhưng không nằm cạnh Streamline nên sẽ không được nạp. Cài đặt sẽ đặt nó vào đúng thư mục.",
  "dlss5.nr.misplaced_detail": "sai thư mục",
  "dlss5.nr.still_needed": "Vẫn cần cung cấp {0}.",
+ "dlss5.nr.untrusted": "nvngx_dlssnr.dll chưa xác minh: Cài đặt sẽ thay thế, bản gốc được sao lưu.",
+ "dlss5.nr.untrusted_detail": "bản đã sửa đổi hoặc không rõ",
  "dlss5.ok.installed": "Đã cài RenoDX DLSS 5 {0}: {1} tệp, đã bật nạp sớm. Khởi động lại trò chơi.",
  "dlss5.ok.location": "Streamline và runtime neural nằm ở: {0}.",
  "dlss5.oneclick.desc": "Một trình cài cho DirectX 11 và 12, có hoặc không có DLSS gốc, RTX 20–50. Prism tải về và chạy nó.",

@@ -53,6 +53,18 @@ public sealed class Dlss5PackageInstaller
         return dirs.Count > 0 ? dirs : new[] { DllInstaller.TargetDirectory(game) };
     }
 
+    /// <summary>
+    /// Dossiers qui doivent contenir nvngx_dlssnr.dll. L'addon RenoDX DLSS 5 le charge lui-meme
+    /// depuis le dossier de l'executable (ReShade.log : « nvngx_dlssnr.dll was not found in
+    /// ...\Binaries\Win64 ») ; absent de la, il se rabat sur le runtime du pilote, signe mais
+    /// refuse sur RTX 20 a 40 (0xBAD0000B). Il est aussi laisse a cote de Streamline.
+    /// </summary>
+    public static IReadOnlyList<string> NeuralRuntimeDirectories(GameInfo game)
+        => new[] { DllInstaller.TargetDirectory(game) }
+            .Concat(RuntimeDirectories(game))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
     /// <summary>Dossiers relatifs au jeu, pour l'affichage : "bin\x64", ou le nom du dossier racine.</summary>
     public static string Describe(GameInfo game, IEnumerable<string> dirs) =>
         string.Join(", ", dirs.Select(d =>
@@ -182,17 +194,22 @@ public sealed class Dlss5PackageInstaller
             var tx = new FileTransaction(game, _backups, _deployments, Origin);
             foreach (var old in others) tx.Delete(old);
 
+            var neuralDirs = NeuralRuntimeDirectories(game);
             foreach (var f in files)
             {
-                var isAddon = f.Name.EndsWith(".addon64", StringComparison.OrdinalIgnoreCase);
-                foreach (var dir in isAddon ? new[] { exeDir } : runtimeDirs)
+                var dirs = f.Name.EndsWith(".addon64", StringComparison.OrdinalIgnoreCase) ? new[] { exeDir }
+                    : f.Name.Equals(NeuralRuntimeFile, StringComparison.OrdinalIgnoreCase) ? neuralDirs
+                    : runtimeDirs;
+                foreach (var dir in dirs)
                     tx.Copy(f.Source, Path.Combine(dir, f.Name), ComponentOf(f.From.Tag), f.From.Version);
             }
 
             // Copies de la pile que Prism avait posees hors des dossiers de Streamline : jamais
-            // chargees, elles ne font que tromper le diagnostic. Seules les notres sont retirees.
+            // chargees, elles ne font que tromper le diagnostic. Seules les notres sont retirees —
+            // sauf le runtime neural, que l'addon charge justement a cote de l'executable.
             var strays = files
-                .Where(f => f.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Where(f => f.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                            && !f.Name.Equals(NeuralRuntimeFile, StringComparison.OrdinalIgnoreCase))
                 .Select(f => Path.Combine(exeDir, f.Name))
                 .Where(p => !runtimeDirs.Contains(Path.GetDirectoryName(p)!, StringComparer.OrdinalIgnoreCase)
                             && File.Exists(p) && _deployments.WasDeployed(p))

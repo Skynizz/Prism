@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll oyunda var ama Streamline'ın yanında değil, bu yüzden yüklenmeyecek. Kurulum onu doğru klasöre koyar.",
  "dlss5.nr.misplaced_detail": "yanlış klasör",
  "dlss5.nr.still_needed": "{0} hâlâ sağlanmalı.",
+ "dlss5.nr.untrusted": "Doğrulanmamış nvngx_dlssnr.dll: Kur onu değiştirir, orijinal yedeklenir.",
+ "dlss5.nr.untrusted_detail": "değiştirilmiş veya bilinmeyen sürüm",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} kuruldu: {1} dosya, erken yükleme açık. Oyunu yeniden başlatın.",
  "dlss5.ok.location": "Streamline ve neural runtime konumu: {0}.",
  "dlss5.oneclick.desc": "DirectX 11 ve 12 için tek yükleyici, yerleşik DLSS olsun olmasın, RTX 20–50. Prism indirip başlatır.",

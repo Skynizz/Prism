@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll はゲーム内にありますが Streamline の隣にないため読み込まれません。インストールで正しいフォルダーに配置されます。",
  "dlss5.nr.misplaced_detail": "フォルダーが違います",
  "dlss5.nr.still_needed": "{0} をまだ用意する必要があります。",
+ "dlss5.nr.untrusted": "未検証の nvngx_dlssnr.dll: インストールで置き換え、元ファイルはバックアップされます。",
+ "dlss5.nr.untrusted_detail": "改変または不明なビルド",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} をインストール：{1} ファイル、早期読み込み有効。ゲームを再起動してください。",
  "dlss5.ok.location": "Streamline とニューラルランタイムの場所：{0}。",
  "dlss5.oneclick.desc": "DirectX 11 と 12、ネイティブ DLSS の有無を問わず、RTX 20〜50 に対応する単一インストーラー。Prism がダウンロードして起動します。",

@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll गेम में है पर Streamline के पास नहीं, इसलिए लोड नहीं होगा। इंस्टॉल उसे सही फ़ोल्डर में रखता है।",
  "dlss5.nr.misplaced_detail": "गलत फ़ोल्डर",
  "dlss5.nr.still_needed": "{0} अभी भी देना होगा।",
+ "dlss5.nr.untrusted": "असत्यापित nvngx_dlssnr.dll: इंस्टॉल इसे बदल देगा, मूल का बैकअप रहेगा।",
+ "dlss5.nr.untrusted_detail": "बदला हुआ या अज्ञात बिल्ड",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} इंस्टॉल हुआ: {1} फ़ाइलें, जल्दी लोड चालू। गेम फिर से शुरू करें।",
  "dlss5.ok.location": "Streamline और न्यूरल रनटाइम यहाँ: {0}।",
  "dlss5.oneclick.desc": "DirectX 11 और 12 के लिए एक इंस्टॉलर, नेटिव DLSS हो या न हो, RTX 20 से 50। Prism डाउनलोड करके चलाता है।",

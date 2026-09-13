@@ -224,6 +224,12 @@ La voie dépend de l'API du jeu :
 
 Le contrôle est **tout ou rien** : une seule DLL refusée, et le jeu n'est pas touché.
 
+**Placement.** Les DLL NGX et `sl.*` vont là où le jeu charge Streamline (sur Unreal,
+`Plugins\…\ThirdParty\Win64`). `nvngx_dlssnr.dll` va **aussi à côté de l'exécutable** : c'est
+là que l'addon le charge. Sans lui à cet endroit, l'addon se rabat sur le runtime du pilote,
+refusé sur RTX 20 à 40 — overlay *« NO NR FEATURE MATCHED »*, `0xBAD0000B`. Une copie modifiée
+ou inconnue (`0xBAD00005`) est signalée et remplacée, original sauvegardé.
+
 > [!TIP]
 > **`X3506: unrecognized compiler target 'cs_5_1'`** en boucle dans le journal ReShade ?
 > Le jeu embarque un `d3dcompiler_47.dll` de Windows 8.1, chargé avant celui du système.

@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "游戏中有 nvngx_dlssnr.dll，但不在 Streamline 旁边，因此不会被加载。安装会把它放到正确的文件夹。",
  "dlss5.nr.misplaced_detail": "文件夹不对",
  "dlss5.nr.still_needed": "仍需提供 {0}。",
+ "dlss5.nr.untrusted": "未验证的 nvngx_dlssnr.dll：安装会替换它，原文件已备份。",
+ "dlss5.nr.untrusted_detail": "已修改或未知的版本",
  "dlss5.ok.installed": "已安装 RenoDX DLSS 5 {0}：{1} 个文件，已启用提前加载。请重启游戏。",
  "dlss5.ok.location": "Streamline 和神经运行时位于：{0}。",
  "dlss5.oneclick.desc": "适用于 DirectX 11 和 12、有无原生 DLSS 均可、RTX 20 至 50 的单一安装程序。Prism 负责下载并启动。",

@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll موجود في اللعبة لكن ليس بجانب Streamline، لذا لن يُحمَّل. التثبيت يضعه في المجلد الصحيح.",
  "dlss5.nr.misplaced_detail": "مجلد خاطئ",
  "dlss5.nr.still_needed": "ما زال يجب توفير {0}.",
+ "dlss5.nr.untrusted": "nvngx_dlssnr.dll غير موثَّق: «تثبيت» يستبدله مع حفظ الأصل.",
+ "dlss5.nr.untrusted_detail": "إصدار معدَّل أو غير معروف",
  "dlss5.ok.installed": "ثُبّت RenoDX DLSS 5 {0}: {1} ملفات، والتحميل المبكر مفعّل. أعد تشغيل اللعبة.",
  "dlss5.ok.location": "Streamline وبيئة التشغيل العصبية في: {0}.",
  "dlss5.oneclick.desc": "مثبّت واحد لـ DirectX 11 و12، مع DLSS أصلي أو بدونه، من RTX 20 إلى 50. ينزّله Prism ويشغّله.",

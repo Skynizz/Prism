@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll è nel gioco ma non accanto a Streamline, quindi non verrà caricato. L'installazione lo mette nella cartella giusta.",
  "dlss5.nr.misplaced_detail": "cartella sbagliata",
  "dlss5.nr.still_needed": "{0} deve ancora essere fornito.",
+ "dlss5.nr.untrusted": "nvngx_dlssnr.dll non verificato: Installa lo sostituisce, originale salvato.",
+ "dlss5.nr.untrusted_detail": "build modificata o sconosciuta",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} installato: {1} file, caricamento anticipato attivo. Riavvia il gioco.",
  "dlss5.ok.location": "Streamline e runtime neurale in: {0}.",
  "dlss5.oneclick.desc": "Installer unico per DirectX 11 e 12, con o senza DLSS nativo, RTX da 20 a 50. Prism lo scarica e lo avvia.",

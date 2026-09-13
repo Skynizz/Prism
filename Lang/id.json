@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll ada di game tetapi tidak di samping Streamline, jadi tidak akan dimuat. Pemasangan menaruhnya di folder yang benar.",
  "dlss5.nr.misplaced_detail": "folder salah",
  "dlss5.nr.still_needed": "{0} masih harus disediakan.",
+ "dlss5.nr.untrusted": "nvngx_dlssnr.dll belum terverifikasi: Pasang menggantinya, file asli dicadangkan.",
+ "dlss5.nr.untrusted_detail": "build dimodifikasi atau tidak dikenal",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} terpasang: {1} file, pemuatan awal aktif. Mulai ulang game.",
  "dlss5.ok.location": "Streamline dan runtime neural di: {0}.",
  "dlss5.oneclick.desc": "Satu installer untuk DirectX 11 dan 12, dengan atau tanpa DLSS bawaan, RTX 20–50. Prism mengunduh dan menjalankannya.",

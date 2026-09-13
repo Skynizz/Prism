@@ -254,6 +254,8 @@
  "dlss5.nr.misplaced": "nvngx_dlssnr.dll이 게임에 있지만 Streamline 옆이 아니라서 로드되지 않습니다. 설치하면 올바른 폴더에 둡니다.",
  "dlss5.nr.misplaced_detail": "잘못된 폴더",
  "dlss5.nr.still_needed": "아직 {0}이(가) 필요합니다.",
+ "dlss5.nr.untrusted": "검증되지 않은 nvngx_dlssnr.dll: 설치가 교체하고 원본은 백업합니다.",
+ "dlss5.nr.untrusted_detail": "수정되었거나 알 수 없는 빌드",
  "dlss5.ok.installed": "RenoDX DLSS 5 {0} 설치됨: 파일 {1}개, 조기 로드 켬. 게임을 다시 시작하세요.",
  "dlss5.ok.location": "Streamline과 뉴럴 런타임 위치: {0}.",
  "dlss5.oneclick.desc": "DirectX 11과 12, 기본 DLSS 유무와 상관없이 RTX 20~50을 지원하는 단일 설치 프로그램. Prism이 받아서 실행합니다.",
