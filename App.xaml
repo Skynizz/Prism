@@ -1,0 +1,15 @@
+<Application x:Class="Prism.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Ordre impose : les jetons d'abord, les styles ensuite. -->
+                <ResourceDictionary Source="Themes/Tokens.xaml" />
+                <ResourceDictionary Source="Themes/Base.xaml" />
+                <ResourceDictionary Source="Themes/Inputs.xaml" />
+                <ResourceDictionary Source="Themes/Data.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

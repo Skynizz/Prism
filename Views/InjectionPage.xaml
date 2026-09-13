@@ -1,0 +1,266 @@
+<UserControl x:Class="Prism.Views.InjectionPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             xmlns:l="clr-namespace:Prism.Core"
+             FontFamily="{DynamicResource FontUi}">
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <StackPanel DockPanel.Dock="Top" Style="{StaticResource S.Empty}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+            <Path Data="{DynamicResource IcoInjection}" Style="{StaticResource S.Icon}"
+                  Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{l:T empty.no_target}" Style="{StaticResource T.Sec}"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="20,18,20,24" DataContext="{Binding Detail}">
+
+                <TextBlock Text="{l:T nav.injection}" Style="{StaticResource T.Display}" />
+                <TextBlock Style="{StaticResource T.Prose}" MaxWidth="740" Margin="0,5,0,0"
+                           Text="{l:T inj.intro}" />
+
+                <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,14,0,0"
+                             Visibility="{Binding Busy, Converter={StaticResource BoolVis}}" />
+
+                <!-- ================================================ PIPELINE -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T inj.chain}" Margin="0,16,0,0">
+                    <HeaderedContentControl.Tag>
+                        <c:StatusDot Status="{Binding InjectionState}" />
+                    </HeaderedContentControl.Tag>
+                    <StackPanel Margin="14,14,14,8">
+                        <c:Pipeline Stages="{Binding Pipeline}" />
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="360" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" MinWidth="320" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ============================================== CIBLE -->
+                    <HeaderedContentControl Grid.Column="0" Style="{StaticResource S.Box}" Header="{l:T label.target}"
+                                            VerticalAlignment="Top">
+                        <StackPanel Margin="14,12,14,14">
+                            <c:Field Label="{l:T label.process}"   Value="{Binding ExecutableName}" Mono="True" LabelWidth="104" />
+                            <c:Field Label="{l:T label.directory}" Value="{Binding TargetDir}" Mono="True" LabelWidth="104" />
+                            <c:Field Label="{l:T label.engine}"    Value="{Binding EngineLabel}" LabelWidth="104" />
+                            <c:Field Label="{l:T label.platform}"  Value="{Binding PlatformLabel}" LabelWidth="104" />
+
+                            <Border Style="{StaticResource S.HRule}" Margin="0,12,0,10" />
+
+                            <c:Field Label="{l:T label.method}" Value="{Binding InjectionMethod}" LabelWidth="104" />
+                            <c:Field Label="{l:T label.addons}" Value="{Binding InjectedAddons}" Mono="True" LabelWidth="104" />
+                            <c:Field Label="RESHADE"            Value="{Binding ReShadeStatus}" Mono="True" LabelWidth="104" />
+
+                            <Border Style="{StaticResource S.HRule}" Margin="0,12,0,10" />
+
+                            <Grid>
+                                <TextBlock Text="{l:T label.status}" Style="{StaticResource T.Label}" VerticalAlignment="Center" />
+                                <c:StatusDot Status="{Binding InjectionState}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- ============================================ HOTE -->
+                    <HeaderedContentControl Grid.Column="2" Style="{StaticResource S.Box}" Header="{l:T inj.host}"
+                                            VerticalAlignment="Top">
+                        <StackPanel Margin="14,12,14,14">
+                            <TextBlock Style="{StaticResource T.Prose}" Text="{l:T inj.host_hint}" />
+
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="108" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding ApiChoices}"
+                                          SelectedItem="{Binding SelectedApi}"
+                                          ToolTip="{l:T inj.api_tip}" />
+                                <Button Grid.Column="2" Content="{l:T inj.install_reshade}"
+                                        Style="{StaticResource Btn}" Margin="8,0,0,0"
+                                        Command="{Binding InstallReShadeCommand}" />
+                            </Grid>
+
+                            <Button Content="{l:T inj.uninstall_reshade}" Style="{StaticResource Btn.Quiet}"
+                                    HorizontalAlignment="Left" Margin="0,6,0,0"
+                                    Command="{Binding RemoveReShadeCommand}"
+                                    ToolTip="{l:T inj.uninstall_tip}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+                </Grid>
+
+                <!-- ================================================== HDR -->
+                <!--
+                    Le plan vient du wiki RenoDX, lu en direct. Chaque ligne dit ce que
+                    Prism fait lui-meme et ce qui reste a faire dans le jeu.
+                -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="HDR · RENODX" Margin="0,12,0,0">
+                    <HeaderedContentControl.Tag>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding HasHdrPlan, Converter={StaticResource BoolVis}}">
+                            <c:StatusDot Status="{Binding HdrStatus}" />
+                            <TextBlock Text="{Binding HdrStatusLabel}" Style="{StaticResource T.Ter}"
+                                       VerticalAlignment="Center" Margin="7,0,0,0" />
+                        </StackPanel>
+                    </HeaderedContentControl.Tag>
+
+                    <StackPanel Margin="14,12,14,14">
+                        <TextBlock Style="{StaticResource T.Prose}" MaxWidth="760" HorizontalAlignment="Left"
+                                   Text="{l:T hdr.intro}" />
+
+                        <!-- Aucun mod -->
+                        <Border Style="{StaticResource S.Sunken}" Padding="12,10" Margin="0,12,0,0"
+                                Visibility="{Binding HasHdrPlan, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+                            <Grid>
+                                <TextBlock Text="{Binding HdrEmptyLabel}" Style="{StaticResource T.Sec}"
+                                           VerticalAlignment="Center" />
+                                <Button Content="{l:T hdr.wiki}" Style="{StaticResource Btn.Quiet}" Height="22"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Command="{Binding OpenHdrPageCommand}" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Plan -->
+                        <StackPanel Visibility="{Binding HasHdrPlan, Converter={StaticResource BoolVis}}">
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding HdrTitle}" Style="{StaticResource T.Strong}"
+                                                   VerticalAlignment="Center" />
+                                        <Border Style="{StaticResource S.Tag}" Margin="10,0,0,0">
+                                            <TextBlock Text="{Binding HdrKindLabel}" Style="{StaticResource T.Tag}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <c:Field Label="{l:T hdr.match}" Value="{Binding HdrPlan.MatchReason}"
+                                             LabelWidth="96" Margin="0,10,0,0" />
+                                    <c:Field Label="{l:T hdr.mod}" Value="{Binding HdrPlan.AddonFileName}"
+                                             Mono="True" LabelWidth="96" />
+
+                                    <TextBlock Text="{Binding HdrBlocked}" Style="{StaticResource T.Ter}"
+                                               Foreground="{DynamicResource BrWarn}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Visibility="{Binding HdrBlocked, Converter={StaticResource HasVis}}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                                    <Button Content="{l:T hdr.apply}" Style="{StaticResource Btn.Primary}"
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding InstallRenoDxCommand}"
+                                            ToolTip="{l:T hdr.apply_tip}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Button Content="{l:T hdr.open_page}" Style="{StaticResource Btn}"
+                                                Command="{Binding OpenHdrPageCommand}" />
+                                        <Button Content="{l:T btn.remove}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                                Command="{Binding RemoveRenoDxCommand}"
+                                                ToolTip="{l:T hdr.remove_tip}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,16,0,7">
+                                <TextBlock Text="{l:T hdr.steps}" Style="{StaticResource T.SectionLabel}" />
+                                <TextBlock Text="{Binding HdrSummary}" Style="{StaticResource T.Ter}"
+                                           HorizontalAlignment="Right" />
+                            </Grid>
+
+                            <Border Style="{StaticResource S.Sunken}" Padding="0,3">
+                                <ItemsControl ItemsSource="{Binding HdrSteps}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="12,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="16" />
+                                                    <ColumnDefinition Width="62" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Ellipse Grid.Column="0" Width="5" Height="5" VerticalAlignment="Top"
+                                                         Margin="0,6,0,0" HorizontalAlignment="Left"
+                                                         Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+
+                                                <Border Grid.Column="1" Style="{StaticResource S.Tag}"
+                                                        HorizontalAlignment="Left" VerticalAlignment="Top">
+                                                    <TextBlock Style="{StaticResource T.Tag}"
+                                                               Text="{Binding Kind, Converter={StaticResource LocKey}, ConverterParameter=hdr.tag.}" />
+                                                </Border>
+
+                                                <StackPanel Grid.Column="2" Margin="4,0,0,0">
+                                                    <TextBlock Text="{Binding Text}" Style="{StaticResource T.Sec}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding WikiText}" Style="{StaticResource T.Ter}"
+                                                               FontStyle="Italic" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                               Visibility="{Binding WikiText, Converter={StaticResource HasVis}}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+
+                            <TextBlock Text="{Binding HdrSourceLabel}" Style="{StaticResource T.Ter}"
+                                       Foreground="{DynamicResource BrFg3}" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- ============================================== DIAGNOSTIC -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Margin="0,12,0,0"
+                                        Header="DIAGNOSTIC"
+                                        Visibility="{Binding HasError, Converter={StaticResource BoolVis}}">
+                    <StackPanel Margin="14,12,14,14">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{DynamicResource IcoWarn}" Style="{StaticResource S.IconSm}"
+                                  Stroke="{DynamicResource BrErr}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding LastErrorTitle}" Style="{StaticResource T.Strong}"
+                                       Foreground="{DynamicResource BrErr}" Margin="9,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <c:Field Label="{l:T label.target}" Value="{Binding ExecutableName}" Mono="True"
+                                 LabelWidth="104" Margin="0,12,0,0" />
+                        <c:Field Label="{l:T label.cause}"  Value="{Binding LastError}" LabelWidth="104" />
+
+                        <TextBlock Text="{l:T inj.causes}" Style="{StaticResource T.SectionLabel}"
+                                   Margin="0,14,0,6"
+                                   Visibility="{Binding ErrorCauses.Count, Converter={StaticResource HasVis}}" />
+
+                        <ItemsControl ItemsSource="{Binding ErrorCauses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Border Width="3" Height="3" CornerRadius="1.5" Margin="4,0,9,0"
+                                                Background="{DynamicResource BrFg3}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding}" Style="{StaticResource T.Sec}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="{l:T btn.view_logs}" Style="{StaticResource Btn}"
+                                    Command="{Binding DataContext.GoToCommand,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="7" />
+                            <Button Content="{l:T btn.open_game_folder}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                    Command="{Binding OpenFolderCommand}" />
+                            <Button Content="{l:T btn.retry}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                    Command="{Binding InstallFgCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

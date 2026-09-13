@@ -1,0 +1,330 @@
+<UserControl x:Class="Prism.Views.DlssPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Prism.Core"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             FontFamily="{DynamicResource FontUi}">
+
+    <UserControl.Resources>
+
+        <!-- Ligne de voie selectionnable : liseré accent, jamais de bordure epaisse. -->
+        <Style x:Key="PathRow" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="IsEnabled" Value="{Binding Available}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="B" Background="{DynamicResource BrPanelAlt}"
+                                BorderBrush="{DynamicResource BrLine}" BorderThickness="1"
+                                CornerRadius="{DynamicResource RdCtrl}">
+                            <Grid>
+                                <Border x:Name="Edge" Width="2" HorizontalAlignment="Left"
+                                        Background="Transparent" CornerRadius="2,0,0,2" />
+                                <ContentPresenter Margin="14,11,14,12" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrLineHi}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrRaise}" />
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrAccentDim}" />
+                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource BrAccent}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Ligne de prerequis : etat, valeur constatee, et ce qu'il faut faire. -->
+        <DataTemplate x:Key="PrereqRow">
+            <Grid Margin="12,7">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="104" />
+                    <ColumnDefinition Width="178" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Ellipse Width="5" Height="5" VerticalAlignment="Center" Margin="0,0,8,0"
+                             Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource T.Label}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" Text="{Binding Detail}" Style="{StaticResource T.Mono}"
+                           Foreground="{DynamicResource BrFg}" VerticalAlignment="Top"
+                           Margin="0,0,10,0" TextTrimming="CharacterEllipsis" />
+
+                <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource T.Prose}"
+                           Visibility="{Binding Hint, Converter={StaticResource HasVis}}" />
+                <Button Grid.Column="3" Content="{Binding FixLabel}" Style="{StaticResource Btn}"
+                        Height="22" Margin="10,0,0,0" VerticalAlignment="Top"
+                        Visibility="{Binding Actionable, Converter={StaticResource BoolVis}}"
+                        Command="{Binding DataContext.Detail.FixPrereqCommand,
+                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}"
+                        ToolTip="{l:T prereq.fix_tip}" />
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <!-- Aucun titre selectionne -->
+        <StackPanel DockPanel.Dock="Top" Style="{StaticResource S.Empty}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+            <Path Data="{DynamicResource IcoDlss}" Style="{StaticResource S.Icon}"
+                  Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{l:T empty.no_target}" Style="{StaticResource T.Sec}"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="20,18,20,24" MaxWidth="1100" HorizontalAlignment="Left"
+                        DataContext="{Binding Detail}">
+
+                <TextBlock Text="DLSS Runtime" Style="{StaticResource T.Display}" />
+                <TextBlock Style="{StaticResource T.Prose}" MaxWidth="760" Margin="0,5,0,0"
+                           Text="{l:T dlss.intro}" />
+
+                <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,14,0,0"
+                             Visibility="{Binding Busy, Converter={StaticResource BoolVis}}" />
+
+                <!-- =================================== PANNEAUX DE RUNTIME -->
+                <ItemsControl ItemsSource="{Binding Slots}" Margin="0,16,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <HeaderedContentControl Style="{StaticResource S.Box}" Margin="0,0,0,10"
+                                                    Header="{Binding ShortLabel}">
+                                <HeaderedContentControl.Tag>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Style="{StaticResource S.Tag}"
+                                                BorderBrush="{DynamicResource BrAccentDim}"
+                                                Visibility="{Binding IsDeployed, Converter={StaticResource BoolVis}}"
+                                                ToolTip="{l:T dlss.added_tip}">
+                                            <TextBlock Text="{l:T tag.added}" Style="{StaticResource T.Tag}"
+                                                       Foreground="{DynamicResource BrAccent}" />
+                                        </Border>
+                                        <Border Style="{StaticResource S.Tag}"
+                                                BorderBrush="{DynamicResource BrAccentDim}"
+                                                Visibility="{Binding IsUpToDate, Converter={StaticResource BoolVis}}">
+                                            <TextBlock Text="{l:T tag.latest}" Style="{StaticResource T.Tag}"
+                                                       Foreground="{DynamicResource BrAccent}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource T.Mono}"
+                                                   Foreground="{DynamicResource BrFg}" VerticalAlignment="Center"
+                                                   Margin="6,0,0,0" />
+                                    </StackPanel>
+                                </HeaderedContentControl.Tag>
+
+                                <Grid Margin="14,12,14,14">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.Row="0">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource T.Strong}"
+                                                       ToolTip="{Binding Tip}" />
+                                            <TextBlock Text="{Binding Tip}" Style="{StaticResource T.Prose}"
+                                                       MaxWidth="660" Margin="0,5,0,0" />
+                                        </StackPanel>
+
+                                        <TextBlock Style="{StaticResource T.Label}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Top" Text="{Binding FileName}" />
+                                    </Grid>
+
+                                    <!-- Le meme bloc sert au remplacement et a l'ajout : seul le
+                                         libelle du bouton principal change de sens. -->
+                                    <Grid Grid.Row="1" Margin="0,14,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <ComboBox Grid.Column="0" ItemsSource="{Binding Versions}"
+                                                  SelectedItem="{Binding Selected}"
+                                                  MaxWidth="420" HorizontalAlignment="Left">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid MinWidth="360">
+                                                        <TextBlock Text="{Binding Version}"
+                                                                   Style="{StaticResource T.Mono}"
+                                                                   Foreground="{DynamicResource BrFg}" />
+                                                        <TextBlock Text="{Binding InternalName}"
+                                                                   Style="{StaticResource T.Ter}"
+                                                                   HorizontalAlignment="Right" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+
+                                        <Button Grid.Column="1" Content="{Binding ActionLabel}"
+                                                Style="{StaticResource Btn.Primary}" MinWidth="78"
+                                                Margin="8,0,0,0" Command="{Binding ApplyCommand}"
+                                                ToolTip="{Binding ActionTip}" />
+                                        <Button Grid.Column="2" Content="{l:T btn.restore}" Style="{StaticResource Btn.Quiet}"
+                                                Margin="4,0,0,0" Command="{Binding RestoreCommand}"
+                                                Visibility="{Binding IsDeployed, Converter={StaticResource BoolVis},
+                                                             ConverterParameter=invert}"
+                                                ToolTip="{l:T dlss.restore_tip}" />
+                                        <Button Grid.Column="3" Content="{l:T btn.remove}" Style="{StaticResource Btn.Quiet}"
+                                                Margin="4,0,0,0" Command="{Binding RemoveCommand}"
+                                                Visibility="{Binding IsDeployed, Converter={StaticResource BoolVis}}"
+                                                ToolTip="{l:T dlss.remove_tip}" />
+                                    </Grid>
+
+                                    <ProgressBar Grid.Row="1" Value="{Binding Progress, Mode=OneWay}" Maximum="100"
+                                                 VerticalAlignment="Bottom" Margin="0,0,0,-12"
+                                                 Visibility="{Binding Busy, Converter={StaticResource BoolVis}}" />
+                                </Grid>
+                            </HeaderedContentControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ============================================== DLSS 5 -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="DLSS 5 — NEURAL RENDERING"
+                                        Margin="0,10,0,0">
+                    <HeaderedContentControl.Tag>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Dlss5Progress}" Style="{StaticResource T.Ter}"
+                                       VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <c:StatusDot Status="{Binding Dlss5Status}" />
+                        </StackPanel>
+                    </HeaderedContentControl.Tag>
+
+                    <StackPanel Margin="14,12,14,14">
+                        <TextBlock Text="{Binding Dlss5Summary}" Style="{StaticResource T.Prose}" MaxWidth="780" />
+
+                        <TextBlock Text="{l:T dlss5.path}" Style="{StaticResource T.SectionLabel}" Margin="0,14,0,7" />
+
+                        <ListBox ItemsSource="{Binding Dlss5Options}" SelectedItem="{Binding SelectedDlss5}"
+                                 Style="{StaticResource S.Rows}" ItemContainerStyle="{StaticResource PathRow}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Title}" Style="{StaticResource T.Strong}" />
+
+                                                <Border Style="{StaticResource S.Tag}" Margin="10,0,0,0"
+                                                        BorderBrush="{DynamicResource BrAccentDim}"
+                                                        Visibility="{Binding Recommended, Converter={StaticResource BoolVis}}">
+                                                    <TextBlock Text="{l:T tag.recommended}" Style="{StaticResource T.Tag}"
+                                                               Foreground="{DynamicResource BrAccent}" />
+                                                </Border>
+
+                                                <Border Style="{StaticResource S.Tag}"
+                                                        Visibility="{Binding NonDestructive, Converter={StaticResource BoolVis}}">
+                                                    <TextBlock Text="{l:T tag.nondestructive}" Style="{StaticResource T.Tag}" />
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Border Style="{StaticResource S.Tag}"
+                                                        ToolTip="{l:T dlss5.api_tip}">
+                                                    <TextBlock Text="{Binding ApiLabel}" Style="{StaticResource T.Tag}" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Version}" Style="{StaticResource T.Mono}"
+                                                           Foreground="{DynamicResource BrFg}"
+                                                           VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource T.Prose}"
+                                                   Margin="0,7,0,0" MaxWidth="720" />
+
+                                        <TextBlock Text="{Binding BlockedReason}" Style="{StaticResource T.Ter}"
+                                                   Foreground="{DynamicResource BrWarn}" Margin="0,7,0,0"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding BlockedReason, Converter={StaticResource HasVis}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="{l:T label.prereqs}" Style="{StaticResource T.SectionLabel}" Margin="0,14,0,7" />
+                        <Border Style="{StaticResource S.Sunken}" Padding="0,2">
+                            <ItemsControl ItemsSource="{Binding Dlss5Checks}"
+                                          ItemTemplate="{StaticResource PrereqRow}" />
+                        </Border>
+
+                        <!-- Build de l'addon RenoDX DLSS 5 : la plus recente par defaut. -->
+                        <Border Style="{StaticResource S.Sunken}" Padding="12,8" Margin="0,12,0,0"
+                                Visibility="{Binding SelectedDlss5.Backend, Converter={StaticResource EqVis}, ConverterParameter=RenoDxDlss5}">
+                            <Grid>
+                                <TextBlock Text="{l:T dlss5.build}" Style="{StaticResource T.Label}"
+                                           VerticalAlignment="Center" />
+                                <ComboBox ItemsSource="{Binding Dlss5Builds}" SelectedItem="{Binding SelectedDlss5Build}"
+                                          Width="230" HorizontalAlignment="Right" ToolTip="{l:T dlss5.build_tip}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid MinWidth="190">
+                                                <TextBlock Text="{Binding Version}" Style="{StaticResource T.Mono}" />
+                                                <TextBlock Text="{Binding Published, StringFormat={}{0:yyyy-MM-dd}}"
+                                                           Style="{StaticResource T.Ter}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="{l:T btn.install}" Style="{StaticResource Btn.Primary}"
+                                    Command="{Binding InstallDlss5Command}"
+                                    ToolTip="{l:T dlss5.prepare_tip}" />
+                            <Button Content="{l:T dlss5.adopt}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                    Command="{Binding AdoptNeuralCommand}"
+                                    ToolTip="{l:T dlss5.adopt_tip}" />
+                            <Button Content="{l:T btn.open_source}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                    Command="{Binding OpenSourceCommand}"
+                                    CommandParameter="{Binding SelectedDlss5.SourceUrl}" />
+                            <Button Content="{l:T dlss5.remove_bridge}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                    Command="{Binding RemoveBridgeCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- ============================================= EXPERT -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T dlss.runtime_paths}" Margin="0,10,0,0"
+                                        Visibility="{Binding DataContext.IsExpert,
+                                                     RelativeSource={RelativeSource AncestorType=UserControl},
+                                                     Converter={StaticResource BoolVis}}">
+                    <ItemsControl ItemsSource="{Binding Game.Dlls}" Margin="14,10,14,12">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Height="24">
+                                    <TextBlock Text="{Binding FileName}" Style="{StaticResource T.Mono}"
+                                               Foreground="{DynamicResource BrFg2}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Path}" Style="{StaticResource T.MonoPath}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               MaxWidth="640" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </HeaderedContentControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

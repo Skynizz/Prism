@@ -1,0 +1,245 @@
+<UserControl x:Class="Prism.Views.ChangesPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Prism.Core"
+             x:Name="Page"
+             FontFamily="{DynamicResource FontUi}">
+
+    <DockPanel>
+
+        <!-- ================================================== BARRE D'OUTILS -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource S.Toolbar}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ChangesSummary}" Style="{StaticResource T.Sec}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="{l:T changes.revert_all}" Style="{StaticResource Btn.Danger}"
+                            Command="{Binding RevertAllCommand}"
+                            ToolTip="{l:T changes.revert_all_tip}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Margin="20,18,20,24">
+
+                <TextBlock Text="{l:T nav.changes}" Style="{StaticResource T.Display}" />
+                <TextBlock Style="{StaticResource T.Prose}" MaxWidth="780" Margin="0,5,0,0"
+                           Text="{l:T changes.intro}" />
+
+                <!-- Etat vide -->
+                <StackPanel Style="{StaticResource S.Empty}"
+                            Visibility="{Binding HasChanges, Converter={StaticResource BoolVis},
+                                         ConverterParameter=invert}">
+                    <Path Data="{DynamicResource IcoChanges}" Style="{StaticResource S.Icon}"
+                          Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                          HorizontalAlignment="Center" />
+                    <TextBlock Text="{l:T changes.empty}" Style="{StaticResource T.Sec}"
+                               HorizontalAlignment="Center" Margin="0,12,0,0" />
+                    <TextBlock Style="{StaticResource T.Prose}" MaxWidth="380" TextAlignment="Center"
+                               HorizontalAlignment="Center" Margin="0,6,0,0"
+                               Text="{l:T changes.empty_hint}" />
+                </StackPanel>
+
+                <!-- ===================================================== TABLE -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T changes.registry}" Margin="0,16,0,0"
+                                        Visibility="{Binding HasChanges, Converter={StaticResource BoolVis}}">
+                    <StackPanel>
+                        <Border Style="{StaticResource S.TableHead}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="*" MinWidth="200" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="96" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{l:T col.type}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="1" Text="{l:T col.file}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="2" Text="{l:T col.component}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="3" Text="{l:T col.title}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="4" Text="{l:T col.when}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="5" Text="" Style="{StaticResource S.ColHeader}" />
+                            </Grid>
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding Changes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource BrHair}" BorderThickness="0,0,0,1"
+                                            Padding="12,0">
+                                        <Grid Height="40">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="*" MinWidth="200" />
+                                                <ColumnDefinition Width="150" />
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="96" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                                                        VerticalAlignment="Center">
+                                                <Ellipse Width="5" Height="5" Margin="0,0,7,0"
+                                                         VerticalAlignment="Center"
+                                                         Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+                                                <TextBlock Text="{Binding KindLabel}" Style="{StaticResource T.Label}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                                        Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding FileName}" Style="{StaticResource T.Mono}"
+                                                           Foreground="{DynamicResource BrFg}" />
+                                                <TextBlock Text="{Binding Path}" Style="{StaticResource T.MonoPath}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center"
+                                                        Margin="0,0,10,0">
+                                                <TextBlock Text="{Binding Component}" Style="{StaticResource T.Sec}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Version}" Style="{StaticResource T.MonoPath}"
+                                                           Margin="0,1,0,0" />
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="3" Text="{Binding GameName}"
+                                                       Style="{StaticResource T.Ter}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,0,10,0" />
+
+                                            <TextBlock Grid.Column="4" Style="{StaticResource T.Ter}"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding At, StringFormat={}{0:dd/MM HH:mm}}" />
+
+                                            <Button Grid.Column="5" Content="{Binding ActionLabel}"
+                                                    Style="{StaticResource Btn}" Height="22"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                    IsEnabled="{Binding StillApplies}"
+                                                    Command="{Binding DataContext.RevertChangeCommand,
+                                                              RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- =============================================== PAR TITRE -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T changes.by_title}" Margin="0,12,0,0"
+                                        Visibility="{Binding HasChanges, Converter={StaticResource BoolVis}}">
+                    <StackPanel Margin="14,12,14,14">
+                        <TextBlock Style="{StaticResource T.Prose}"
+                                   Text="{l:T changes.by_title_hint}" />
+
+                        <ItemsControl ItemsSource="{Binding ChangedGames}" Margin="0,10,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="32">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource T.Sec}"
+                                                       VerticalAlignment="Center" />
+                                            <Border Style="{StaticResource S.Tag}" Margin="10,0,0,0">
+                                                <TextBlock Text="{Binding CountLabel}" Style="{StaticResource T.Tag}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <Button Content="{l:T changes.revert_title}" Style="{StaticResource Btn.Quiet}"
+                                                Height="22" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Command="{Binding DataContext.RevertGameCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding Id}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+
+                <!-- =============================================== VANILLE -->
+                <!--
+                    Le registre dit ce qui a ete ecrit ; cette section dit ce qui est
+                    encore en place. Un fichier peut avoir derive depuis l'ecriture :
+                    mise a jour du jeu, autre outil, edition manuelle. Le plan de retour
+                    distingue ces cas au lieu de tout ecraser.
+                -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T changes.vanilla}" Margin="0,12,0,0"
+                                        Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+                    <HeaderedContentControl.Tag>
+                        <TextBlock Text="{Binding Detail.Game.Name}" Style="{StaticResource T.Ter}" />
+                    </HeaderedContentControl.Tag>
+
+                    <StackPanel Margin="14,12,14,14" DataContext="{Binding Detail}">
+                        <TextBlock Style="{StaticResource T.Prose}"
+                                   Text="{l:T changes.vanilla_hint}" />
+
+                        <Border Style="{StaticResource S.Sunken}" Padding="11,9" Margin="0,11,0,0">
+                            <TextBlock Text="{Binding PlanSummary}" Style="{StaticResource T.Sec}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+
+                        <!-- Etat par fichier -->
+                        <ItemsControl ItemsSource="{Binding Drift}" Margin="0,10,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="28">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                    Margin="0,0,140,0">
+                                            <Ellipse Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                     Fill="{Binding Status, Converter={StaticResource StatusBrush}}" />
+                                            <TextBlock Text="{Binding Entry.FileName}" Style="{StaticResource T.Mono}"
+                                                       Foreground="{DynamicResource BrFg2}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource T.Ter}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Orphelins : poses par un autre outil, ou restes d'une installation
+                             que Prism n'a pas tracee. Jamais retires sans accord explicite. -->
+                        <StackPanel Visibility="{Binding Orphans.Count, Converter={StaticResource HasVis}}"
+                                    Margin="0,10,0,0">
+                            <TextBlock Text="{l:T changes.orphans}" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding Orphans}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Height="26">
+                                            <TextBlock Text="{Binding FileName}" Style="{StaticResource T.Mono}"
+                                                       Foreground="{DynamicResource BrFg2}" VerticalAlignment="Center"
+                                                       Margin="0,0,160,0" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Kind}" Style="{StaticResource T.Ter}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="{l:T changes.verify}" Style="{StaticResource Btn}"
+                                    Command="{Binding VerifyCommand}"
+                                    ToolTip="{l:T changes.verify_tip}" />
+                            <Button Content="{l:T changes.restore_vanilla}" Style="{StaticResource Btn.Danger}" Margin="6,0,0,0"
+                                    Command="{Binding RestoreVanillaCommand}"
+                                    ToolTip="{l:T changes.restore_vanilla_tip}" />
+                            <Button Content="{l:T changes.restore_orphans}" Style="{StaticResource Btn.Quiet}"
+                                    Margin="6,0,0,0"
+                                    Command="{Binding RestoreVanillaCommand}" CommandParameter="True"
+                                    Visibility="{Binding Orphans.Count, Converter={StaticResource HasVis}}"
+                                    ToolTip="{l:T changes.restore_orphans_tip}" />
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

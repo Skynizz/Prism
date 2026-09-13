@@ -1,0 +1,16 @@
+# Sorties de compilation
+bin/
+obj/
+build-invoker/
+app.invoker.manifest
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Divers
+*.log
+Thumbs.db

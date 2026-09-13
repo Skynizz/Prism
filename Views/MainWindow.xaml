@@ -1,0 +1,353 @@
+<Window x:Class="Prism.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Prism.Core"
+        xmlns:v="clr-namespace:Prism.Views"
+        xmlns:c="clr-namespace:Prism.Views.Controls"
+        xmlns:m="clr-namespace:Prism.Models"
+        Title="Prism" Height="900" Width="1480" MinHeight="640" MinWidth="1180"
+        Background="{DynamicResource BrBase}"
+        Foreground="{DynamicResource BrFg}"
+        FontFamily="{DynamicResource FontUi}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        WindowStartupLocation="CenterScreen"
+        FlowDirection="{Binding FlowDirection, Source={x:Static l:Loc.I}}">
+
+    <WindowChrome.WindowChrome>
+        <!-- Chrome natif retire : la barre de titre fait partie de l'identite produit. -->
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+
+        <!-- Pages : TabControl sans bandeau, pilote par le rail. -->
+        <Style x:Key="Pages" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <ContentPresenter ContentSource="SelectedContent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Entree du rail : icone + libelle, marqueur accent a gauche. -->
+        <Style x:Key="NavRow" TargetType="ListBoxItem">
+            <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="B" Height="30" Background="Transparent" Margin="6,1">
+                            <Grid>
+                                <Border x:Name="Edge" Width="2" HorizontalAlignment="Left"
+                                        Background="Transparent" CornerRadius="1" Margin="0,6" />
+                                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <Path x:Name="Ico" Data="{DynamicResource IcoOverview}"
+                                          Style="{StaticResource S.IconSm}"
+                                          Stroke="{DynamicResource BrFg3}" />
+                                    <TextBlock x:Name="Txt" Text="{Binding Title}"
+                                               FontSize="{DynamicResource SzBody}"
+                                               Foreground="{DynamicResource BrFg2}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoOverview">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoOverview}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoGames">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoGames}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoDlss">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoDlss}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoFrameGen">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoFrameGen}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoInjection">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoInjection}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoComponents}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoLogs">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoLogs}" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="IcoSettings">
+                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoSettings}" /></DataTrigger>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
+                                <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
+                                <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrFg2}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
+                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource BrAccent}" />
+                                <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
+                                <Setter TargetName="Txt" Property="FontWeight" Value="SemiBold" />
+                                <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrAccent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Bloc du bandeau systeme : libelle au-dessus, valeur en dessous. -->
+        <DataTemplate x:Key="SysCell">
+            <StackPanel Margin="0,0,26,0" VerticalAlignment="Center" />
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Border x:Name="RootShell" Background="{DynamicResource BrBase}"
+            BorderBrush="{DynamicResource BrLine}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="26" />
+            </Grid.RowDefinitions>
+
+            <!-- ============================================ BARRE DE TITRE -->
+            <Border Grid.Row="0" Background="{DynamicResource BrChrome}"
+                    BorderBrush="{DynamicResource BrLine}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+
+                        <!-- Marque : prisme, faisceau entrant, spectre sortant. -->
+                        <Canvas Width="24" Height="20" VerticalAlignment="Center" Margin="0,0,9,0">
+                            <Path Data="{DynamicResource MarkBeam}" Stroke="{DynamicResource BrFg3}"
+                                  StrokeThickness="1.2" Canvas.Left="-1" Canvas.Top="0" />
+                            <Path Data="{DynamicResource MarkPrism}" Stroke="{DynamicResource BrAccent}"
+                                  StrokeThickness="1.3" StrokeLineJoin="Round" Fill="#14200A" />
+                            <Path Data="{DynamicResource MarkSpectrum}" Stroke="{DynamicResource BrAccent}"
+                                  StrokeThickness="1.1" Opacity="0.85" />
+                        </Canvas>
+
+                        <TextBlock Text="PRISM" FontSize="12.5" FontWeight="Bold"
+                                   Foreground="{DynamicResource BrFg}" VerticalAlignment="Center">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform Y="0.5" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <Border Style="{StaticResource S.VRule}" Height="12" Margin="10,0" />
+
+                        <TextBlock Text="{l:T app.tagline}" Style="{StaticResource T.Ter}"
+                                   VerticalAlignment="Center" />
+
+                        <TextBlock Text="{Binding AppVersion, StringFormat=v{0}}"
+                                   Style="{StaticResource T.Mono}"
+                                   Foreground="{DynamicResource BrFgDim}"
+                                   FontSize="{DynamicResource SzMicro}"
+                                   VerticalAlignment="Center" Margin="10,1,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource Btn.Caption}" Click="OnMinimize" ToolTip="{l:T win.minimize}">
+                            <Path Data="{DynamicResource IcoMin}" Style="{StaticResource S.Icon}"
+                                  Stroke="{DynamicResource BrFg2}" Width="12" Height="12" Stretch="Uniform" />
+                        </Button>
+                        <Button Style="{StaticResource Btn.Caption}" Click="OnMaximize" ToolTip="{l:T win.maximize}">
+                            <Path x:Name="MaxGlyph" Data="{DynamicResource IcoMax}" Style="{StaticResource S.Icon}"
+                                  Stroke="{DynamicResource BrFg2}" Width="11" Height="11" Stretch="Uniform" />
+                        </Button>
+                        <Button Style="{StaticResource Btn.CaptionClose}" Click="OnClose" ToolTip="{l:T win.close}">
+                            <Path Data="{DynamicResource IcoClose}" Style="{StaticResource S.Icon}"
+                                  Stroke="{DynamicResource BrFg2}" Width="11" Height="11" Stretch="Uniform" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ========================================== BANDEAU SYSTEME -->
+            <!-- Toujours visible : c'est ce qui ancre l'outil a la machine. -->
+            <Border Grid.Row="1" Background="{DynamicResource BrPanel}"
+                    BorderBrush="{DynamicResource BrLine}" BorderThickness="0,0,0,1"
+                    Padding="16,9">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                        <StackPanel Margin="0,0,24,0">
+                            <TextBlock Text="GPU" Style="{StaticResource T.Label}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock Text="{Binding GpuName}" Style="{StaticResource T.Strong}" />
+                                <Border Style="{StaticResource S.Tag}" Margin="7,0,0,0">
+                                    <TextBlock Text="{Binding Gpu.Architecture}" Style="{StaticResource T.Tag}" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource S.VRule}" Height="26" Margin="0,0,24,0" />
+
+                        <StackPanel Margin="0,0,24,0">
+                            <TextBlock Text="{l:T label.driver}" Style="{StaticResource T.Label}" />
+                            <TextBlock Text="{Binding DriverLabel}" Style="{StaticResource T.Mono}"
+                                       Foreground="{DynamicResource BrFg}" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,24,0">
+                            <TextBlock Text="VRAM" Style="{StaticResource T.Label}" />
+                            <TextBlock Text="{Binding VramLabel}" Style="{StaticResource T.Mono}"
+                                       Foreground="{DynamicResource BrFg}" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,24,0">
+                            <TextBlock Text="API" Style="{StaticResource T.Label}" />
+                            <TextBlock Text="{Binding ApiLabel}" Style="{StaticResource T.Mono}"
+                                       Foreground="{DynamicResource BrFg}" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="{l:T label.display}" Style="{StaticResource T.Label}" />
+                            <TextBlock Text="{Binding Display.Summary}" Style="{StaticResource T.Mono}"
+                                       Foreground="{DynamicResource BrFg}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+                        <!-- Jeu actif -->
+                        <StackPanel Margin="0,0,20,0" HorizontalAlignment="Right">
+                            <TextBlock Text="{l:T label.active_game}" Style="{StaticResource T.Label}"
+                                       HorizontalAlignment="Right" />
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0" HorizontalAlignment="Right">
+                                <c:StatusDot Status="{Binding RunningStatus}"
+                                             Text="{Binding RunningStatus}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RunningLabel}" Style="{StaticResource T.Sec}"
+                                           Foreground="{DynamicResource BrFg}" Margin="8,0,0,0"
+                                           VerticalAlignment="Center" MaxWidth="220"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Style="{StaticResource S.VRule}" Height="26" Margin="0,0,16,0" />
+
+                        <!-- Niveau de detail : gouverne la densite des pages. -->
+                        <StackPanel>
+                            <TextBlock Text="{l:T label.mode}" Style="{StaticResource T.Label}" Margin="0,0,0,3" />
+                            <ItemsControl Style="{StaticResource Seg.Host}">
+                                <RadioButton Style="{StaticResource Seg.Item}" Content="{l:T mode.basic}" GroupName="lvl"
+                                             Command="{Binding SetLevelCommand}" CommandParameter="Basic"
+                                             IsChecked="{Binding Level, Mode=OneWay,
+                                                         Converter={StaticResource EqBool}, ConverterParameter=Basic}" />
+                                <RadioButton Style="{StaticResource Seg.Item}" Content="{l:T mode.advanced}" GroupName="lvl"
+                                             Command="{Binding SetLevelCommand}" CommandParameter="Advanced"
+                                             IsChecked="{Binding Level, Mode=OneWay,
+                                                         Converter={StaticResource EqBool}, ConverterParameter=Advanced}" />
+                                <RadioButton Style="{StaticResource Seg.Item}" Content="{l:T mode.expert}" GroupName="lvl"
+                                             Command="{Binding SetLevelCommand}" CommandParameter="Expert"
+                                             IsChecked="{Binding Level, Mode=OneWay,
+                                                         Converter={StaticResource EqBool}, ConverterParameter=Expert}" />
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- =================================================== CORPS -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="176" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Rail de navigation -->
+                <Border Grid.Column="0" Background="{DynamicResource BrChrome}"
+                        BorderBrush="{DynamicResource BrLine}" BorderThickness="0,0,1,0">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Bottom" Margin="12,0,12,12">
+                            <Button Content="{l:T btn.rescan_caps}" Style="{StaticResource Btn.Primary}"
+                                    Command="{Binding ScanCommand}" HorizontalAlignment="Stretch" />
+                            <Button Content="{l:T btn.update_catalogs}" Style="{StaticResource Btn.Quiet}"
+                                    Command="{Binding RefreshCatalogsCommand}" Margin="0,4,0,0"
+                                    HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <!--
+                            IsSynchronizedWithCurrentItem est desactive explicitement : liee a une
+                            vue groupee, la synchronisation deplace la selection au fil de la
+                            realisation des conteneurs et fait deriver la page affichee.
+                        -->
+                        <ListBox DockPanel.Dock="Top" VerticalAlignment="Top" Margin="0,10,0,0"
+                                 Background="Transparent" BorderThickness="0"
+                                 IsSynchronizedWithCurrentItem="False"
+                                 VirtualizingPanel.IsVirtualizing="False"
+                                 ItemsSource="{Binding NavView}" SelectedItem="{Binding SelectedNav}"
+                                 ItemContainerStyle="{StaticResource NavRow}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.GroupStyle>
+                                <GroupStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Style="{StaticResource T.Label}"
+                                                       Foreground="{DynamicResource BrFgDim}"
+                                                       Margin="18,14,0,6">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource LocKey}" ConverterParameter="group.">
+                                                        <Binding Path="Name" />
+                                                        <Binding Path="Code" Source="{x:Static l:Loc.I}" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListBox.GroupStyle>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- Pages -->
+                <TabControl Grid.Column="1" Style="{StaticResource Pages}"
+                            SelectedIndex="{Binding PageIndex, Mode=OneWay}">
+                    <TabItem><v:OverviewPage /></TabItem>
+                    <TabItem><v:GamesPage /></TabItem>
+                    <TabItem><v:DlssPage /></TabItem>
+                    <TabItem><v:FrameGenPage /></TabItem>
+                    <TabItem><v:InjectionPage /></TabItem>
+                    <TabItem><v:ChangesPage /></TabItem>
+                    <TabItem><v:ComponentsPage /></TabItem>
+                    <TabItem><v:LogsPage /></TabItem>
+                    <TabItem><v:SettingsPage /></TabItem>
+                </TabControl>
+            </Grid>
+
+            <!-- ============================================ BARRE D'ETAT -->
+            <Border Grid.Row="3" Background="{DynamicResource BrChrome}"
+                    BorderBrush="{DynamicResource BrLine}" BorderThickness="0,1,0,0"
+                    Padding="12,0">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <c:StatusDot Status="{Binding ShellStatus}" Text="" />
+                        <TextBlock Text="{Binding Status}" Style="{StaticResource T.Ter}"
+                                   Margin="8,0,0,0" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="700" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding GameCountLabel}" Style="{StaticResource T.Ter}"
+                                   VerticalAlignment="Center" />
+                        <Border Style="{StaticResource S.VRule}" Height="11" Margin="12,0" />
+                        <Button Style="{StaticResource Btn.Quiet}" Height="20" Padding="6,0"
+                                Command="{Binding GoToCommand}" CommandParameter="5"
+                                ToolTip="{l:T status.changes_tip}">
+                            <TextBlock Text="{Binding ChangesSummary}" Style="{StaticResource T.Ter}"
+                                       VerticalAlignment="Center" />
+                        </Button>
+                        <Border Style="{StaticResource S.VRule}" Height="11" Margin="12,0" />
+                        <TextBlock Style="{StaticResource T.Mono}" Foreground="{DynamicResource BrFgDim}"
+                                   FontSize="{DynamicResource SzMicro}" VerticalAlignment="Center"
+                                   Text="{Binding LastLog.Time}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

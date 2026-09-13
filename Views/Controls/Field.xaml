@@ -1,0 +1,25 @@
+<UserControl x:Class="Prism.Views.Controls.Field"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <!--
+        Ligne libelle / valeur. C'est la brique de base des panneaux techniques :
+        elle remplace les cartes, qu'on s'interdit ici.
+    -->
+    <Grid Margin="0,0,0,0" MinHeight="22" ToolTipService.InitialShowDelay="350">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{Binding LabelWidth, ElementName=Root}" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0" Text="{Binding Label, ElementName=Root}"
+                   Style="{StaticResource T.Label}" VerticalAlignment="Center" />
+
+        <TextBlock Grid.Column="1" x:Name="ValueText"
+                   Text="{Binding Value, ElementName=Root}"
+                   Style="{StaticResource T.Body}"
+                   FontSize="{DynamicResource SzSmall}"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+    </Grid>
+</UserControl>

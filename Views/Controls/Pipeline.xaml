@@ -1,0 +1,55 @@
+<UserControl x:Class="Prism.Views.Controls.Pipeline"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+    <!--
+        Chaine de rendu. Un etage emprunte par le pipeline porte un liseré accent et
+        sa valeur technique ; un etage non emprunte reste en place, attenue, pour que
+        la chaine complete reste lisible.
+    -->
+    <ItemsControl ItemsSource="{Binding Stages, ElementName=Root}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <!-- Le retour a la ligne assure la tenue jusqu'a 1280 px de large. -->
+                <WrapPanel Orientation="Horizontal" IsItemsHost="True" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+
+                    <!-- Connecteur, sauf pour le premier maillon -->
+                    <Grid Width="18" Height="44"
+                          Visibility="{Binding IsFirst, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+                        <Border Height="1" Width="18" VerticalAlignment="Center"
+                                Background="{DynamicResource BrLine}" />
+                        <Path Data="M0,0 L3.5,3.5 L0,7" Stretch="None" Width="4" Height="7"
+                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Stroke="{DynamicResource BrLineHi}" StrokeThickness="1.2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    </Grid>
+
+                    <Border Background="{DynamicResource BrPanelAlt}"
+                            BorderBrush="{DynamicResource BrLine}" BorderThickness="1"
+                            CornerRadius="{DynamicResource RdCtrl}"
+                            Height="44" MinWidth="94" Opacity="{Binding NodeOpacity}"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <Border Width="2" HorizontalAlignment="Left" CornerRadius="2,0,0,2"
+                                    Background="{Binding State, Converter={StaticResource StatusBrush}}"
+                                    Visibility="{Binding Engaged, Converter={StaticResource BoolVis}}" />
+
+                            <StackPanel Margin="11,0,12,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource T.Label}" />
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource T.Mono}"
+                                           FontSize="{DynamicResource SzLabel}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource BrFg}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

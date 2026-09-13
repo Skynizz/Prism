@@ -1,0 +1,346 @@
+<UserControl x:Class="Prism.Views.FrameGenPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Prism.Core"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             FontFamily="{DynamicResource FontUi}">
+
+    <UserControl.Resources>
+        <!--
+            Une voie de generation d'images. La selection se marque par le liseré
+            accent et le fond, jamais par une bordure epaisse.
+        -->
+        <Style x:Key="PathRow" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="IsEnabled" Value="{Binding Available}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="B" Background="{DynamicResource BrPanel}"
+                                BorderBrush="{DynamicResource BrLine}" BorderThickness="1"
+                                CornerRadius="{DynamicResource RdPanel}">
+                            <Grid>
+                                <Border x:Name="Edge" Width="2" HorizontalAlignment="Left"
+                                        Background="Transparent" CornerRadius="2,0,0,2" />
+                                <ContentPresenter Margin="16,13,16,14" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrLineHi}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrRaise}" />
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrAccentDim}" />
+                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource BrAccent}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <StackPanel DockPanel.Dock="Top" Style="{StaticResource S.Empty}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+            <Path Data="{DynamicResource IcoFrameGen}" Style="{StaticResource S.Icon}"
+                  Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{l:T empty.no_target}" Style="{StaticResource T.Sec}"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+            <Grid Margin="20,18,20,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="480" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="330" />
+                </Grid.ColumnDefinitions>
+
+                <!-- ================================================ VOIES -->
+                <StackPanel Grid.Column="0" DataContext="{Binding Detail}">
+
+                    <TextBlock Text="{l:T term.framegen}" Style="{StaticResource T.Display}" />
+                    <TextBlock Style="{StaticResource T.Prose}" MaxWidth="700" Margin="0,5,0,0"
+                               Text="{l:T fg.intro}" />
+
+                    <!-- Blocage global -->
+                    <Border Style="{StaticResource S.Notice}" Margin="0,14,0,0"
+                            Visibility="{Binding FgUnavailableReason, Converter={StaticResource HasVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{DynamicResource IcoWarn}" Style="{StaticResource S.IconSm}"
+                                  Stroke="{DynamicResource BrWarn}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                            <TextBlock Text="{Binding FgUnavailableReason}" Style="{StaticResource T.Prose}"
+                                       Foreground="{DynamicResource BrWarn}" Margin="9,0,0,0" MaxWidth="620" />
+                        </StackPanel>
+                    </Border>
+
+                    <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,14,0,0"
+                                 Visibility="{Binding Busy, Converter={StaticResource BoolVis}}" />
+
+                    <ListBox ItemsSource="{Binding FgOptions}" SelectedItem="{Binding SelectedFg}"
+                             Style="{StaticResource S.Rows}" ItemContainerStyle="{StaticResource PathRow}"
+                             Margin="0,16,0,0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource T.Strong}" />
+
+                                            <Border Style="{StaticResource S.Tag}" Margin="10,0,0,0"
+                                                    BorderBrush="{DynamicResource BrAccentDim}"
+                                                    Visibility="{Binding Recommended, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="{l:T tag.recommended}" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrAccent}" />
+                                            </Border>
+
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding NonDestructive, Converter={StaticResource BoolVis}}"
+                                                    ToolTip="{l:T fg.nondestructive_tip}">
+                                                <TextBlock Text="{l:T tag.nondestructive}" Style="{StaticResource T.Tag}" />
+                                            </Border>
+
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding Experimental, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="{l:T tag.experimental}" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrWarn}" />
+                                            </Border>
+
+                                            <!-- Le moteur reellement execute : ce n'est pas un detail. -->
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    BorderBrush="{DynamicResource BrAccentDim}"
+                                                    Visibility="{Binding Native, Converter={StaticResource BoolVis}}"
+                                                    ToolTip="{l:T fg.native_tip}">
+                                                <TextBlock Text="{l:T tag.native}" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrAccent}" />
+                                            </Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding Native, Converter={StaticResource BoolVis},
+                                                                 ConverterParameter=invert}"
+                                                    ToolTip="{l:T fg.fsr_tip}">
+                                                <TextBlock Text="FSR 3.1" Style="{StaticResource T.Tag}" />
+                                            </Border>
+
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    BorderBrush="{DynamicResource BrWarn}"
+                                                    Visibility="{Binding AutoInstall, Converter={StaticResource BoolVis},
+                                                                 ConverterParameter=invert}"
+                                                    ToolTip="{l:T fg.manual_tip}">
+                                                <TextBlock Text="{l:T tag.manual}" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrWarn}" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Method}" Style="{StaticResource T.Ter}"
+                                                       VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            <TextBlock Text="{Binding MultiplierLabel}" Style="{StaticResource T.Mono}"
+                                                       Foreground="{DynamicResource BrFg}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource T.Prose}"
+                                               Margin="0,7,0,0" MaxWidth="640" HorizontalAlignment="Left" />
+
+                                    <TextBlock Text="{Binding BlockedReason}" Style="{StaticResource T.Ter}"
+                                               Foreground="{DynamicResource BrErr}" Margin="0,7,0,0"
+                                               TextWrapping="Wrap"
+                                               Visibility="{Binding BlockedReason, Converter={StaticResource HasVis}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+
+                <!-- ============================================ REGLAGES -->
+                <StackPanel Grid.Column="2" DataContext="{Binding Detail}">
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T fg.multiplier}">
+                        <StackPanel Margin="14,14,14,14">
+                            <ItemsControl ItemsSource="{Binding Multipliers}" Style="{StaticResource Seg.Host}"
+                                          HorizontalAlignment="Left">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton Style="{StaticResource Seg.Item}" GroupName="mult"
+                                                     Content="{Binding StringFormat=×{0}}"
+                                                     Command="{Binding DataContext.PickMultiplierCommand,
+                                                               RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                     CommandParameter="{Binding}"
+                                                     ToolTip="{Binding Converter={StaticResource MultTip}}">
+                                            <!-- La valeur comparee est l'element lui-meme : un
+                                                 ConverterParameter ne peut pas etre lie, d'ou le MultiBinding. -->
+                                            <RadioButton.IsChecked>
+                                                <MultiBinding Converter="{StaticResource MultiEq}" Mode="OneWay">
+                                                    <Binding />
+                                                    <Binding Path="DataContext.Multiplier"
+                                                             RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                </MultiBinding>
+                                            </RadioButton.IsChecked>
+                                        </RadioButton>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <c:Field Label="{l:T label.selected}" Value="{Binding MultiplierLabel}" Mono="True"
+                                     LabelWidth="86" Margin="0,14,0,0" />
+                            <TextBlock Style="{StaticResource T.Prose}" Margin="0,8,0,0"
+                                       Text="{l:T fg.multiplier_hint}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!--
+                        Prerequis de la voie choisie. Un debrideur MFG ne fabrique rien :
+                        il leve une limite sur une pile qui doit deja etre la bonne.
+                    -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T label.prereqs}" Margin="0,12,0,0"
+                                            Visibility="{Binding FgHasRequirements, Converter={StaticResource BoolVis}}">
+                        <HeaderedContentControl.Tag>
+                            <TextBlock Text="{Binding FgRequirementsLabel}" Style="{StaticResource T.Ter}" />
+                        </HeaderedContentControl.Tag>
+
+                        <StackPanel Margin="0,4,0,8">
+                            <ItemsControl ItemsSource="{Binding FgRequirements}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="14,6">
+                                            <Grid>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="5" Height="5" VerticalAlignment="Center"
+                                                             Margin="0,0,8,0"
+                                                             Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+                                                    <TextBlock Text="{Binding Label}" Style="{StaticResource T.Label}"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource T.Mono}"
+                                                           Foreground="{DynamicResource BrFg}"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" MaxWidth="150" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding Hint}" Style="{StaticResource T.Prose}"
+                                                       Margin="13,4,0,0"
+                                                       Visibility="{Binding Hint, Converter={StaticResource HasVis}}" />
+                                            <Button Content="{Binding FixLabel}" Style="{StaticResource Btn}"
+                                                    Height="22" Margin="13,6,0,0" HorizontalAlignment="Left"
+                                                    Visibility="{Binding Actionable, Converter={StaticResource BoolVis}}"
+                                                    Command="{Binding DataContext.Detail.FixPrereqCommand,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T fg.actions}" Margin="0,12,0,0">
+                        <StackPanel Margin="14,14,14,14">
+                            <Button Content="{l:T btn.install}" Style="{StaticResource Btn.Primary}"
+                                    HorizontalAlignment="Stretch" Command="{Binding InstallFgCommand}"
+                                    ToolTip="{l:T fg.prepare_tip}" />
+                            <Button Content="{l:T fg.open_source}" Style="{StaticResource Btn}"
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                                    Command="{Binding OpenSourceCommand}"
+                                    CommandParameter="{Binding SelectedFg.SourceUrl}"
+                                    Visibility="{Binding SelectedFg.SourceUrl, Converter={StaticResource HasVis}}"
+                                    ToolTip="{l:T fg.open_source_tip}" />
+                            <Button Content="{l:T fg.remove_overlays}" Style="{StaticResource Btn.Danger}"
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                                    Command="{Binding RemoveFgCommand}" />
+
+                            <Border Style="{StaticResource S.HRule}" Margin="0,14,0,12" />
+
+                            <c:Field Label="{l:T label.backend}" Value="{Binding SelectedFg.Title}" LabelWidth="86" />
+                            <c:Field Label="{l:T label.engine}"  Value="{Binding SelectedFg.KindLabel}" LabelWidth="86" />
+                            <c:Field Label="{l:T label.method}"  Value="{Binding SelectedFg.Method}" LabelWidth="86" />
+                            <c:Field Label="{l:T label.risk}"    Value="{Binding SelectedFg.RiskLabel}" LabelWidth="86" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!--
+                        Reglages de l'addon RenoDX MFG Unlock. Ils vivent dans ReShade.ini
+                        sous [RenoDX.MFGUnlock] : l'addon ne modifie aucun fichier du jeu,
+                        il patche le runtime en memoire.
+                    -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="MFG UNLOCK" Margin="0,12,0,0">
+                        <HeaderedContentControl.Tag>
+                            <Ellipse Width="5" Height="5" VerticalAlignment="Center"
+                                     Fill="{Binding Compat.State, Converter={StaticResource StatusBrush}}" />
+                        </HeaderedContentControl.Tag>
+
+                        <StackPanel Margin="14,12,14,14">
+                            <TextBlock Text="{Binding Compat.Title}" Style="{StaticResource T.Strong}" />
+                            <TextBlock Text="{Binding Compat.Detail}" Style="{StaticResource T.Prose}"
+                                       Margin="0,5,0,0" />
+                            <Border Style="{StaticResource S.Notice}" Margin="0,9,0,0"
+                                    Visibility="{Binding Compat.Suggestion, Converter={StaticResource HasVis}}">
+                                <TextBlock Text="{Binding Compat.Suggestion}" Style="{StaticResource T.Prose}" />
+                            </Border>
+
+                            <Border Style="{StaticResource S.HRule}" Margin="0,13,0,12" />
+
+                            <TextBlock Text="{l:T fg.hdr_compat}" Style="{StaticResource T.Label}" />
+                            <ComboBox ItemsSource="{Binding HdrModes}" SelectedIndex="{Binding MfgHdrMode}"
+                                      Margin="0,5,0,0"
+                                      ToolTip="{l:T fg.hdr_compat_tip}" />
+
+                            <TextBlock Text="{l:T fg.runtime_sel}" Style="{StaticResource T.Label}" Margin="0,11,0,0" />
+                            <ComboBox ItemsSource="{Binding RuntimeModes}" SelectedIndex="{Binding MfgRuntimeMode}"
+                                      Margin="0,5,0,0"
+                                      ToolTip="{l:T fg.runtime_sel_tip}" />
+
+                            <CheckBox Content="{l:T fg.dynamic}" IsChecked="{Binding MfgDynamic}" Margin="0,12,0,0"
+                                      ToolTip="{l:T fg.dynamic_tip}" />
+                            <CheckBox Content="{l:T fg.flip_off}" Margin="0,7,0,0"
+                                      IsChecked="{Binding Mfg.ForceFlipMeteringOff}"
+                                      ToolTip="{l:T fg.flip_off_tip}" />
+                            <CheckBox Content="{l:T fg.raise_ceiling}" Margin="0,7,0,0"
+                                      IsChecked="{Binding Mfg.RaiseFrameCeiling}"
+                                      ToolTip="{l:T fg.raise_ceiling_tip}" />
+
+                            <Button Content="{l:T fg.apply_mfg}" Style="{StaticResource Btn.Primary}" Margin="0,13,0,0"
+                                    HorizontalAlignment="Stretch" Command="{Binding ApplyMfgSettingsCommand}"
+                                    ToolTip="{l:T fg.apply_mfg_tip}" />
+
+                            <TextBlock Style="{StaticResource T.Ter}" Margin="0,9,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource BrFg3}"
+                                       Visibility="{Binding MfgAddonPresent, Converter={StaticResource BoolVis},
+                                                    ConverterParameter=invert}"
+                                       Text="{l:T fg.mfg_missing}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T label.hardware}" Margin="0,12,0,0">
+                        <StackPanel Margin="14,12,14,14">
+                            <c:Field Label="{l:T label.adapter}" LabelWidth="86"
+                                     Value="{Binding DataContext.GpuName,
+                                             RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <c:Field Label="{l:T col.arch}" LabelWidth="86"
+                                     Value="{Binding DataContext.Gpu.GenerationLabel,
+                                             RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <c:Field Label="{l:T label.native_mfg}" LabelWidth="86"
+                                     Value="{Binding DataContext.MfgDetail,
+                                             RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <TextBlock Style="{StaticResource T.Prose}" Margin="0,10,0,0"
+                                       Text="{Binding DataContext.CapabilitySummary,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

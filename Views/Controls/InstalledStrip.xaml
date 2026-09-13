@@ -1,0 +1,57 @@
+<UserControl x:Class="Prism.Views.Controls.InstalledStrip"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Prism.Core"
+             xmlns:c="clr-namespace:Prism.Views.Controls">
+    <!--
+        Ce que Prism a pose dans le jeu selectionne, une pastille par installation.
+        Le survol detaille les fichiers ; Retirer defait l'installation entiere.
+        DataContext attendu : GameDetailViewModel.
+    -->
+    <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Left" Text="{l:T installed.header}" Style="{StaticResource T.Label}"
+                   VerticalAlignment="Center" Margin="0,0,12,0" />
+
+        <Grid VerticalAlignment="Center">
+            <TextBlock Text="{l:T installed.empty}" Style="{StaticResource T.Ter}" VerticalAlignment="Center"
+                       Visibility="{Binding HasInstalled, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+
+            <ItemsControl ItemsSource="{Binding Installed}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource S.Sunken}" Padding="9,2,3,2" Margin="0,3,6,3">
+                            <Border.ToolTip>
+                                <StackPanel MaxWidth="380">
+                                    <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding When}" Margin="0,2,0,6" />
+                                    <TextBlock Text="{Binding FilesLabel}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border.ToolTip>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{DynamicResource BrAccent}"
+                                         VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Origin}" Style="{StaticResource T.Body}"
+                                           VerticalAlignment="Center" Margin="7,0,0,0" />
+                                <TextBlock Text="{Binding Version}" Style="{StaticResource T.Mono}"
+                                           Foreground="{DynamicResource BrFg3}" VerticalAlignment="Center"
+                                           Margin="6,0,0,0" MaxWidth="160" TextTrimming="CharacterEllipsis" />
+                                <Button Content="{l:T btn.remove}" Style="{StaticResource Btn.Quiet}"
+                                        Height="22" Margin="8,0,0,0"
+                                        Command="{Binding DataContext.RemoveInstalledCommand,
+                                                  RelativeSource={RelativeSource AncestorType=c:InstalledStrip}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="{l:T installed.remove_tip}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </DockPanel>
+</UserControl>
