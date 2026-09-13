@@ -4,19 +4,68 @@
              xmlns:l="clr-namespace:Prism.Core"
              xmlns:c="clr-namespace:Prism.Views.Controls">
     <!--
-        Ce que Prism a pose dans le jeu selectionne, une pastille par installation.
-        Le survol detaille les fichiers ; Retirer defait l'installation entiere.
-        DataContext attendu : GameDetailViewModel.
+        Ce que le jeu contient en plus de sa version d'origine, une pastille par mod :
+          - AJOUTE PAR PRISM : retirable d'un clic ;
+          - HORS PRISM : pose a la main ou par un autre outil, mis de cote a la demande.
+        Le survol detaille les fichiers. DataContext attendu : GameDetailViewModel.
     -->
-    <DockPanel LastChildFill="True">
-        <TextBlock DockPanel.Dock="Left" Text="{l:T installed.header}" Style="{StaticResource T.Label}"
-                   VerticalAlignment="Center" Margin="0,0,12,0" />
+    <StackPanel>
 
-        <Grid VerticalAlignment="Center">
-            <TextBlock Text="{l:T installed.empty}" Style="{StaticResource T.Ter}" VerticalAlignment="Center"
-                       Visibility="{Binding HasInstalled, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+        <!-- ========================================= Ajoute par Prism -->
+        <DockPanel LastChildFill="True">
+            <TextBlock DockPanel.Dock="Left" Text="{l:T installed.header}" Style="{StaticResource T.Label}"
+                       VerticalAlignment="Center" MinWidth="124" Margin="0,0,12,0" />
 
-            <ItemsControl ItemsSource="{Binding Installed}">
+            <Grid VerticalAlignment="Center">
+                <TextBlock Text="{l:T installed.empty}" Style="{StaticResource T.Ter}" VerticalAlignment="Center"
+                           Visibility="{Binding HasInstalled, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+
+                <ItemsControl ItemsSource="{Binding Installed}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource S.Sunken}" Padding="9,2,3,2" Margin="0,3,6,3">
+                                <Border.ToolTip>
+                                    <StackPanel MaxWidth="380">
+                                        <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding When}" Margin="0,2,0,6" />
+                                        <TextBlock Text="{Binding FilesLabel}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border.ToolTip>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="6" Height="6" Fill="{DynamicResource BrAccent}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Origin}" Style="{StaticResource T.Body}"
+                                               VerticalAlignment="Center" Margin="7,0,0,0" />
+                                    <TextBlock Text="{Binding Version}" Style="{StaticResource T.Mono}"
+                                               Foreground="{DynamicResource BrFg3}" VerticalAlignment="Center"
+                                               Margin="6,0,0,0" MaxWidth="160" TextTrimming="CharacterEllipsis" />
+                                    <Button Content="{l:T btn.remove}" Style="{StaticResource Btn.Quiet}"
+                                            Height="22" Margin="8,0,0,0"
+                                            Command="{Binding DataContext.RemoveInstalledCommand,
+                                                      RelativeSource={RelativeSource AncestorType=c:InstalledStrip}}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip="{l:T installed.remove_tip}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </DockPanel>
+
+        <!-- ============================================== Hors Prism -->
+        <DockPanel LastChildFill="True" Margin="0,2,0,0"
+                   Visibility="{Binding HasDetected, Converter={StaticResource BoolVis}}">
+            <TextBlock DockPanel.Dock="Left" Text="{l:T detected.header}" Style="{StaticResource T.Label}"
+                       VerticalAlignment="Center" MinWidth="124" Margin="0,0,12,0" />
+
+            <ItemsControl ItemsSource="{Binding Detected}" VerticalAlignment="Center">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel />
@@ -28,30 +77,35 @@
                             <Border.ToolTip>
                                 <StackPanel MaxWidth="380">
                                     <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding When}" Margin="0,2,0,6" />
-                                    <TextBlock Text="{Binding FilesLabel}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding FilesLabel}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                                    <TextBlock Text="{l:T detected.keep}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Visibility="{Binding Removable, Converter={StaticResource BoolVis},
+                                                            ConverterParameter=invert}" />
                                 </StackPanel>
                             </Border.ToolTip>
 
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="6" Height="6" Fill="{DynamicResource BrAccent}"
+                            <StackPanel Orientation="Horizontal" MinHeight="22">
+                                <Ellipse Width="6" Height="6" Stroke="{DynamicResource BrFg3}" StrokeThickness="1.2"
                                          VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding Origin}" Style="{StaticResource T.Body}"
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource T.Body}"
+                                           Foreground="{DynamicResource BrFg2}"
                                            VerticalAlignment="Center" Margin="7,0,0,0" />
-                                <TextBlock Text="{Binding Version}" Style="{StaticResource T.Mono}"
-                                           Foreground="{DynamicResource BrFg3}" VerticalAlignment="Center"
-                                           Margin="6,0,0,0" MaxWidth="160" TextTrimming="CharacterEllipsis" />
-                                <Button Content="{l:T btn.remove}" Style="{StaticResource Btn.Quiet}"
+                                <TextBlock Text="{l:T detected.probable}" Style="{StaticResource T.Ter}"
+                                           VerticalAlignment="Center" Margin="6,0,6,0"
+                                           Visibility="{Binding Certain, Converter={StaticResource BoolVis},
+                                                        ConverterParameter=invert}" />
+                                <Button Content="{l:T detected.quarantine}" Style="{StaticResource Btn.Quiet}"
                                         Height="22" Margin="8,0,0,0"
-                                        Command="{Binding DataContext.RemoveInstalledCommand,
+                                        Visibility="{Binding Removable, Converter={StaticResource BoolVis}}"
+                                        Command="{Binding DataContext.QuarantineDetectedCommand,
                                                   RelativeSource={RelativeSource AncestorType=c:InstalledStrip}}"
                                         CommandParameter="{Binding}"
-                                        ToolTip="{l:T installed.remove_tip}" />
+                                        ToolTip="{l:T detected.quarantine_tip}" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </Grid>
-    </DockPanel>
+        </DockPanel>
+    </StackPanel>
 </UserControl>

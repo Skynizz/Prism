@@ -154,6 +154,47 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(string.Empty);
     }
 
+    // ------------------------------------------------------------ Apparence
+
+    public IReadOnlyList<string> Themes => Theme.All;
+
+    /// <summary>
+    /// Theme choisi. La fenetre est reconstruite apres coup, hors de la liaison en cours :
+    /// la liste qui vient de declencher le changement appartient a l'ancienne fenetre.
+    /// </summary>
+    public string SelectedTheme
+    {
+        get => Theme.Current;
+        set
+        {
+            var code = Theme.Normalize(value);
+            if (code == Theme.Current) return;
+
+            _svc.Settings.Current.Theme = code;
+            _svc.Settings.Save();
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => App.SwitchTheme(code)));
+        }
+    }
+
+    /// <summary>Explications a la demande, partagees par toutes les vues et memorisees.</summary>
+    public bool ShowDetails
+    {
+        get => UiPrefs.I.ShowDetails;
+        set
+        {
+            if (value == UiPrefs.I.ShowDetails) return;
+            UiPrefs.I.ShowDetails = value;
+            _svc.Settings.Current.ShowDetails = value;
+            _svc.Settings.Save();
+            OnPropertyChanged();
+        }
+    }
+
+    private int _settingsSection;
+
+    /// <summary>Rubrique ouverte dans les parametres, conservee quand la fenetre est reconstruite.</summary>
+    public int SettingsSection { get => _settingsSection; set => Set(ref _settingsSection, value); }
+
     // ------------------------------------------------------ Niveau de detail
 
     private DetailLevel _level = DetailLevel.Advanced;

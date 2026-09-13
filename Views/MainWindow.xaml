@@ -35,68 +35,6 @@
             </Setter>
         </Style>
 
-        <!-- Entree du rail : icone + libelle, marqueur accent a gauche. -->
-        <Style x:Key="NavRow" TargetType="ListBoxItem">
-            <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="B" Height="30" Background="Transparent" Margin="6,1">
-                            <Grid>
-                                <Border x:Name="Edge" Width="2" HorizontalAlignment="Left"
-                                        Background="Transparent" CornerRadius="1" Margin="0,6" />
-                                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
-                                    <Path x:Name="Ico" Data="{DynamicResource IcoOverview}"
-                                          Style="{StaticResource S.IconSm}"
-                                          Stroke="{DynamicResource BrFg3}" />
-                                    <TextBlock x:Name="Txt" Text="{Binding Title}"
-                                               FontSize="{DynamicResource SzBody}"
-                                               Foreground="{DynamicResource BrFg2}"
-                                               Margin="10,0,0,0" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoOverview">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoOverview}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoGames">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoGames}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoDlss">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoDlss}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoFrameGen">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoFrameGen}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoInjection">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoInjection}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoComponents}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoLogs">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoLogs}" /></DataTrigger>
-                            <DataTrigger Binding="{Binding Icon}" Value="IcoSettings">
-                                <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoSettings}" /></DataTrigger>
-
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
-                                <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
-                                <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrFg2}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
-                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource BrAccent}" />
-                                <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
-                                <Setter TargetName="Txt" Property="FontWeight" Value="SemiBold" />
-                                <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrAccent}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- Bloc du bandeau systeme : libelle au-dessus, valeur en dessous. -->
         <DataTemplate x:Key="SysCell">
             <StackPanel Margin="0,0,26,0" VerticalAlignment="Center" />
@@ -108,10 +46,10 @@
             BorderBrush="{DynamicResource BrLine}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="32" />
+                <RowDefinition Height="{DynamicResource TitleBarH}" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="26" />
+                <RowDefinition Height="{DynamicResource StatusBarH}" />
             </Grid.RowDefinitions>
 
             <!-- ============================================ BARRE DE TITRE -->
@@ -150,6 +88,22 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <!-- Explications a la demande : sans elles, l'interface s'en tient aux mots-cles. -->
+                        <Button Style="{StaticResource Btn.Caption}" Click="OnToggleDetails" ToolTip="{l:T ui.details_tip}">
+                            <TextBlock Text="?" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontFamily" Value="{DynamicResource FontUi}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource BrFg3}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ShowDetails, Source={x:Static l:UiPrefs.I}}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource BrAccent}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
                         <Button Style="{StaticResource Btn.Caption}" Click="OnMinimize" ToolTip="{l:T win.minimize}">
                             <Path Data="{DynamicResource IcoMin}" Style="{StaticResource S.Icon}"
                                   Stroke="{DynamicResource BrFg2}" Width="12" Height="12" Stretch="Uniform" />
@@ -170,7 +124,7 @@
             <!-- Toujours visible : c'est ce qui ancre l'outil a la machine. -->
             <Border Grid.Row="1" Background="{DynamicResource BrPanel}"
                     BorderBrush="{DynamicResource BrLine}" BorderThickness="0,0,0,1"
-                    Padding="16,9">
+                    Padding="{DynamicResource SysBarPad}">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
@@ -254,7 +208,7 @@
             <!-- =================================================== CORPS -->
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="176" />
+                    <ColumnDefinition Width="{DynamicResource RailW}" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -305,8 +259,12 @@
                 </Border>
 
                 <!-- Pages -->
-                <TabControl Grid.Column="1" Style="{StaticResource Pages}"
-                            SelectedIndex="{Binding PageIndex, Mode=OneWay}">
+                <TabControl x:Name="PagesHost" Grid.Column="1" Style="{StaticResource Pages}"
+                            SelectedIndex="{Binding PageIndex, Mode=OneWay}"
+                            SelectionChanged="OnPageChanged">
+                    <TabControl.RenderTransform>
+                        <TranslateTransform />
+                    </TabControl.RenderTransform>
                     <TabItem><v:OverviewPage /></TabItem>
                     <TabItem><v:GamesPage /></TabItem>
                     <TabItem><v:DlssPage /></TabItem>

@@ -50,6 +50,7 @@ public sealed class GameDetailViewModel : ObservableObject
         OpenSourceCommand = new RelayCommand(p => OpenUrl(p as string));
         FixPrereqCommand = new AsyncRelayCommand(p => ApplyFixAsync(p as PrereqCheck), _ => !Busy);
         RemoveInstalledCommand = new RelayCommand(p => RemoveInstalled(p as InstalledGroup), _ => !Busy);
+        QuarantineDetectedCommand = new RelayCommand(p => QuarantineDetected(p as DetectedMod), _ => !Busy);
         ApplyOptiProfileCommand = new RelayCommand(p => ApplyOptiProfile(p), _ => !Busy);
         RevertGameCommand = new RelayCommand(_ => RevertGame());
         ApplyMfgSettingsCommand = new RelayCommand(_ => ApplyMfgSettings(), _ => Game.HasReShade);
@@ -601,6 +602,16 @@ public sealed class GameDetailViewModel : ObservableObject
 
     public RelayCommand RemoveInstalledCommand { get; }
 
+    /// <summary>Mods presents dans le jeu sans avoir ete poses par Prism.</summary>
+    public ObservableCollection<DetectedMod> Detected { get; } = new();
+
+    public bool HasDetected => Detected.Count > 0;
+
+    /// <summary>Quelque chose a montrer dans le bandeau : ajouts Prism ou mods exterieurs.</summary>
+    public bool HasAnyMods => HasInstalled || HasDetected;
+
+    public RelayCommand QuarantineDetectedCommand { get; }
+
     private void BuildInstalled()
     {
         Installed.Clear();
@@ -616,7 +627,61 @@ public sealed class GameDetailViewModel : ObservableObject
                 Summary = Loc.T("installed.reshade")
             });
 
+        // Tout le reste de ce qui n'est pas d'origine : pose a la main ou par un autre outil.
+        Detected.Clear();
+        var prismPaths = _svc.Changes.For(Game.Id).Select(c => c.Path);
+        foreach (var mod in ForeignModScanner.Scan(Game, prismPaths, Profile.ReShadeInstalled)) Detected.Add(mod);
+
         OnPropertyChanged(nameof(HasInstalled));
+        OnPropertyChanged(nameof(HasDetected));
+        OnPropertyChanged(nameof(HasAnyMods));
+    }
+
+    /// <summary>
+    /// Met de cote un mod pose hors Prism : chaque fichier est copie dans les sauvegardes,
+    /// puis retire du jeu. Rien n'est perdu — l'historique des modifications le restaure.
+    /// </summary>
+    private void QuarantineDetected(DetectedMod? mod)
+    {
+        if (mod is null || !mod.Removable) return;
+
+        var moved = 0;
+        foreach (var file in mod.Files)
+        {
+            try
+            {
+                if (!File.Exists(file)) continue;
+
+                // Une sauvegarde plus ancienne du meme chemin contiendrait un autre fichier :
+                // on ne supprime que ce qui est reellement a l'abri.
+                var backup = _svc.Backups.Capture(Game, file, $"{mod.Label} · external");
+                if (backup is null || !SameContent(backup.BackupPath, file)) continue;
+
+                DllInstaller.ClearReadOnly(file);
+                File.Delete(file);
+                moved++;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Src, $"Mise de cote impossible pour {file} : {ex.Message}");
+            }
+        }
+
+        Log.Info(Src, $"{mod.Label} (hors Prism) mis de cote dans {Game.Name} : {moved} fichier(s)");
+        _notify(moved > 0 ? Loc.T("detected.removed", mod.Label, moved) : Loc.T("changes.msg.none_reverted"),
+            moved == 0);
+        Refresh();
+    }
+
+    private static bool SameContent(string a, string b)
+    {
+        try
+        {
+            return File.Exists(a) && new FileInfo(a).Length == new FileInfo(b).Length
+                   && string.Equals(DownloadService.Sha256Cached(a), DownloadService.Sha256Cached(b),
+                       StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
     }
 
     /// <summary>
@@ -916,6 +981,7 @@ public sealed class GameDetailViewModel : ObservableObject
             InstallRenoDxCommand.Raise();
             InstallReShadeCommand.Raise();
             RemoveInstalledCommand.Raise();
+            QuarantineDetectedCommand.Raise();
         }
     }
 

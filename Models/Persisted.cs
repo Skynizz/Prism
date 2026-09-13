@@ -51,6 +51,12 @@ public sealed class AppSettings
     /// <summary>Langue de l'interface ; null suit celle de Windows.</summary>
     public string? Language { get; set; }
     public bool DarkTheme { get; set; } = true;
+
+    /// <summary>Theme de l'interface : "classic" ou "studio".</summary>
+    public string Theme { get; set; } = "classic";
+
+    /// <summary>Explications affichees ; par defaut l'interface s'en tient aux mots-cles.</summary>
+    public bool ShowDetails { get; set; }
     public bool ShowDevBuilds { get; set; }
     public bool AutoCheckUpdates { get; set; } = true;
     public DateTimeOffset? ManifestFetchedAt { get; set; }

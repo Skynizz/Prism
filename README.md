@@ -147,6 +147,23 @@ entière, pas un fichier isolé :
 Chaque fichier écrit est rattaché à l'installation qui l'a posé. Un original déjà
 restauré ne compte plus : le bandeau montre l'état réel du dossier, pas un historique.
 
+### Ce qui a été ajouté sans Prism
+
+Le même bandeau a une seconde ligne, **HORS PRISM** : tout ce que le jeu contient en plus
+de sa version d'origine sans que Prism l'y ait posé — ReShade, addons RenoDX, OptiScaler,
+DLSS Enabler, dlssg-to-fsr3, Special K, DLSSTweaks, chargeurs ASI, `nvngx_dlssnr.dll`.
+
+| Indice | Certitude | Action |
+|---|---|---|
+| Fichier propre à un mod (`.addon64`, `OptiScaler.ini`, `.asi`…) | certain | **Mettre de côté** |
+| DLL proxy (`dxgi.dll`, `winmm.dll`…) dont la description se réclame d'une surcouche | certain | **Mettre de côté** |
+| Runtime NVIDIA ou Streamline créé bien après l'exécutable, absent du registre | *probable* | signalé seulement |
+
+**Mettre de côté** copie chaque fichier dans les sauvegardes de Prism avant de le retirer
+du jeu : l'historique des modifications le restaure. Un runtime NVIDIA remplacé à la main
+n'a pas d'original connu — Prism l'indique et renvoie à la vérification des fichiers du
+launcher plutôt que de deviner.
+
 ### Retour vanille
 
 La page **Changes** va plus loin, titre par titre : vérification SHA-256 de chaque
@@ -270,13 +287,28 @@ aucune application de gestion officielle.
 
 ---
 
+## ✦ Apparence
+
+**Paramètres ▸ Apparence** propose deux thèmes, appliqués sans redémarrer :
+
+| Thème | Esprit |
+|---|---|
+| **Classique** | graphite dense, outil technique |
+| **Studio** | graphite presque noir, typographie Segoe UI Variable, surfaces calmes, arrondis retenus, transitions de 150 à 250 ms, pages en fondu |
+
+L'interface s'en tient aux **mots-clés**. Les explications détaillées restent à portée de
+main : le bouton **?** de la barre de titre les affiche ou les masque partout, et le choix
+est mémorisé.
+
+---
+
 ## ✦ Langues
 
 English · Français · Deutsch · Español · Italiano · Português (Brasil) · Русский ·
 Українська · Polski · Türkçe · العربية · हिन्दी · 日本語 · 한국어 · 简体中文 · 繁體中文 ·
 Bahasa Indonesia · Tiếng Việt
 
-La langue de Windows est choisie au premier lancement. Les textes vivent dans
+La langue d'affichage de Windows est choisie au premier lancement. Les textes vivent dans
 `Lang/<code>.json`, embarqués dans l'exécutable, avec repli *langue → anglais → clé*.
 
 ---
@@ -311,7 +343,7 @@ Prism/
 ├─ ViewModels/      MainViewModel (coquille), GameDetailViewModel
 ├─ Views/           fenêtre + 9 pages
 │  └─ Controls/     GameBar, InstalledStrip, StatusDot, Field, Pipeline
-└─ Themes/          Tokens, Base, Inputs, Data
+└─ Themes/          Tokens, Base, Inputs, Data — Tokens.Studio, Studio
 ```
 
 | Page | Rôle |

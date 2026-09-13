@@ -18,15 +18,47 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             Log.Error("app", $"Exception non geree : {args.ExceptionObject}");
 
-        // Langue avant la premiere fenetre : chaque liaison se resout d'emblee dans la bonne.
-        var language = new SettingsStore().Current.Language;
-        Loc.I.Set(string.IsNullOrWhiteSpace(language) ? Loc.DetectDefault() : language);
+        var settings = new SettingsStore().Current;
+
+        // Langue, theme et niveau d'explication avant la premiere fenetre : chaque liaison
+        // et chaque style se resolvent d'emblee dans le bon etat.
+        Loc.I.Set(string.IsNullOrWhiteSpace(settings.Language) ? Loc.DetectDefault() : settings.Language);
+        Theme.Apply(settings.Theme);
+        UiPrefs.I.ShowDetails = settings.ShowDetails;
 
         // Molette fiable dans toutes les pages, y compris au-dessus des listes deployees.
         WheelScroll.Register();
 
         MainWindow = new Views.MainWindow();
         MainWindow.Show();
+    }
+
+    /// <summary>
+    /// Change de theme. Les jetons suivent aussitot ; les gabarits etant fixes a la
+    /// creation, la fenetre est reconstruite sur le meme modele de vue, a la meme place.
+    /// </summary>
+    public static void SwitchTheme(string code)
+    {
+        if (Theme.Normalize(code) == Theme.Current) return;
+        Theme.Apply(code);
+
+        if (Current.MainWindow is not Views.MainWindow old) return;
+
+        var fresh = new Views.MainWindow(old.ViewModel)
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = old.Left,
+            Top = old.Top,
+            Width = old.Width,
+            Height = old.Height
+        };
+
+        Current.MainWindow = fresh;
+        fresh.Show();
+        if (old.WindowState == WindowState.Maximized) fresh.WindowState = WindowState.Maximized;
+        old.Close();
+
+        Log.Info("app", $"Theme : {Theme.Current}");
     }
 
     private void OnDispatcherException(object sender, DispatcherUnhandledExceptionEventArgs e)

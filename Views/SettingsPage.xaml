@@ -18,12 +18,19 @@
             <StackPanel Margin="0,18,0,0">
                 <TextBlock Text="{l:T nav.settings}" Style="{StaticResource T.Display}" Margin="18,0,0,14" />
 
-                <ListBox x:Name="Sections" SelectedIndex="0"
+                <!-- La rubrique ouverte vit dans le modele de vue : elle survit a un changement de theme. -->
+                <ListBox x:Name="Sections" SelectedIndex="{Binding SettingsSection, Mode=TwoWay}"
                          Style="{StaticResource S.Rows}" ItemContainerStyle="{StaticResource S.Row}">
                     <ListBoxItem AutomationProperties.Name="language">
                         <StackPanel Orientation="Horizontal" Margin="6,9">
                             <Path Data="{DynamicResource IcoSettings}" Style="{StaticResource S.IconSm}" VerticalAlignment="Center" />
                             <TextBlock Text="{l:T set.sec.language}" Style="{StaticResource T.Sec}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </ListBoxItem>
+                    <ListBoxItem AutomationProperties.Name="appearance">
+                        <StackPanel Orientation="Horizontal" Margin="6,9">
+                            <Path Data="{DynamicResource IcoOverview}" Style="{StaticResource S.IconSm}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T set.sec.appearance}" Style="{StaticResource T.Sec}" Margin="10,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                     </ListBoxItem>
                     <ListBoxItem AutomationProperties.Name="library">
@@ -93,9 +100,48 @@
                     </HeaderedContentControl>
                 </StackPanel>
 
-                <!-- ========================================= BIBLIOTHEQUES -->
+                <!-- ============================================== APPARENCE -->
                 <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
                                          Converter={StaticResource EqVis}, ConverterParameter=1}">
+                    <TextBlock Text="{l:T set.sec.appearance}" Style="{StaticResource T.Title}" />
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T set.theme_header}" Margin="0,16,0,0">
+                        <ListBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
+                                 Style="{StaticResource S.Rows}" ItemContainerStyle="{StaticResource S.Row}"
+                                 Margin="0,4,0,4">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,10">
+                                        <TextBlock Style="{StaticResource T.Strong}">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{StaticResource LocKey}" ConverterParameter="theme.">
+                                                    <Binding />
+                                                    <Binding Path="Code" Source="{x:Static l:Loc.I}" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Style="{StaticResource T.Ter}" Margin="0,3,0,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{StaticResource LocKey}" ConverterParameter="theme.desc.">
+                                                    <Binding />
+                                                    <Binding Path="Code" Source="{x:Static l:Loc.I}" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T set.details}" Margin="0,12,0,0">
+                        <CheckBox Content="{l:T ui.details_tip}" IsChecked="{Binding ShowDetails}" Margin="14,14" />
+                    </HeaderedContentControl>
+                </StackPanel>
+
+                <!-- ========================================= BIBLIOTHEQUES -->
+                <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
+                                         Converter={StaticResource EqVis}, ConverterParameter=2}">
                     <TextBlock Text="{l:T set.sec.library}" Style="{StaticResource T.Title}" />
                     <TextBlock Text="{l:T set.libraries_hint}" Style="{StaticResource T.Prose}" Margin="0,5,0,0" />
 
@@ -132,7 +178,7 @@
 
                 <!-- =========================================== SAUVEGARDES -->
                 <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
-                                         Converter={StaticResource EqVis}, ConverterParameter=2}">
+                                         Converter={StaticResource EqVis}, ConverterParameter=3}">
                     <TextBlock Text="{l:T set.sec.backups}" Style="{StaticResource T.Title}" />
                     <TextBlock Text="{l:T set.backups_hint}" Style="{StaticResource T.Prose}" Margin="0,5,0,0" />
 
@@ -199,7 +245,7 @@
 
                 <!-- ============================================== STOCKAGE -->
                 <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
-                                         Converter={StaticResource EqVis}, ConverterParameter=3}">
+                                         Converter={StaticResource EqVis}, ConverterParameter=4}">
                     <TextBlock Text="{l:T set.sec.storage}" Style="{StaticResource T.Title}" />
 
                     <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T set.storage}" Margin="0,16,0,0">
@@ -228,7 +274,7 @@
 
                 <!-- =============================================== SECURITE -->
                 <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
-                                         Converter={StaticResource EqVis}, ConverterParameter=4}">
+                                         Converter={StaticResource EqVis}, ConverterParameter=5}">
                     <TextBlock Text="{l:T set.sec.safety}" Style="{StaticResource T.Title}" />
 
                     <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T set.safety}" Margin="0,16,0,0">

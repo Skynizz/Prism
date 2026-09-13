@@ -71,6 +71,14 @@
     <sys:Double x:Key="RowH">30</sys:Double>
     <sys:Double x:Key="CtrlH">26</sys:Double>
 
+    <!-- ================================================ Gabarit -->
+    <!-- Dimensions de la coquille, pour qu'un theme puisse l'aerer sans toucher aux vues. -->
+    <GridLength x:Key="TitleBarH">32</GridLength>
+    <GridLength x:Key="StatusBarH">26</GridLength>
+    <GridLength x:Key="RailW">176</GridLength>
+    <Thickness x:Key="SysBarPad">16,9</Thickness>
+    <sys:Double x:Key="NavRowH">30</sys:Double>
+
     <!-- ================================================ Durees -->
     <!-- Rien au-dela de 160 ms : l'application doit sembler instantanee. -->
     <Duration x:Key="DurFast">0:0:0.10</Duration>

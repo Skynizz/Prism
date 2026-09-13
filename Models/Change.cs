@@ -64,6 +64,30 @@ public sealed class InstalledGroup
 }
 
 /// <summary>
+/// Un mod present dans le jeu sans que Prism l'y ait pose : ReShade, addon, OptiScaler,
+/// runtime NVIDIA remplace a la main... Ce qui n'appartient pas a la version d'origine.
+/// </summary>
+public sealed class DetectedMod
+{
+    public required string Label { get; init; }
+    public IReadOnlyList<string> Files { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Certain : fichier propre a un mod, ou DLL proxy qui s'en reclame. Sinon deduit
+    /// des dates — un runtime cree bien apres le jeu peut aussi venir d'une mise a jour.
+    /// </summary>
+    public bool Certain { get; init; }
+
+    /// <summary>Vrai si les fichiers peuvent etre mis de cote : un ajout, pas un original remplace.</summary>
+    public bool Removable { get; init; }
+
+    public string Reason { get; init; } = "";
+
+    public string Summary => Certain ? Reason : $"{Reason} · {Loc.T("detected.probable")}";
+    public string FilesLabel => string.Join(Environment.NewLine, Files.Select(System.IO.Path.GetFileName));
+}
+
+/// <summary>
 /// Prerequis que Prism sait resoudre lui-meme. L'identifiant est porte par la ligne
 /// de controle, ce qui permet a l'interface d'offrir le correctif sur place.
 /// </summary>

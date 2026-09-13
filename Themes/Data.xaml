@@ -150,6 +150,71 @@
         <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
 
+    <!-- ============================================== RAIL ============== -->
+
+    <!-- Entree du rail : icone + libelle, marqueur accent a gauche. Ici plutot que dans la
+         fenetre, pour qu'un theme puisse la redefinir. -->
+    <Style x:Key="NavRow" TargetType="ListBoxItem">
+        <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="B" Height="{DynamicResource NavRowH}" Background="Transparent" Margin="6,1">
+                        <Grid>
+                            <Border x:Name="Edge" Width="2" HorizontalAlignment="Left"
+                                    Background="Transparent" CornerRadius="1" Margin="0,6" />
+                            <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <Path x:Name="Ico" Data="{DynamicResource IcoOverview}"
+                                      Style="{StaticResource S.IconSm}"
+                                      Stroke="{DynamicResource BrFg3}" />
+                                <TextBlock x:Name="Txt" Text="{Binding Title}"
+                                           FontSize="{DynamicResource SzBody}"
+                                           Foreground="{DynamicResource BrFg2}"
+                                           Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoOverview">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoOverview}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoGames">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoGames}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoDlss">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoDlss}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoFrameGen">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoFrameGen}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoInjection">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoInjection}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoComponents}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoLogs">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoLogs}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoSettings">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoSettings}" /></DataTrigger>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
+                            <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
+                            <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrFg2}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource BrPanel}" />
+                            <Setter TargetName="Edge" Property="Background" Value="{DynamicResource BrAccent}" />
+                            <Setter TargetName="Txt" Property="Foreground" Value="{DynamicResource BrFg}" />
+                            <Setter TargetName="Txt" Property="FontWeight" Value="SemiBold" />
+                            <Setter TargetName="Ico" Property="Stroke" Value="{DynamicResource BrAccent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============================================== ETAT VIDE ========== -->
 
     <Style x:Key="S.Empty" TargetType="StackPanel">

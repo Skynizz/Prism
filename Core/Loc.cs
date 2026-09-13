@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Data;
@@ -109,10 +110,20 @@ public sealed class Loc : INotifyPropertyChanged
         LanguageChanged?.Invoke();
     }
 
-    /// <summary>Langue de l'utilisateur si elle est proposee, l'anglais sinon.</summary>
+    [DllImport("kernel32.dll")]
+    private static extern ushort GetUserDefaultUILanguage();
+
+    /// <summary>
+    /// Langue d'affichage de Windows si elle est proposee, l'anglais sinon. La langue
+    /// d'affichage du compte fait foi ; la culture du processus ne sert que de repli.
+    /// </summary>
     public static string DetectDefault()
     {
-        var ui = CultureInfo.CurrentUICulture;
+        CultureInfo ui;
+        try { ui = CultureInfo.GetCultureInfo(GetUserDefaultUILanguage()); }
+        catch { ui = CultureInfo.CurrentUICulture; }
+        if (string.IsNullOrEmpty(ui.Name)) ui = CultureInfo.CurrentUICulture;
+
         var name = ui.Name;
 
         if (name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))

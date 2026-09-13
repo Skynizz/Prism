@@ -66,6 +66,12 @@
         <Setter Property="FontSize" Value="{DynamicResource SzSmall}" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="LineHeight" Value="17" />
+        <Style.Triggers>
+            <!-- Explications a la demande : bouton « ? » de la barre de titre. -->
+            <DataTrigger Binding="{Binding ShowDetails, Source={x:Static core:UiPrefs.I}}" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Libelle de champ : petites capitales espacees, le marqueur visuel des

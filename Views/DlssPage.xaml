@@ -66,8 +66,7 @@
                            Foreground="{DynamicResource BrFg}" VerticalAlignment="Top"
                            Margin="0,0,10,0" TextTrimming="CharacterEllipsis" />
 
-                <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource T.Prose}"
-                           Visibility="{Binding Hint, Converter={StaticResource HasVis}}" />
+                <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource T.Prose}" />
                 <Button Grid.Column="3" Content="{Binding FixLabel}" Style="{StaticResource Btn}"
                         Height="22" Margin="10,0,0,0" VerticalAlignment="Top"
                         Visibility="{Binding Actionable, Converter={StaticResource BoolVis}}"

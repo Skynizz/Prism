@@ -61,9 +61,10 @@
     </Border>
 
     <!-- Ce que Prism a deja pose dans ce jeu : visible sur chaque page, retirable d'un clic. -->
-    <Border Style="{StaticResource S.Toolbar}"
-            Visibility="{Binding Detail.HasInstalled, Converter={StaticResource BoolVis}, FallbackValue=Collapsed}">
-        <c:InstalledStrip DataContext="{Binding Detail}" VerticalAlignment="Center" />
+    <Border Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"
+            BorderThickness="0,0,0,1" Padding="16,5"
+            Visibility="{Binding Detail.HasAnyMods, Converter={StaticResource BoolVis}, FallbackValue=Collapsed}">
+        <c:InstalledStrip DataContext="{Binding Detail}" />
     </Border>
     </StackPanel>
 </UserControl>

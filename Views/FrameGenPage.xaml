@@ -229,8 +229,7 @@
                                                            TextTrimming="CharacterEllipsis" MaxWidth="150" />
                                             </Grid>
                                             <TextBlock Text="{Binding Hint}" Style="{StaticResource T.Prose}"
-                                                       Margin="13,4,0,0"
-                                                       Visibility="{Binding Hint, Converter={StaticResource HasVis}}" />
+                                                       Margin="13,4,0,0" />
                                             <Button Content="{Binding FixLabel}" Style="{StaticResource Btn}"
                                                     Height="22" Margin="13,6,0,0" HorizontalAlignment="Left"
                                                     Visibility="{Binding Actionable, Converter={StaticResource BoolVis}}"
