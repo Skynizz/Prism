@@ -64,6 +64,28 @@ public static class FrameGenOptions
 
     // ------------------------------------------------------------- Officiel
 
+    /// <summary>
+    /// Prerequis ReShade commun aux voies : pret seulement pour un ReShade add-on 6.8+ charge
+    /// une seule fois. Une version standard ou ancienne se remplace sur place ; un doublon bloque.
+    /// </summary>
+    public static PrereqCheck ReShadeCheck(GameInfo game, string absentHint)
+    {
+        var state = ReShadeLocator.Scan(game);
+        return new PrereqCheck
+        {
+            Label = "RESHADE",
+            State = state.Ready ? UiStatus.Ready
+                : state.IsDuplicate || !state.Present ? UiStatus.Error
+                : UiStatus.Warning,
+            Detail = state.Label,
+            Fix = PrereqFix.InstallReShade,
+            Hint = state.Ready ? null
+                : state.IsDuplicate ? Loc.T("reshade.hint.duplicate")
+                : state.Present ? Loc.T("reshade.hint.upgrade")
+                : absentHint
+        };
+    }
+
     private static FgOption NativeDriver(GpuInfo gpu, string? blocked) => new()
     {
         Title = Loc.T("fg.kind.native"),
@@ -150,14 +172,7 @@ public static class FrameGenOptions
                 Detail = gpu.DriverBranch ?? gpu.DriverVersion,
                 Hint = Loc.T("fg.mfg.driver_hint")
             },
-            new()
-            {
-                Label = "RESHADE",
-                State = game.HasReShade ? UiStatus.Ready : UiStatus.Error,
-                Detail = game.HasReShade ? Loc.T("common.installed") : Loc.T("common.absent"),
-                Fix = PrereqFix.InstallReShade,
-                Hint = game.HasReShade ? null : Loc.T("fg.mfg.reshade_hint")
-            }
+            ReShadeCheck(game, Loc.T("fg.mfg.reshade_hint"))
         };
 
         return new FgOption

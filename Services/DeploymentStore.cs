@@ -59,7 +59,7 @@ public sealed class DeploymentStore
         => Record(game, path, ShortName(kind), record.Version, kind, record.Md5);
 
     /// <summary>Libelle compact, aligne sur celui du registre des modifications.</summary>
-    private static string ShortName(DllKind kind) => kind switch
+    public static string ShortName(DllKind kind) => kind switch
     {
         DllKind.Dlss => "DLSS SR",
         DllKind.DlssG => "DLSS-G",

@@ -37,15 +37,17 @@ public sealed class Dlss5Service
 
     private readonly GitHubService _github;
     private readonly DownloadService _downloads;
+    private readonly BackupService _backups;
     private readonly DeploymentStore _deployments;
     private readonly RhiRepoService _rhi;
     private readonly Dlss5PackageInstaller _package;
 
-    public Dlss5Service(GitHubService github, DownloadService downloads, DeploymentStore deployments,
-        RhiRepoService rhi, Dlss5PackageInstaller package)
+    public Dlss5Service(GitHubService github, DownloadService downloads, BackupService backups,
+        DeploymentStore deployments, RhiRepoService rhi, Dlss5PackageInstaller package)
     {
         _github = github;
         _downloads = downloads;
+        _backups = backups;
         _deployments = deployments;
         _rhi = rhi;
         _package = package;
@@ -221,14 +223,7 @@ public sealed class Dlss5Service
         var needsReShade = option?.Backend is Dlss5Backend.Bridge or Dlss5Backend.RenoDxDlss5;
         if (needsReShade)
         {
-            checks.Add(new PrereqCheck
-            {
-                Label = "RESHADE",
-                State = game.HasReShade ? UiStatus.Ready : UiStatus.Error,
-                Detail = game.HasReShade ? ReShadeService.InstalledVersion(game) ?? Loc.T("common.installed") : Loc.T("common.absent"),
-                Fix = PrereqFix.InstallReShade,
-                Hint = game.HasReShade ? null : Loc.T("dlss5.reshade.hint")
-            });
+            checks.Add(FrameGenOptions.ReShadeCheck(game, Loc.T("dlss5.reshade.hint")));
         }
 
         var sr = game.Dlls.FirstOrDefault(d => d.Kind == DllKind.Dlss);
@@ -385,10 +380,10 @@ public sealed class Dlss5Service
             var cached = Path.Combine(AppPaths.ComponentCache, "dlss5-bridge", release.Tag, asset.Name);
             await _downloads.DownloadAsync(asset.Url, cached, null, progress, ct);
 
-            var dest = Path.Combine(dir, asset.Name);
-            DllInstaller.ClearReadOnly(dest);
-            File.Copy(cached, dest, overwrite: true);
-            _deployments.Record(game, dest, "DLSS 5 Bridge", release.Tag);
+            var tx = new FileTransaction(game, _backups, _deployments, null);
+            tx.Copy(cached, Path.Combine(dir, asset.Name), "DLSS 5 Bridge", release.Tag);
+            var written = tx.Commit();
+            if (!written.Success) return written;
 
             BridgeVersion = release.Tag;
             DllDetector.Inspect(game);
@@ -447,8 +442,7 @@ public sealed class Dlss5Service
             if (proxy is null)
                 return new InstallResult(false, Loc.T("err.no_proxy"));
 
-            var copied = 0;
-            var written = new List<string>();
+            var tx = new FileTransaction(game, _backups, _deployments, null);
             foreach (var file in Directory.EnumerateFiles(sourceDir))
             {
                 var name = Path.GetFileName(file);
@@ -461,13 +455,12 @@ public sealed class Dlss5Service
                 // Une configuration deja ajustee ne doit pas etre ecrasee.
                 if (name.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) && File.Exists(dest)) continue;
 
-                DllInstaller.ClearReadOnly(dest);
-                File.Copy(file, dest, overwrite: true);
-                written.Add(dest);
-                copied++;
+                tx.Copy(file, dest, label, release.Tag);
             }
 
-            _deployments.RecordMany(game, written, label, release.Tag);
+            var written = tx.Commit();
+            if (!written.Success) return written;
+            var copied = tx.Count;
 
             DllDetector.Inspect(game);
             var msg = Loc.T("opti.ok", label, release.Tag, proxy, copied);
@@ -550,8 +543,13 @@ public sealed class Dlss5Service
         try
         {
             var dest = Path.Combine(DllInstaller.TargetDirectory(game), NeuralRuntime);
+            if (GameGuard.Check(game, new[] { dest }) is { } blocked) return blocked;
+
+            // Copie a cote puis remplacement d'un geste : jamais de runtime a moitie ecrit.
+            var temp = dest + ".prism-new";
+            File.Copy(source, temp, overwrite: true);
             DllInstaller.ClearReadOnly(dest);
-            File.Copy(source, dest, overwrite: true);
+            File.Move(temp, dest, overwrite: true);
 
             DllDetector.Inspect(game);
             Log.Info(Src, $"{NeuralRuntime} copie depuis le pilote vers {dest}");

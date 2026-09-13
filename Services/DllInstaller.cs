@@ -99,39 +99,21 @@ public sealed class DllInstaller
             return new InstallResult(false, Loc.T("err.download_failed", ex.Message));
         }
 
-        var changed = 0;
-        var failures = new List<string>();
-
+        // Toutes les copies ou aucune : deux versions differentes du meme runtime dans un
+        // jeu font charger l'une ou l'autre selon le module. Un fichier que Prism a lui-meme
+        // depose reste un ajout, sans sauvegarde ; un original du jeu part en sauvegarde.
+        var tx = new FileTransaction(game, _backups, _deployments, null);
         foreach (var target in targets)
-        {
-            try
-            {
-                // Un fichier que Prism a lui-meme depose reste un ajout : le mettre a
-                // jour ne doit pas creer de sauvegarde, sinon la meme ecriture
-                // apparaitrait deux fois au registre des modifications.
-                var ours = _deployments.WasDeployed(target);
-                if (File.Exists(target) && !ours) _backups.Capture(game, target);
+            tx.Copy(dll, target, DeploymentStore.ShortName(record.Kind), record.Version, record.Kind, record.Md5);
 
-                ClearReadOnly(target);
-                File.Copy(dll, target, overwrite: true);
-
-                if (deploying || ours) _deployments.Record(game, target, record.Kind, record);
-                changed++;
-            }
-            catch (Exception ex)
-            {
-                failures.Add($"{Path.GetFileName(target)} : {ex.Message}");
-                Log.Error(Src, $"Ecriture impossible sur {target} : {ex.Message}");
-            }
-        }
-
+        var result = tx.Commit();
         DllDetector.Inspect(game);
 
-        if (changed == 0)
-            return new InstallResult(false, Loc.T("dll.err.failed", string.Join(" | ", failures)));
+        if (!result.Success)
+            return new InstallResult(false, Loc.T("dll.err.failed", result.Message));
 
+        var changed = targets.Count;
         var msg = Loc.T(deploying ? "dll.ok.added" : "dll.ok.updated", LabelFor(record.Kind), record.Version, changed);
-        if (failures.Count > 0) msg += " " + Loc.T("dll.partial", failures.Count);
 
         Log.Info(Src, msg);
         return new InstallResult(true, msg, changed);

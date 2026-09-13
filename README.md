@@ -117,12 +117,37 @@ flowchart LR
     B -- DLSS-G 310.x --> E[catalogue signé]
     C & D & E --> F[Voie choisie]
     B -- rien --> F
-    F --> G{Vérification<br/>signature · SHA-256}
+    F --> G{Jeu fermé ?<br/>signature · SHA-256}
     G -- refus --> H([Rien n'est écrit])
-    G -- OK --> I[Sauvegarde des originaux]
-    I --> J[Pose + registre]
+    G -- OK --> I[Transaction :<br/>sauvegarde · pose · relecture]
+    I -- échec --> L([Retour à l'état d'avant])
+    I -- OK --> J[Registre]
     J --> K([Visible dans<br/>AJOUTÉ PAR PRISM])
 ```
+
+**Rien à moitié.** Chaque écriture dans un jeu passe par une transaction : l'original part
+en sauvegarde, le nouveau fichier est écrit à côté puis remplacé d'un geste, relu et comparé
+à sa source. Au premier échec, tout ce qui a été touché reprend son contenu d'avant. Prism
+refuse d'agir tant que le jeu tourne ou qu'un fichier visé est verrouillé — la cause n° 1
+des piles DLSS à moitié posées.
+
+### ReShade : gardé s'il est déjà là
+
+Inspiré de [RHI](https://github.com/RankFTW/RHI) :
+
+| Situation dans le jeu | Ce que fait Prism |
+|---|---|
+| ReShade **add-on ≥ 6.8** déjà chargé, sous n'importe quel nom | rien — aucun téléchargement |
+| ReShade standard ou trop ancien | remplacé **sur place**, sous le même nom, original sauvegardé |
+| Absent | nom choisi d'après les imports de l'exécutable : `d3d9.dll`, `opengl32.dll`, sinon `dxgi.dll` |
+| Proxy déjà pris par OptiScaler | `ReShade64.dll` + `[Plugins] LoadReshade=true` |
+| Proxy pris par un autre outil | `d3d12.dll` / `d3d11.dll` selon l'API, sinon refus — jamais écrasé |
+| ReShade chargé deux fois | signalé, installation bloquée |
+| Jeu Vulkan | refus : ReShade passe par sa couche Vulkan globale |
+
+La DLL est extraite de l'installeur officiel de reshade.me **sans l'exécuter**. La version
+add-on se reconnaît sans supposition : la build standard contient le message
+*« only limited add-on functionality »*, absent de la build add-on.
 
 ### Ce que Prism a ajouté, sous les yeux
 
@@ -252,6 +277,8 @@ uniquement sur Nexus ou Discord est signalé, pas deviné.
 | Runtime neural patché | accepté seulement sur SHA-256 épinglé |
 | Catalogue DLSS | manifeste signé + MD5 vérifié avant écriture |
 | Aucun original perdu | copie avant remplacement, première version conservée |
+| Jamais d'installation partielle | transaction par installation : relecture SHA-256, retour arrière complet |
+| Jeu en cours d'exécution | écriture refusée tant que l'exécutable tourne ou qu'un fichier est verrouillé |
 | Désinstallation exacte | registre par fichier, par installation, avec empreinte |
 | Fichiers de l'utilisateur | presets ReShade, `dxgi.dll` étrangers et fichiers modifiés hors Prism jamais écrasés |
 

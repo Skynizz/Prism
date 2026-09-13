@@ -131,8 +131,6 @@ public static class DllDetector
                 else if (isMfgAddon) game.HasMfgUnlock = true;
                 else if (name.StartsWith("renodx", StringComparison.OrdinalIgnoreCase)) game.HasRenoDx = true;
             }
-            else if (name.StartsWith("ReShade", StringComparison.OrdinalIgnoreCase) && name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                game.HasReShade = true;
             else if (name.Equals("OptiScaler.dll", StringComparison.OrdinalIgnoreCase) ||
                      name.Equals("OptiScaler.asi", StringComparison.OrdinalIgnoreCase) ||
                      name.Equals("dlss-enabler.dll", StringComparison.OrdinalIgnoreCase))
@@ -165,18 +163,21 @@ public static class DllDetector
 
         // Heuristique : l'executable du jeu est de loin le plus gros binaire.
         game.Executable ??= exeCandidates.OrderByDescending(e => e.Size).FirstOrDefault().Path;
+
+        // ReShade compte seulement s'il est charge par le jeu : a cote de l'executable, sous
+        // un nom de proxy, ou par OptiScaler. Un ReShade64.dll oublie dans un sous-dossier non.
+        game.HasReShade = ReShadeLocator.Scan(DllInstaller.TargetDirectory(game)).Present;
         game.Scanned = true;
         if (raise) game.RaiseAll();
     }
 
-    /// <summary>Un dxgi.dll peut etre ReShade, OptiScaler ou un vrai systeme : la description tranche.</summary>
+    /// <summary>Un dxgi.dll peut etre ReShade, OptiScaler ou un vrai systeme : la description tranche (ReShade : voir ReShadeLocator).</summary>
     private static void ClassifyProxy(string file, GameInfo game)
     {
         try
         {
             var info = FileVersionInfo.GetVersionInfo(file);
             var tag = $"{info.FileDescription} {info.ProductName} {info.CompanyName}";
-            if (tag.Contains("ReShade", StringComparison.OrdinalIgnoreCase)) game.HasReShade = true;
             if (tag.Contains("OptiScaler", StringComparison.OrdinalIgnoreCase) ||
                 tag.Contains("DLSS Enabler", StringComparison.OrdinalIgnoreCase)) game.HasOptiScaler = true;
             if (tag.Contains("RTXMFG", StringComparison.OrdinalIgnoreCase) ||

@@ -22,18 +22,18 @@ public sealed class AppServices
         Deployments = new DeploymentStore();
         Manifest = new ManifestService();
         GitHub = new GitHubService(Downloads);
-        ReShade = new ReShadeService(Downloads);
+        ReShade = new ReShadeService(Downloads, Backups, Deployments);
         RenoDx = new RenoDxService(GitHub, Downloads, Deployments);
         Wiki = new RenoDxWikiService(Downloads);
         Hdr = new HdrInstaller(Downloads, Deployments, Backups, Profiles);
         Rhi = new RhiRepoService(Downloads);
-        FrameGen = new FrameGenService(GitHub, Downloads, Deployments);
+        FrameGen = new FrameGenService(GitHub, Downloads, Backups, Deployments);
         Installer = new DllInstaller(Downloads, Backups, Deployments);
-        Dlss5 = new Dlss5Service(GitHub, Downloads, Deployments, Rhi,
+        Dlss5 = new Dlss5Service(GitHub, Downloads, Backups, Deployments, Rhi,
             new Dlss5PackageInstaller(Rhi, Downloads, Backups, Deployments, () => Gpu));
         Changes = new ChangesService(Backups, Deployments);
         Restore = new RestoreService(Changes, Backups, Deployments, Hdr);
-        Streamline = new StreamlineService(GitHub, Downloads, Backups);
+        Streamline = new StreamlineService(GitHub, Downloads, Backups, Deployments);
         Catalog = new ComponentCatalog(GitHub, ReShade, RenoDx, Manifest);
         Scanner = new GameScanner { ExtraFolders = Settings.Current.ExtraLibraryFolders };
 

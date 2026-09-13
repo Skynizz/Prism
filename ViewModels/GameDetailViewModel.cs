@@ -364,8 +364,20 @@ public sealed class GameDetailViewModel : ObservableObject
     /// <summary>Chargement precoce de l'addon DLSS 5, exige par RenoDX.</summary>
     public bool Dlss5EarlyLoaded => ReShadeConfig.IsEarlyLoaded(TargetDir, "renodx-dlss5.addon64");
 
+    /// <summary>
+    /// Refuse d'agir sur un jeu lance ou dont les fichiers sont verrouilles : c'est ce qui
+    /// laissait des installations a moitie posees.
+    /// </summary>
+    private bool Guard()
+    {
+        if (GameGuard.Check(Game) is not { } blocked) return true;
+        _notify(blocked.Message, true);
+        return false;
+    }
+
     private void ApplyMfgSettings()
     {
+        if (!Guard()) return;
         // Le multiplicateur choisi dans l'interface devient celui force par l'addon.
         Mfg.ForceMultiplier = Multiplier;
         Mfg.MaxCount = Math.Max(Multiplier, 4);
@@ -377,7 +389,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void EnableEarlyLoad(string? addon)
     {
-        if (string.IsNullOrWhiteSpace(addon)) return;
+        if (string.IsNullOrWhiteSpace(addon) || !Guard()) return;
         var result = ReShadeConfig.EnableEarlyLoading(TargetDir, addon);
         _notify(result.Message, !result.Success);
         OnPropertyChanged(nameof(Dlss5EarlyLoaded));
@@ -483,6 +495,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RestoreVanilla(bool includeOrphans)
     {
+        if (!Guard()) return;
         var result = _svc.Restore.RestoreVanilla(Game, includeOrphans);
         _notify(result.Message, !result.Success);
         VerifyIntegrity();
@@ -498,7 +511,7 @@ public sealed class GameDetailViewModel : ObservableObject
     /// </summary>
     private async Task<bool> ApplyFixAsync(PrereqCheck? check)
     {
-        if (check is null) return false;
+        if (check is null || !Guard()) return false;
 
         return check.Fix switch
         {
@@ -551,7 +564,7 @@ public sealed class GameDetailViewModel : ObservableObject
     private async Task PrepareFgAsync()
     {
         var option = SelectedFg;
-        if (option is null) return;
+        if (option is null || !Guard()) return;
 
         foreach (var req in option.Requirements.Where(r => r.Actionable).ToList())
             if (!await ApplyFixAsync(req)) return;
@@ -569,7 +582,7 @@ public sealed class GameDetailViewModel : ObservableObject
     private async Task PrepareDlss5Async()
     {
         var option = SelectedDlss5;
-        if (option is null) return;
+        if (option is null || !Guard()) return;
 
         // Le paquet RenoDX DLSS 5 apporte lui-meme DLSS SR, le runtime neural et l'addon :
         // les poser a part avant lui serait telecharger deux fois.
@@ -590,7 +603,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     // ------------------------------------------------------ Ajoute par Prism
 
-    private const string ReShadeOrigin = "ReShade";
+    private const string ReShadeOrigin = ReShadeService.Origin;
 
     /// <summary>
     /// Installations encore en place dans ce jeu — ce qu'on retrouve en revenant sur
@@ -643,7 +656,7 @@ public sealed class GameDetailViewModel : ObservableObject
     /// </summary>
     private void QuarantineDetected(DetectedMod? mod)
     {
-        if (mod is null || !mod.Removable) return;
+        if (mod is null || !mod.Removable || !Guard()) return;
 
         var moved = 0;
         foreach (var file in mod.Files)
@@ -690,7 +703,7 @@ public sealed class GameDetailViewModel : ObservableObject
     /// </summary>
     private void RemoveInstalled(InstalledGroup? group)
     {
-        if (group is null) return;
+        if (group is null || !Guard()) return;
 
         var origin = group.Origin;
         var dir = TargetDir;
@@ -698,7 +711,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
         try
         {
-            if (origin == ReShadeOrigin)
+            if (origin == ReShadeService.Origin)
             {
                 done += ReShadeService.Uninstall(Game).FilesChanged;
                 Profile.ReShadeInstalled = false;
@@ -762,6 +775,7 @@ public sealed class GameDetailViewModel : ObservableObject
             string s when Enum.TryParse<OptiProfile>(s, true, out var parsed) => parsed,
             _ => OptiProfile.Full
         };
+        if (!Guard()) return;
 
         var result = OptiScalerConfig.Apply(TargetDir, profile, Multiplier);
         _notify(result.Message, !result.Success);
@@ -770,6 +784,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RevertGame()
     {
+        if (!Guard()) return;
         var result = _svc.Changes.RevertGame(Game.Id);
         _notify(result.Message, !result.Success);
         Refresh();
@@ -832,6 +847,7 @@ public sealed class GameDetailViewModel : ObservableObject
     /// </summary>
     private async Task<bool> DeployStreamlineAsync()
     {
+        if (!Guard()) return false;
         Busy = true;
         Progress = 0;
         try
@@ -854,6 +870,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RemoveBridge()
     {
+        if (!Guard()) return;
         var result = Dlss5Service.RemoveBridge(Game);
         _notify(result.Message, !result.Success);
         Refresh();
@@ -861,6 +878,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private bool AdoptNeural()
     {
+        if (!Guard()) return false;
         var result = Dlss5Service.AdoptNeuralRuntime(Game);
         _notify(result.Message, !result.Success);
         Refresh();
@@ -872,13 +890,15 @@ public sealed class GameDetailViewModel : ObservableObject
     private string? _reShadeVersion;
     public string? ReShadeVersion { get => _reShadeVersion; private set => Set(ref _reShadeVersion, value); }
 
-    public string ReShadeStatus => Game.HasReShade ? ReShadeVersion ?? Loc.T("common.installed_cap") : Loc.T("common.not_installed");
-    public UiStatus ReShadeState => Game.HasReShade ? UiStatus.Injected : UiStatus.Idle;
+    /// <summary>« 6.8.0 · add-on · dxgi.dll » : version, build et nom sous lequel le jeu le charge.</summary>
+    public string ReShadeStatus => ReShadeLocator.Scan(Game) is { Present: true } s ? s.Label : Loc.T("common.not_installed");
 
-    public IReadOnlyList<string> ApiChoices { get; } = new[] { "dxgi", "d3d11", "d3d12", "d3d9", "opengl", "vulkan" };
-
-    private string _selectedApi = "dxgi";
-    public string SelectedApi { get => _selectedApi; set => Set(ref _selectedApi, value); }
+    public UiStatus ReShadeState => ReShadeLocator.Scan(Game) switch
+    {
+        { Ready: true } => UiStatus.Injected,
+        { Present: true } => UiStatus.Warning,
+        _ => UiStatus.Idle
+    };
 
     // -------------------------------------------------------- Injection
 
@@ -1086,6 +1106,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RestoreEverything()
     {
+        if (!Guard()) return;
         var result = _svc.Installer.RestoreAll(Game);
         _notify(result.Message, !result.Success);
         Refresh();
@@ -1126,6 +1147,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RemoveFg()
     {
+        if (!Guard()) return;
         var result = FrameGenService.RemoveOverlays(Game);
         _notify(result.Message, !result.Success);
         Profile.FgBackend = FgBackend.None;
@@ -1136,13 +1158,14 @@ public sealed class GameDetailViewModel : ObservableObject
     /// <summary>ReShade d'abord s'il manque, puis le plan HDR complet.</summary>
     private async Task PrepareHdrAsync()
     {
-        if (HdrPlan is null) return;
+        if (HdrPlan is null || !Guard()) return;
 
-        if (!Game.HasReShade)
+        // Un ReShade add-on 6.8+ deja charge est garde tel quel ; sinon il est pose ou mis a niveau.
+        if (!HdrInstaller.ReShadeReady(Game))
         {
-            await InstallReShadeAsync();
+            if (!await InstallReShadeAsync()) return;
             DllDetector.Inspect(Game);
-            if (!Game.HasReShade) return;
+            if (!HdrInstaller.ReShadeReady(Game)) return;
         }
 
         var plan = HdrPlan;
@@ -1152,6 +1175,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RemoveHdr()
     {
+        if (!Guard()) return;
         var result = _svc.Hdr.Remove(Game);
         _notify(result.Message, !result.Success);
         Refresh();
@@ -1159,14 +1183,16 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private async Task<bool> InstallReShadeAsync()
     {
+        if (!Guard()) return false;
         Busy = true;
         Progress = 0;
         try
         {
-            var result = await _svc.ReShade.InstallAsync(Game, SelectedApi, new Progress<double>(p => Progress = p));
+            var result = await _svc.ReShade.InstallAsync(Game, new Progress<double>(p => Progress = p));
             _notify(result.Message, !result.Success);
-            // Reinstaller par-dessus une installation deja faite ne doit pas l'oublier si ca echoue.
-            Profile.ReShadeInstalled = result.Success || Profile.ReShadeInstalled;
+            // Un ReShade deja present et garde tel quel n'est pas une installation de Prism ;
+            // un echec, lui, ne doit pas faire oublier une installation precedente.
+            Profile.ReShadeInstalled = (result.Success && result.FilesChanged > 0) || Profile.ReShadeInstalled;
             _svc.Profiles.Update(Profile);
             return result.Success;
         }
@@ -1176,6 +1202,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void RemoveReShade()
     {
+        if (!Guard()) return;
         var result = ReShadeService.Uninstall(Game);
         _notify(result.Message, !result.Success);
         Refresh();

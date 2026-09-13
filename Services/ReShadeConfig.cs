@@ -103,7 +103,7 @@ public static class ReShadeConfig
     public static InstallResult WriteMfg(string dir, MfgSettings s)
     {
         var path = PathFor(dir);
-        if (!File.Exists(path))
+        if (!File.Exists(path) && !ReShadeLocator.Scan(dir).Present)
             return new InstallResult(false, Loc.T("reshade.err.ini_missing", FileName));
 
         var keys = new (string Key, string Value)[]
@@ -121,8 +121,9 @@ public static class ReShadeConfig
 
         try
         {
-            var lines = File.ReadAllLines(path).ToList();
+            var lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
             foreach (var (key, value) in keys) SetKey(lines, MfgSection, key, value);
+            DllInstaller.ClearReadOnly(path);
             File.WriteAllLines(path, lines);
 
             var msg = Loc.T("mfg.ok", s.MultiplierLabel, s.HdrModeLabel, s.RuntimeModeLabel);
@@ -145,12 +146,14 @@ public static class ReShadeConfig
     public static InstallResult EnableEarlyLoading(string dir, string addonFileName)
     {
         var path = PathFor(dir);
-        if (!File.Exists(path))
+        // ReShade complete lui-meme un fichier incomplet : l'absence de ReShade.ini ne doit
+        // pas empecher d'inscrire l'addon, a condition que ReShade soit bien la.
+        if (!File.Exists(path) && !ReShadeLocator.Scan(dir).Present)
             return new InstallResult(false, Loc.T("reshade.err.ini_missing", FileName));
 
         try
         {
-            var lines = File.ReadAllLines(path).ToList();
+            var lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
             var current = ReadKey(lines, "ADDON", "LoadFromDllMain") ?? "";
 
             var entries = current
@@ -162,6 +165,7 @@ public static class ReShadeConfig
 
             entries.Add(addonFileName);
             SetKey(lines, "ADDON", "LoadFromDllMain", string.Join(",", entries));
+            DllInstaller.ClearReadOnly(path);
             File.WriteAllLines(path, lines);
 
             Log.Info(Src, $"Chargement precoce active pour {addonFileName} dans {dir}");

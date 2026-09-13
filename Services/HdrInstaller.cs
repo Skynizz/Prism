@@ -15,8 +15,6 @@ public sealed class HdrInstaller
     /// <summary>Section des reglages globaux des mods RenoDX dans ReShade.ini.</summary>
     public const string Section = "renodx";
 
-    private static readonly Version MinReShade = new(6, 8, 0);
-
     private readonly DownloadService _downloads;
     private readonly DeploymentStore _deployments;
     private readonly BackupService _backups;
@@ -59,14 +57,7 @@ public sealed class HdrInstaller
     }
 
     /// <summary>ReShade 6.8 ou plus recent, exige par la page Mods du wiki.</summary>
-    public static bool ReShadeReady(GameInfo game)
-    {
-        var raw = ReShadeService.InstalledVersion(game);
-        if (raw is null) return false;
-
-        var digits = new string(raw.TakeWhile(c => char.IsDigit(c) || c == '.').ToArray()).Trim('.');
-        return Version.TryParse(digits.Contains('.') ? digits : digits + ".0", out var v) && v >= MinReShade;
-    }
+    public static bool ReShadeReady(GameInfo game) => ReShadeLocator.Scan(game).Ready;
 
     // ------------------------------------------------------------ Application
 
@@ -74,7 +65,8 @@ public sealed class HdrInstaller
         GameInfo game, HdrPlan plan, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         if (!plan.CanInstall) return new InstallResult(false, plan.BlockedReason ?? Loc.T("hdr.none"));
-        if (!game.HasReShade) return new InstallResult(false, Loc.T("hdr.err.reshade"));
+        if (!ReShadeReady(game)) return new InstallResult(false, Loc.T("hdr.err.reshade"));
+        if (GameGuard.Check(game) is { } blocked) return blocked;
 
         var dir = DllInstaller.TargetDirectory(game);
         if (!Directory.Exists(dir)) return new InstallResult(false, Loc.T("err.target_missing"));
@@ -92,8 +84,6 @@ public sealed class HdrInstaller
 
         try
         {
-            foreach (var old in others) RemoveDeployed(old);
-
             // Les builds snapshot evoluent sous le meme nom : un cache de plus de six
             // heures est retelecharge.
             var uri = new Uri(plan.AddonUrl!);
@@ -103,10 +93,14 @@ public sealed class HdrInstaller
 
             await _downloads.DownloadAsync(plan.AddonUrl!, cache, null, progress, ct);
 
+            // Ancien mod Prism retire et nouveau pose d'un seul geste : un echec ne laisse
+            // le jeu ni sans mod, ni avec les deux.
             var dest = Path.Combine(dir, file);
-            DllInstaller.ClearReadOnly(dest);
-            File.Copy(cache, dest, overwrite: true);
-            _deployments.Record(game, dest, "RenoDX HDR", plan.Title, default, "", DownloadService.Sha256Cached(dest));
+            var tx = new FileTransaction(game, _backups, _deployments, "RenoDX HDR");
+            foreach (var old in others) tx.Delete(old);
+            tx.Copy(cache, dest, "RenoDX HDR", plan.Title);
+            var written = tx.Commit();
+            if (!written.Success) return written;
 
             profile.HdrAddonPath = dest;
             profile.HdrKind = plan.Kind;

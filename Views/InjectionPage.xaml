@@ -74,19 +74,10 @@
                         <StackPanel Margin="14,12,14,14">
                             <TextBlock Style="{StaticResource T.Prose}" Text="{l:T inj.host_hint}" />
 
-                            <Grid Margin="0,12,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="108" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ComboBox Grid.Column="0" ItemsSource="{Binding ApiChoices}"
-                                          SelectedItem="{Binding SelectedApi}"
-                                          ToolTip="{l:T inj.api_tip}" />
-                                <Button Grid.Column="2" Content="{l:T inj.install_reshade}"
-                                        Style="{StaticResource Btn}" Margin="8,0,0,0"
-                                        Command="{Binding InstallReShadeCommand}" />
-                            </Grid>
+                            <!-- Nom du proxy choisi par Prism : imports de l'exe, OptiScaler, existant. -->
+                            <Button Content="{l:T inj.install_reshade}" Style="{StaticResource Btn}"
+                                    HorizontalAlignment="Left" Margin="0,12,0,0"
+                                    Command="{Binding InstallReShadeCommand}" />
 
                             <Button Content="{l:T inj.uninstall_reshade}" Style="{StaticResource Btn.Quiet}"
                                     HorizontalAlignment="Left" Margin="0,6,0,0"

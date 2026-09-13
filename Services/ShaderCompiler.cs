@@ -19,7 +19,12 @@ public static class ShaderCompiler
     /// <summary>Premiere generation qui compile le Shader Model 5.1.</summary>
     private const int MinimumMajor = 10;
 
-    private static string SystemCopy => Path.Combine(Environment.SystemDirectory, FileName);
+    public static string SystemCopy => Path.Combine(Environment.SystemDirectory, FileName);
+
+    /// <summary>La copie de Windows existe et compile le Shader Model 5.1.</summary>
+    public static bool SystemCopyUsable => File.Exists(SystemCopy) && MajorOf(SystemCopy) >= MinimumMajor;
+
+    public static string? SystemVersion => File.Exists(SystemCopy) ? FileVersionInfo.GetVersionInfo(SystemCopy).FileVersion : null;
 
     /// <summary>Version du compilateur du jeu, ou null s'il n'en embarque pas.</summary>
     public static string? LocalVersion(string dir)

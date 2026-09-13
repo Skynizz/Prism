@@ -28,13 +28,24 @@ public sealed class FrameGenService
 
     private readonly GitHubService _github;
     private readonly DownloadService _downloads;
+    private readonly BackupService _backups;
     private readonly DeploymentStore _deployments;
 
-    public FrameGenService(GitHubService github, DownloadService downloads, DeploymentStore deployments)
+    public FrameGenService(GitHubService github, DownloadService downloads, BackupService backups,
+        DeploymentStore deployments)
     {
         _github = github;
         _downloads = downloads;
+        _backups = backups;
         _deployments = deployments;
+    }
+
+    /// <summary>Pose les fichiers en une transaction : tout, ou le jeu tel qu'il etait.</summary>
+    private InstallResult Commit(GameInfo game, IEnumerable<(string Source, string Dest)> files, string component, string version)
+    {
+        var tx = new FileTransaction(game, _backups, _deployments, null);
+        foreach (var (source, dest) in files) tx.Copy(source, dest, component, version);
+        return tx.Commit();
     }
 
     /// <summary>
@@ -84,9 +95,8 @@ public sealed class FrameGenService
             await _downloads.DownloadAsync(asset.Url, cached, null, progress, ct);
 
             var dest = Path.Combine(dir, asset.Name);
-            DllInstaller.ClearReadOnly(dest);
-            File.Copy(cached, dest, overwrite: true);
-            _deployments.Record(game, dest, "MFGAdaUnlock", release.Tag);
+            var written = Commit(game, new[] { (cached, dest) }, "MFGAdaUnlock", release.Tag);
+            if (!written.Success) return written;
 
             DllDetector.Inspect(game);
             Log.Info(Src, $"MFGAdaUnlock {release.Tag} depose dans {dir}");
@@ -130,9 +140,8 @@ public sealed class FrameGenService
                 return new InstallResult(false, Loc.T("err.no_proxy"));
 
             var dest = Path.Combine(dir, proxy);
-            DllInstaller.ClearReadOnly(dest);
-            File.Copy(dll, dest, overwrite: true);
-            _deployments.Record(game, dest, "RTX40MFG-Unlock", release.Tag);
+            var written = Commit(game, new[] { (dll, dest) }, "RTX40MFG-Unlock", release.Tag);
+            if (!written.Success) return written;
 
             DllDetector.Inspect(game);
             Log.Info(Src, $"RTX40MFG-Unlock {release.Tag} installe sous {proxy}");
@@ -176,8 +185,7 @@ public sealed class FrameGenService
             if (proxy is null)
                 return new InstallResult(false, Loc.T("err.no_proxy"));
 
-            var copied = 0;
-            var written = new List<string>();
+            var staged = new List<(string Source, string Dest)>();
             foreach (var file in Directory.EnumerateFiles(sourceDir))
             {
                 var name = Path.GetFileName(file);
@@ -190,13 +198,12 @@ public sealed class FrameGenService
                 // Une configuration deja ajustee par l'utilisateur ne doit pas etre ecrasee.
                 if (name.Equals("OptiScaler.ini", StringComparison.OrdinalIgnoreCase) && File.Exists(dest)) continue;
 
-                DllInstaller.ClearReadOnly(dest);
-                File.Copy(file, dest, overwrite: true);
-                written.Add(dest);
-                copied++;
+                staged.Add((file, dest));
             }
 
-            _deployments.RecordMany(game, written, "OptiScaler", release.Tag);
+            var written = Commit(game, staged, "OptiScaler", release.Tag);
+            if (!written.Success) return written;
+            var copied = staged.Count;
 
             DllDetector.Inspect(game);
             Log.Info(Src, $"OptiScaler {release.Tag} installe sous {proxy} ({copied} fichiers)");

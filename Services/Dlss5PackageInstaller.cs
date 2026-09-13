@@ -96,7 +96,8 @@ public sealed class Dlss5PackageInstaller
         // L'addon va a cote de ReShade, donc de l'executable ; la pile, la ou Streamline est charge.
         var exeDir = DllInstaller.TargetDirectory(game);
         if (!Directory.Exists(exeDir)) return new InstallResult(false, Loc.T("err.target_missing"));
-        if (!game.HasReShade) return new InstallResult(false, Loc.T("hdr.err.reshade"));
+        if (!HdrInstaller.ReShadeReady(game)) return new InstallResult(false, Loc.T("hdr.err.reshade"));
+        if (GameGuard.Check(game) is { } blocked) return blocked;
 
         var runtimeDirs = RuntimeDirectories(game);
 
@@ -176,34 +177,16 @@ public sealed class Dlss5PackageInstaller
                 }
             }
 
-            // 3. Pose.
-            foreach (var old in others) RemoveDeployed(old);
-
-            var written = 0;
-            var placed = new List<(string Source, string Dest)>();
+            // 3 et 4. Pose en une transaction : chaque fichier est relu et compare a sa source,
+            // et au moindre echec — jeu lance, fichier verrouille — tout revient a l'etat d'avant.
+            var tx = new FileTransaction(game, _backups, _deployments, Origin);
+            foreach (var old in others) tx.Delete(old);
 
             foreach (var f in files)
             {
                 var isAddon = f.Name.EndsWith(".addon64", StringComparison.OrdinalIgnoreCase);
                 foreach (var dir in isAddon ? new[] { exeDir } : runtimeDirs)
-                {
-                    var dest = Path.Combine(dir, f.Name);
-                    var existed = File.Exists(dest);
-                    var ours = _deployments.WasDeployed(dest);
-
-                    if (existed && !ours) _backups.Capture(game, dest, Origin);
-
-                    DllInstaller.ClearReadOnly(dest);
-                    File.Copy(f.Source, dest, overwrite: true);
-
-                    // Un ajout, ou une nouvelle version d'un ajout : le registre suit l'empreinte reelle.
-                    if (!existed || ours)
-                        _deployments.Record(game, dest, ComponentOf(f.From.Tag), f.From.Version,
-                            default, "", DownloadService.Sha256Cached(dest), Origin);
-
-                    placed.Add((f.Source, dest));
-                    written++;
-                }
+                    tx.Copy(f.Source, Path.Combine(dir, f.Name), ComponentOf(f.From.Tag), f.From.Version);
             }
 
             // Copies de la pile que Prism avait posees hors des dossiers de Streamline : jamais
@@ -214,34 +197,28 @@ public sealed class Dlss5PackageInstaller
                 .Where(p => !runtimeDirs.Contains(Path.GetDirectoryName(p)!, StringComparer.OrdinalIgnoreCase)
                             && File.Exists(p) && _deployments.WasDeployed(p))
                 .ToList();
-            foreach (var stray in strays)
-            {
-                RemoveDeployed(stray);
-                Log.Info(Src, $"Copie hors Streamline retiree : {stray}");
-            }
+            foreach (var stray in strays) tx.Delete(stray);
 
             // Un compilateur de shaders de Windows 8.1 dans le dossier du jeu fait echouer
             // l'addon (« unrecognized compiler target 'cs_5_1' »).
-            if (ShaderCompiler.IsOutdated(exeDir) && ShaderCompiler.Upgrade(game, exeDir, _backups, Origin)) written++;
+            if (ShaderCompiler.IsOutdated(exeDir) && ShaderCompiler.SystemCopyUsable)
+                tx.Copy(ShaderCompiler.SystemCopy, Path.Combine(exeDir, ShaderCompiler.FileName),
+                    "d3dcompiler", ShaderCompiler.SystemVersion ?? "", track: false);
+
+            var committed = tx.Commit();
+            if (!committed.Success)
+            {
+                DllDetector.Inspect(game);
+                return committed;
+            }
+
+            var written = committed.FilesChanged;
+            if (strays.Count > 0) Log.Info(Src, $"Copies hors Streamline retirees : {string.Join(", ", strays)}");
 
             var early = ReShadeConfig.EnableEarlyLoading(exeDir, AddonFileName);
 
-            // 4. Chaque fichier pose est relu : present, et identique a la source.
-            var bad = placed
-                .Where(p => !File.Exists(p.Dest)
-                            || !string.Equals(DownloadService.Sha256Cached(p.Dest),
-                                DownloadService.Sha256Cached(p.Source), StringComparison.OrdinalIgnoreCase))
-                .Select(p => Path.GetRelativePath(game.InstallDir, p.Dest))
-                .ToList();
-
             DllDetector.Inspect(game);
             progress?.Report(100);
-
-            if (bad.Count > 0)
-            {
-                Log.Error(Src, $"Verification apres pose echouee : {string.Join(", ", bad)}");
-                return new InstallResult(false, Loc.T("dlss5.err.verify", string.Join(", ", bad)), written);
-            }
 
             var where = Describe(game, runtimeDirs);
             var msg = Loc.T("dlss5.ok.installed", addon.Version, written) + " " + Loc.T("dlss5.ok.location", where);
@@ -255,12 +232,6 @@ public sealed class Dlss5PackageInstaller
             Log.Error(Src, $"Installation DLSS 5 echouee : {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
-    }
-
-    private void RemoveDeployed(string path)
-    {
-        var entry = _deployments.All.FirstOrDefault(e => string.Equals(e.Path, path, StringComparison.OrdinalIgnoreCase));
-        if (entry is not null) _deployments.Remove(entry);
     }
 
     private static string ComponentOf(string tag) => tag switch

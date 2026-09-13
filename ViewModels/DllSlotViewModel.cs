@@ -188,7 +188,7 @@ public sealed class DllSlotViewModel : ObservableObject
 
     private async Task ApplyAsync()
     {
-        if (Selected is null) return;
+        if (Selected is null || !Guard()) return;
 
         var adding = !IsPresent;
         Busy = true;
@@ -213,8 +213,17 @@ public sealed class DllSlotViewModel : ObservableObject
         }
     }
 
+    /// <summary>Refuse d'ecrire dans un jeu lance : ses DLL sont verrouillees.</summary>
+    private bool Guard()
+    {
+        if (GameGuard.Check(_game) is not { } blocked) return true;
+        _notify(blocked.Message, true);
+        return false;
+    }
+
     private void Restore()
     {
+        if (!Guard()) return;
         var entries = _backups.For(_game.Id)
             .Where(e => string.Equals(Path.GetFileName(e.OriginalPath), FileName, StringComparison.OrdinalIgnoreCase))
             .ToList();
@@ -230,6 +239,7 @@ public sealed class DllSlotViewModel : ObservableObject
 
     private void Remove()
     {
+        if (!Guard()) return;
         var result = _installer.Undeploy(_game, Kind);
         _notify(result.Message, !result.Success);
         Reload();

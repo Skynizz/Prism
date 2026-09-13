@@ -25,12 +25,15 @@ public sealed class StreamlineService
     private readonly GitHubService _github;
     private readonly DownloadService _downloads;
     private readonly BackupService _backups;
+    private readonly DeploymentStore _deployments;
 
-    public StreamlineService(GitHubService github, DownloadService downloads, BackupService backups)
+    public StreamlineService(GitHubService github, DownloadService downloads, BackupService backups,
+        DeploymentStore deployments)
     {
         _github = github;
         _downloads = downloads;
         _backups = backups;
+        _deployments = deployments;
     }
 
     public string? LatestVersion { get; private set; }
@@ -97,22 +100,22 @@ public sealed class StreamlineService
                 return new InstallResult(false,
                     Loc.T("sl.err.none_in_game"));
 
-            var copied = 0;
             var skipped = new List<string>();
 
+            // Le paquet apparie entier, ou rien : un melange de composants sl.* est
+            // precisement ce que MFGAdaUnlock interdit.
+            var tx = new FileTransaction(game, _backups, _deployments, null);
             foreach (var name in present)
             {
                 var source = Path.Combine(binDir, name!);
                 if (!File.Exists(source)) { skipped.Add(name!); continue; }
-
-                var dest = Path.Combine(targetDir, name!);
-                _backups.Capture(game, dest);
-                DllInstaller.ClearReadOnly(dest);
-                File.Copy(source, dest, overwrite: true);
-                copied++;
+                tx.Copy(source, Path.Combine(targetDir, name!), "Streamline", version);
             }
 
+            var committed = tx.Commit();
             DllDetector.Inspect(game);
+            if (!committed.Success) return committed;
+            var copied = tx.Count;
 
             var msg = Loc.T("sl.ok", version, copied);
             if (skipped.Count > 0) msg += " " + Loc.T("sl.skipped", string.Join(", ", skipped));
