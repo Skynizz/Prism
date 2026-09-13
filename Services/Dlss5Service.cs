@@ -241,20 +241,30 @@ public sealed class Dlss5Service
             Hint = sr is null ? Loc.T("dlss5.sr.hint") : null
         });
 
-        var inGame = game.HasNeuralRuntime;
-        var inDriver = NeuralRuntimeInDriverStore();
         var renodx = option?.Backend == Dlss5Backend.RenoDxDlss5;
+
+        // Streamline charge ses plugins et les DLL NGX a cote de sl.interposer.dll : un runtime
+        // present ailleurs dans le dossier du jeu n'est jamais charge.
+        var runtimeDirs = Dlss5PackageInstaller.RuntimeDirectories(game);
+        var inPlace = runtimeDirs.All(d => File.Exists(Path.Combine(d, NeuralRuntime)));
+        var misplaced = renodx && game.HasNeuralRuntime && !inPlace;
+        var inGame = renodx ? inPlace : game.HasNeuralRuntime;
+        var inDriver = NeuralRuntimeInDriverStore();
 
         checks.Add(new PrereqCheck
         {
             Label = "NEURAL RT",
-            State = inGame ? UiStatus.Ready : renodx ? UiStatus.Warning : UiStatus.Error,
-            Detail = inGame ? Loc.T("dlss5.nr.in_game")
+            State = inGame ? UiStatus.Ready
+                  : misplaced ? UiStatus.Error
+                  : renodx ? UiStatus.Warning : UiStatus.Error,
+            Detail = inGame ? (renodx ? Dlss5PackageInstaller.Describe(game, runtimeDirs) : Loc.T("dlss5.nr.in_game"))
+                   : misplaced ? Loc.T("dlss5.nr.misplaced_detail")
                    : renodx ? Loc.T("dlss5.nr.in_package")
                    : inDriver ? Loc.T("dlss5.nr.in_driver") : Loc.T("common.absent"),
             Fix = renodx ? PrereqFix.InstallDlss5Addon
                 : inDriver ? PrereqFix.AdoptNeuralRuntime : PrereqFix.None,
             Hint = inGame ? null
+                 : misplaced ? Loc.T("dlss5.nr.misplaced")
                  : renodx ? Loc.T("dlss5.nr.hint_package")
                  : inDriver ? Loc.T("dlss5.nr.hint_driver") : Loc.T("dlss5.nr.hint_absent")
         });
@@ -263,10 +273,30 @@ public sealed class Dlss5Service
         {
             var dir = DllInstaller.TargetDirectory(game);
 
+            // Streamline complet, a l'endroit meme ou le jeu le charge.
+            var slMissing = runtimeDirs
+                .SelectMany(d => Dlss5PackageInstaller.RequiredFiles
+                    .Where(r => !r.Equals(NeuralRuntime, StringComparison.OrdinalIgnoreCase)
+                                && !File.Exists(Path.Combine(d, r))))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var interposer = runtimeDirs.Select(d => Path.Combine(d, "sl.interposer.dll")).FirstOrDefault(File.Exists);
+
+            checks.Add(new PrereqCheck
+            {
+                Label = "STREAMLINE",
+                State = slMissing.Count == 0 ? UiStatus.Ready : UiStatus.Error,
+                Detail = slMissing.Count == 0 && interposer is not null
+                    ? $"{DllDetector.ReadProductVersion(interposer) ?? DllDetector.ReadVersion(interposer)} · {Dlss5PackageInstaller.Describe(game, runtimeDirs)}"
+                    : string.Join(", ", slMissing),
+                Fix = slMissing.Count == 0 ? PrereqFix.None : PrereqFix.InstallDlss5Addon,
+                Hint = slMissing.Count == 0 ? null : Loc.T("dlss5.sl.hint")
+            });
+
             // La signature du runtime en place : un runtime repatche fonctionne parfois,
             // mais plus rien ne permet de savoir d'ou il vient.
-            var nr = Path.Combine(dir, NeuralRuntime);
-            if (File.Exists(nr))
+            var nr = runtimeDirs.Select(d => Path.Combine(d, NeuralRuntime)).FirstOrDefault(File.Exists);
+            if (nr is not null)
             {
                 // Signe par NVIDIA (RTX 50), ou build repatchee a l'empreinte connue (RTX 20-40).
                 var trusted = Dlss5PackageInstaller.IsTrustedRuntime(nr);

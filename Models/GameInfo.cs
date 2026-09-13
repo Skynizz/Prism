@@ -24,6 +24,13 @@ public sealed class GameInfo : ObservableObject
     /// <summary>DLL remplacables trouvees dans l'arborescence du jeu.</summary>
     public List<InstalledDll> Dlls { get; } = new();
 
+    /// <summary>
+    /// Dossiers contenant sl.interposer.dll. Streamline charge ses plugins et les DLL NGX a
+    /// cote de l'interposer : c'est la, et pas forcement a cote de l'executable, que la pile
+    /// DLSS 5 doit etre posee.
+    /// </summary>
+    public List<string> StreamlineDirectories { get; } = new();
+
     /// <summary>Presence de sl.interposer.dll — le jeu embarque Streamline, donc DLSS-G est integrable.</summary>
     public bool HasStreamline { get; set; }
 

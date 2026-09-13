@@ -9,8 +9,12 @@ namespace Prism.Services;
 /// </summary>
 public static class DllDetector
 {
-    /// <summary>Profondeur maximale de descente : au-dela on perd du temps dans les assets.</summary>
-    private const int MaxDepth = 7;
+    /// <summary>
+    /// Profondeur maximale de descente. Unreal range Streamline sous
+    /// Engine\Plugins\Runtime\Nvidia\StreamlineCore\Binaries\ThirdParty\Win64, soit 8 niveaux :
+    /// a 7, ce dossier n'etait jamais vu et la pile DLSS 5 partait a cote de l'executable.
+    /// </summary>
+    private const int MaxDepth = 10;
 
     private static readonly Dictionary<string, DllKind> Known = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -68,6 +72,7 @@ public static class DllDetector
         game.HasDlss5Bridge = false;
         game.HasDlss5Addon = false;
         game.StreamlineVersion = null;
+        game.StreamlineDirectories.Clear();
         game.Api = GameApi.Unknown;
         game.Engine = null;
 
@@ -100,6 +105,7 @@ public static class DllDetector
             if (name.Equals("sl.interposer.dll", StringComparison.OrdinalIgnoreCase))
             {
                 game.HasStreamline = true;
+                game.StreamlineDirectories.Add(Path.GetDirectoryName(file)!);
                 // MFGAdaUnlock exige un paquet Streamline exact : la version compte.
                 game.StreamlineVersion = ReadProductVersion(file) ?? ReadVersion(file);
                 sawD3D12 = true;

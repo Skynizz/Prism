@@ -6,15 +6,17 @@ namespace Prism.Services;
 /// <summary>
 /// RenoDX DLSS 5, paquet complet : l'addon et toute la pile runtime qui va avec.
 ///
-/// Trois temps, dans cet ordre et sans raccourci :
-///  1. tout telecharger et extraire, sans toucher au jeu ;
+/// Quatre temps, dans cet ordre et sans raccourci :
+///  1. tout telecharger et extraire, sans toucher au jeu, et refuser un paquet auquel il
+///     manque Streamline ou le runtime neural ;
 ///  2. verifier la signature Authenticode de <i>chaque</i> DLL — une seule qui n'est
 ///     pas signee par NVIDIA et rien n'est ecrit ;
-///  3. poser l'ensemble, originaux sauvegardes, ajouts inscrits au registre, puis
-///     inscrire l'addon en chargement precoce.
+///  3. poser l'ensemble au bon endroit : l'addon a cote de ReShade, Streamline et les DLL
+///     NGX la ou le jeu charge Streamline ; originaux sauvegardes, ajouts inscrits ;
+///  4. relire chaque fichier pose et le comparer, empreinte a empreinte, a la source.
 ///
-/// Un paquet partiel est exactement ce qui produit « NO NR FEATURE MATCHED » en jeu :
-/// c'est pour cela que la pile est posee en entier.
+/// Un paquet partiel, ou un nvngx_dlssnr.dll pose loin de sl.interposer.dll, est
+/// exactement ce qui produit « NO NR FEATURE MATCHED » en jeu.
 /// </summary>
 public sealed class Dlss5PackageInstaller
 {
@@ -26,12 +28,38 @@ public sealed class Dlss5PackageInstaller
     public const string AddonFileName = "renodx-dlss5.addon64";
     public const string NeuralRuntimeFile = "nvngx_dlssnr.dll";
 
+    /// <summary>Fichiers sans lesquels la pile ne demarre pas : absents du paquet, rien n'est ecrit.</summary>
+    public static readonly string[] RequiredFiles = { "sl.interposer.dll", "sl.common.dll", NeuralRuntimeFile };
+
     /// <summary>
     /// Runtime neural de confiance : signe par NVIDIA, ou build repatchee dont
     /// l'empreinte figure dans <see cref="NeuralRuntimePins"/>.
     /// </summary>
     public static bool IsTrustedRuntime(string path)
         => Authenticode.Verify(path).IsNvidia || NeuralRuntimePins.IsKnown(DownloadService.Sha256Cached(path));
+
+    /// <summary>
+    /// Dossiers d'ou le jeu charge Streamline. Streamline cherche ses plugins et les DLL NGX a
+    /// cote de sl.interposer.dll — a cote de l'executable par defaut, ou dans le chemin que le
+    /// jeu lui donne. Chacun de ces dossiers recoit la pile entiere. Un jeu sans Streamline la
+    /// recoit a cote de son executable.
+    /// </summary>
+    public static IReadOnlyList<string> RuntimeDirectories(GameInfo game)
+    {
+        var dirs = game.StreamlineDirectories
+            .Where(Directory.Exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return dirs.Count > 0 ? dirs : new[] { DllInstaller.TargetDirectory(game) };
+    }
+
+    /// <summary>Dossiers relatifs au jeu, pour l'affichage : "bin\x64", ou le nom du dossier racine.</summary>
+    public static string Describe(GameInfo game, IEnumerable<string> dirs) =>
+        string.Join(", ", dirs.Select(d =>
+        {
+            var relative = Path.GetRelativePath(game.InstallDir, d);
+            return relative == "." ? Path.GetFileName(d.TrimEnd('\\', '/')) : relative;
+        }));
 
     private readonly RhiRepoService _rhi;
     private readonly DownloadService _downloads;
@@ -65,12 +93,15 @@ public sealed class Dlss5PackageInstaller
         if (missing.Count > 0)
             return new InstallResult(false, Loc.T("dlss5.err.missing", string.Join(", ", missing)));
 
-        var dir = DllInstaller.TargetDirectory(game);
-        if (!Directory.Exists(dir)) return new InstallResult(false, Loc.T("err.target_missing"));
+        // L'addon va a cote de ReShade, donc de l'executable ; la pile, la ou Streamline est charge.
+        var exeDir = DllInstaller.TargetDirectory(game);
+        if (!Directory.Exists(exeDir)) return new InstallResult(false, Loc.T("err.target_missing"));
         if (!game.HasReShade) return new InstallResult(false, Loc.T("hdr.err.reshade"));
 
+        var runtimeDirs = RuntimeDirectories(game);
+
         // Un seul addon neural par dossier. Un autre, pose a la main, n'est pas le notre.
-        var others = Directory.EnumerateFiles(dir, "renodx-dlss5*.addon64")
+        var others = Directory.EnumerateFiles(exeDir, "renodx-dlss5*.addon64")
             .Where(p => !Path.GetFileName(p).Equals(AddonFileName, StringComparison.OrdinalIgnoreCase))
             .ToList();
         var foreign = others.Where(p => !_deployments.WasDeployed(p)).Select(Path.GetFileName).ToList();
@@ -114,6 +145,16 @@ public sealed class Dlss5PackageInstaller
                 }
             }
 
+            // Streamline et le runtime neural sont indispensables : sans eux, pas de DLSS 5.
+            var absent = RequiredFiles
+                .Where(req => files.All(f => !f.Name.Equals(req, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            if (absent.Count > 0)
+            {
+                Log.Error(Src, $"Paquet incomplet, rien n'est ecrit : {string.Join(", ", absent)}");
+                return new InstallResult(false, Loc.T("dlss5.err.pack_incomplete", string.Join(", ", absent)));
+            }
+
             // 2. Signatures : tout ou rien.
             foreach (var f in files.Where(f => f.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
             {
@@ -139,38 +180,74 @@ public sealed class Dlss5PackageInstaller
             foreach (var old in others) RemoveDeployed(old);
 
             var written = 0;
+            var placed = new List<(string Source, string Dest)>();
+
             foreach (var f in files)
             {
-                var dest = Path.Combine(dir, f.Name);
-                var existed = File.Exists(dest);
-                var ours = _deployments.WasDeployed(dest);
+                var isAddon = f.Name.EndsWith(".addon64", StringComparison.OrdinalIgnoreCase);
+                foreach (var dir in isAddon ? new[] { exeDir } : runtimeDirs)
+                {
+                    var dest = Path.Combine(dir, f.Name);
+                    var existed = File.Exists(dest);
+                    var ours = _deployments.WasDeployed(dest);
 
-                if (existed && !ours) _backups.Capture(game, dest, Origin);
+                    if (existed && !ours) _backups.Capture(game, dest, Origin);
 
-                DllInstaller.ClearReadOnly(dest);
-                File.Copy(f.Source, dest, overwrite: true);
+                    DllInstaller.ClearReadOnly(dest);
+                    File.Copy(f.Source, dest, overwrite: true);
 
-                // Un ajout, ou une nouvelle version d'un ajout : le registre suit l'empreinte reelle.
-                if (!existed || ours)
-                    _deployments.Record(game, dest, ComponentOf(f.From.Tag), f.From.Version,
-                        default, "", DownloadService.Sha256Cached(dest), Origin);
+                    // Un ajout, ou une nouvelle version d'un ajout : le registre suit l'empreinte reelle.
+                    if (!existed || ours)
+                        _deployments.Record(game, dest, ComponentOf(f.From.Tag), f.From.Version,
+                            default, "", DownloadService.Sha256Cached(dest), Origin);
 
-                written++;
+                    placed.Add((f.Source, dest));
+                    written++;
+                }
+            }
+
+            // Copies de la pile que Prism avait posees hors des dossiers de Streamline : jamais
+            // chargees, elles ne font que tromper le diagnostic. Seules les notres sont retirees.
+            var strays = files
+                .Where(f => f.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Select(f => Path.Combine(exeDir, f.Name))
+                .Where(p => !runtimeDirs.Contains(Path.GetDirectoryName(p)!, StringComparer.OrdinalIgnoreCase)
+                            && File.Exists(p) && _deployments.WasDeployed(p))
+                .ToList();
+            foreach (var stray in strays)
+            {
+                RemoveDeployed(stray);
+                Log.Info(Src, $"Copie hors Streamline retiree : {stray}");
             }
 
             // Un compilateur de shaders de Windows 8.1 dans le dossier du jeu fait echouer
             // l'addon (« unrecognized compiler target 'cs_5_1' »).
-            if (ShaderCompiler.IsOutdated(dir) && ShaderCompiler.Upgrade(game, dir, _backups, Origin)) written++;
+            if (ShaderCompiler.IsOutdated(exeDir) && ShaderCompiler.Upgrade(game, exeDir, _backups, Origin)) written++;
 
-            var early = ReShadeConfig.EnableEarlyLoading(dir, AddonFileName);
+            var early = ReShadeConfig.EnableEarlyLoading(exeDir, AddonFileName);
+
+            // 4. Chaque fichier pose est relu : present, et identique a la source.
+            var bad = placed
+                .Where(p => !File.Exists(p.Dest)
+                            || !string.Equals(DownloadService.Sha256Cached(p.Dest),
+                                DownloadService.Sha256Cached(p.Source), StringComparison.OrdinalIgnoreCase))
+                .Select(p => Path.GetRelativePath(game.InstallDir, p.Dest))
+                .ToList();
 
             DllDetector.Inspect(game);
             progress?.Report(100);
 
-            var msg = Loc.T("dlss5.ok.installed", addon.Version, written);
+            if (bad.Count > 0)
+            {
+                Log.Error(Src, $"Verification apres pose echouee : {string.Join(", ", bad)}");
+                return new InstallResult(false, Loc.T("dlss5.err.verify", string.Join(", ", bad)), written);
+            }
+
+            var where = Describe(game, runtimeDirs);
+            var msg = Loc.T("dlss5.ok.installed", addon.Version, written) + " " + Loc.T("dlss5.ok.location", where);
             if (!early.Success) msg += " " + early.Message;
 
-            Log.Info(Src, $"RenoDX DLSS 5 {addon.Version} : {written} fichier(s) poses dans {dir}");
+            Log.Info(Src, $"RenoDX DLSS 5 {addon.Version} : {written} fichier(s) poses et verifies, pile dans {where}");
             return new InstallResult(true, msg, written);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
