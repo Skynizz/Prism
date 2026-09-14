@@ -57,13 +57,13 @@
     <FontFamily x:Key="FontUiTight">Segoe UI Variable Display, Segoe UI Variable, Inter Display, Segoe UI, sans-serif</FontFamily>
     <FontFamily x:Key="FontMono">Cascadia Mono, JetBrains Mono, Consolas, monospace</FontFamily>
 
-    <sys:Double x:Key="SzMicro">10.5</sys:Double>
-    <sys:Double x:Key="SzLabel">11</sys:Double>
-    <sys:Double x:Key="SzSmall">12.5</sys:Double>
-    <sys:Double x:Key="SzBody">13.5</sys:Double>
-    <sys:Double x:Key="SzStrong">14</sys:Double>
-    <sys:Double x:Key="SzTitle">21</sys:Double>
-    <sys:Double x:Key="SzDisplay">28</sys:Double>
+    <sys:Double x:Key="SzMicro">11.5</sys:Double>
+    <sys:Double x:Key="SzLabel">12</sys:Double>
+    <sys:Double x:Key="SzSmall">13.5</sys:Double>
+    <sys:Double x:Key="SzBody">14.5</sys:Double>
+    <sys:Double x:Key="SzStrong">15.5</sys:Double>
+    <sys:Double x:Key="SzTitle">22</sys:Double>
+    <sys:Double x:Key="SzDisplay">30</sys:Double>
 
     <!-- ==================================================== Formes -->
     <!-- Arrondis retenus : precision materielle, pas bulles d'application mobile. -->
@@ -75,7 +75,7 @@
     <!-- ================================================ Gabarit -->
     <GridLength x:Key="TitleBarH">40</GridLength>
     <GridLength x:Key="StatusBarH">30</GridLength>
-    <GridLength x:Key="RailW">216</GridLength>
+    <GridLength x:Key="RailW">236</GridLength>
     <Thickness x:Key="SysBarPad">24,14</Thickness>
     <sys:Double x:Key="NavRowH">34</sys:Double>
 

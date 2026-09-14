@@ -8,226 +8,233 @@
     <UserControl.Resources>
         <!-- Ligne de capacite : etat + intitule + detail technique. -->
         <Style x:Key="CapRow" TargetType="Grid">
-            <Setter Property="Height" Value="30" />
+            <Setter Property="Height" Value="38" />
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer>
-        <StackPanel Margin="20,18,20,24">
+    <!--
+        La page occupe toute la hauteur visible : les panneaux gardent leur taille, la liste
+        des jeux prend le reste. Une fenetre basse fait defiler la page entiere.
+    -->
+    <ScrollViewer x:Name="Scroll">
+        <Grid MinHeight="{Binding ViewportHeight, ElementName=Scroll}">
+            <Grid Margin="24,20,24,24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="260" />
+                </Grid.RowDefinitions>
 
-            <TextBlock Text="{l:T ov.title}" Style="{StaticResource T.Display}" />
-            <TextBlock Style="{StaticResource T.Prose}" MaxWidth="720" HorizontalAlignment="Left"
-                       Margin="0,5,0,0"
-                       Text="{l:T ov.intro}" />
+                <StackPanel Grid.Row="0">
+                    <TextBlock Text="{l:T ov.title}" Style="{StaticResource T.Display}" />
+                    <TextBlock Style="{StaticResource T.Prose}" MaxWidth="760" HorizontalAlignment="Left"
+                               Margin="0,6,0,0"
+                               Text="{l:T ov.intro}" />
+                </StackPanel>
 
-            <!-- ============================================ TROIS PANNEAUX -->
-            <Grid Margin="0,18,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="300" />
-                    <ColumnDefinition Width="14" />
-                    <ColumnDefinition Width="*" MinWidth="300" />
-                    <ColumnDefinition Width="14" />
-                    <ColumnDefinition Width="*" MinWidth="280" />
-                </Grid.ColumnDefinitions>
+                <!-- ============================================ TROIS PANNEAUX -->
+                <!-- Trois colonnes en grand, deux puis une quand la largeur manque. -->
+                <l:AdaptiveColumns Grid.Row="1" Margin="0,18,0,0" MinColumnWidth="340" MaxColumns="3"
+                                   Gap="16" EqualRows="True">
 
-                <!-- SYSTEME -->
-                <HeaderedContentControl Grid.Column="0" Style="{StaticResource S.Box}" Header="{l:T ov.system}">
-                    <StackPanel Margin="12,10,12,12">
-                        <c:Field Label="{l:T label.adapter}"     Value="{Binding Gpu.Name}" />
-                        <c:Field Label="{l:T label.architecture}" Value="{Binding Gpu.GenerationLabel}" />
-                        <c:Field Label="{l:T label.driver}"      Value="{Binding DriverLabel}" Mono="True" />
-                        <c:Field Label="WDDM"        Value="{Binding Gpu.DriverVersion}" Mono="True"
-                                 Visibility="{Binding IsExpert, Converter={StaticResource BoolVis}}" />
-                        <c:Field Label="VRAM"        Value="{Binding VramLabel}" Mono="True" />
-                        <c:Field Label="API"         Value="{Binding ApiLabel}" />
-                        <c:Field Label="{l:T label.display}"     Value="{Binding Display.Summary}" Mono="True" />
-                    </StackPanel>
-                </HeaderedContentControl>
-
-                <!-- CAPACITES DLSS -->
-                <HeaderedContentControl Grid.Column="2" Style="{StaticResource S.Box}" Header="{l:T ov.capability}">
-                    <StackPanel Margin="12,8,12,12">
-
-                        <Grid Style="{StaticResource CapRow}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <c:StatusDot Status="{Binding SrStatus}" Text="" />
-                                <TextBlock Text="Super Resolution" Style="{StaticResource T.Body}"
-                                           FontSize="{DynamicResource SzSmall}" Margin="8,0,0,0"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding DlssRuntimeLabel}" Style="{StaticResource T.Mono}"
-                                       Foreground="{DynamicResource BrFg2}"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
-                        </Grid>
-                        <Border Style="{StaticResource S.HRule}" />
-
-                        <Grid Style="{StaticResource CapRow}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <c:StatusDot Status="{Binding FgStatus}" Text="" />
-                                <TextBlock Text="{l:T term.framegen}" Style="{StaticResource T.Body}"
-                                           FontSize="{DynamicResource SzSmall}" Margin="8,0,0,0"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding DlssGRuntimeLabel}" Style="{StaticResource T.Mono}"
-                                       Foreground="{DynamicResource BrFg2}"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
-                        </Grid>
-                        <Border Style="{StaticResource S.HRule}" />
-
-                        <Grid Style="{StaticResource CapRow}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <c:StatusDot Status="{Binding MfgStatus}" Text="" />
-                                <TextBlock Text="Multi Frame Generation" Style="{StaticResource T.Body}"
-                                           FontSize="{DynamicResource SzSmall}" Margin="8,0,0,0"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding MfgDetail}" Style="{StaticResource T.Mono}"
-                                       Foreground="{DynamicResource BrFg2}"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
-                        </Grid>
-                        <Border Style="{StaticResource S.HRule}" />
-
-                        <Grid Style="{StaticResource CapRow}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <c:StatusDot Status="{Binding SrStatus}" Text="" />
-                                <TextBlock Text="Neural Rendering" Style="{StaticResource T.Body}"
-                                           FontSize="{DynamicResource SzSmall}" Margin="8,0,0,0"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding DlssDRuntimeLabel}" Style="{StaticResource T.Mono}"
-                                       Foreground="{DynamicResource BrFg2}"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
-                        </Grid>
-
-                        <TextBlock Text="{Binding CapabilitySummary}" Style="{StaticResource T.Prose}"
-                                   Margin="0,12,0,0" />
-                    </StackPanel>
-                </HeaderedContentControl>
-
-                <!-- JEU ACTIF -->
-                <HeaderedContentControl Grid.Column="4" Style="{StaticResource S.Box}" Header="{l:T ov.active}">
-                    <StackPanel Margin="12,10,12,12">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <c:StatusDot Status="{Binding Detail.Status}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedGame.Name}" Style="{StaticResource T.Strong}"
-                                       Margin="10,0,0,0" VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis" />
+                    <!-- SYSTEME -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T ov.system}">
+                        <StackPanel Margin="16,12,16,14">
+                            <c:Field Label="{l:T label.adapter}"     Value="{Binding Gpu.Name}" />
+                            <c:Field Label="{l:T label.architecture}" Value="{Binding Gpu.GenerationLabel}" />
+                            <c:Field Label="{l:T label.driver}"      Value="{Binding DriverLabel}" Mono="True" />
+                            <c:Field Label="WDDM"        Value="{Binding Gpu.DriverVersion}" Mono="True"
+                                     Visibility="{Binding IsExpert, Converter={StaticResource BoolVis}}" />
+                            <c:Field Label="VRAM"        Value="{Binding VramLabel}" Mono="True" />
+                            <c:Field Label="API"         Value="{Binding ApiLabel}" />
+                            <c:Field Label="{l:T label.display}"     Value="{Binding Display.Summary}" Mono="True" />
                         </StackPanel>
+                    </HeaderedContentControl>
 
-                        <c:Field Label="{l:T col.platform}" Value="{Binding Detail.PlatformLabel}" />
-                        <c:Field Label="{l:T label.engine}"   Value="{Binding Detail.EngineLabel}" />
-                        <c:Field Label="API"      Value="{Binding Detail.ApiLabel}" />
-                        <c:Field Label="{l:T label.binary}"   Value="{Binding Detail.ExecutableName}" Mono="True" />
-                        <c:Field Label="{l:T label.injection}" Value="{Binding Detail.InjectionMethod}" />
+                    <!-- CAPACITES DLSS -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T ov.capability}">
+                        <StackPanel Margin="16,8,16,14">
 
-                        <Button Content="{l:T btn.open_profile}" Style="{StaticResource Btn}" Margin="0,12,0,0"
-                                HorizontalAlignment="Stretch"
-                                Command="{Binding GoToCommand}" CommandParameter="1" />
+                            <Grid Style="{StaticResource CapRow}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <c:StatusDot Status="{Binding SrStatus}" Text="" />
+                                    <TextBlock Text="Super Resolution" Style="{StaticResource T.Body}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding DlssRuntimeLabel}" Style="{StaticResource T.Mono}"
+                                           Foreground="{DynamicResource BrFg2}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Style="{StaticResource S.HRule}" />
+
+                            <Grid Style="{StaticResource CapRow}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <c:StatusDot Status="{Binding FgStatus}" Text="" />
+                                    <TextBlock Text="{l:T term.framegen}" Style="{StaticResource T.Body}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding DlssGRuntimeLabel}" Style="{StaticResource T.Mono}"
+                                           Foreground="{DynamicResource BrFg2}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Style="{StaticResource S.HRule}" />
+
+                            <Grid Style="{StaticResource CapRow}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <c:StatusDot Status="{Binding MfgStatus}" Text="" />
+                                    <TextBlock Text="Multi Frame Generation" Style="{StaticResource T.Body}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding MfgDetail}" Style="{StaticResource T.Mono}"
+                                           Foreground="{DynamicResource BrFg2}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Style="{StaticResource S.HRule}" />
+
+                            <Grid Style="{StaticResource CapRow}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <c:StatusDot Status="{Binding SrStatus}" Text="" />
+                                    <TextBlock Text="Neural Rendering" Style="{StaticResource T.Body}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding DlssDRuntimeLabel}" Style="{StaticResource T.Mono}"
+                                           Foreground="{DynamicResource BrFg2}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <TextBlock Text="{Binding CapabilitySummary}" Style="{StaticResource T.Prose}"
+                                       Margin="0,12,0,0" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- JEU ACTIF -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T ov.active}">
+                        <DockPanel Margin="16,12,16,14">
+                            <Button DockPanel.Dock="Bottom" Content="{l:T btn.open_profile}" Style="{StaticResource Btn.Primary}"
+                                    Margin="0,14,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                                    Command="{Binding GoToCommand}" CommandParameter="1" />
+
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <c:StatusDot Status="{Binding Detail.Status}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding SelectedGame.Name}" Style="{StaticResource T.Title}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+
+                                <c:Field Label="{l:T col.platform}" Value="{Binding Detail.PlatformLabel}" />
+                                <c:Field Label="{l:T label.engine}"   Value="{Binding Detail.EngineLabel}" />
+                                <c:Field Label="API"      Value="{Binding Detail.ApiLabel}" />
+                                <c:Field Label="{l:T label.binary}"   Value="{Binding Detail.ExecutableName}" Mono="True" />
+                                <c:Field Label="{l:T label.injection}" Value="{Binding Detail.InjectionMethod}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </HeaderedContentControl>
+                </l:AdaptiveColumns>
+
+                <!-- ================================================= PIPELINE -->
+                <HeaderedContentControl Grid.Row="2" Style="{StaticResource S.Box}" Margin="0,16,0,0"
+                                        Header="{l:T ov.pipeline}">
+                    <HeaderedContentControl.Tag>
+                        <TextBlock Text="{Binding SelectedGame.Name}" Style="{StaticResource T.Ter}" />
+                    </HeaderedContentControl.Tag>
+
+                    <StackPanel Margin="16,16,16,8">
+                        <c:Pipeline Stages="{Binding Detail.Pipeline}" />
+                        <TextBlock Style="{StaticResource T.Prose}" Margin="0,4,0,6"
+                                   Text="{l:T ov.pipeline_hint}" />
                     </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- ========================================== JEUX DETECTES -->
+                <!-- Occupe toute la hauteur restante : plus de vide sous la liste. -->
+                <HeaderedContentControl Grid.Row="3" Style="{StaticResource S.Box}" Margin="0,16,0,0"
+                                        VerticalAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                        Header="{l:T ov.detected}">
+                    <HeaderedContentControl.Tag>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding GameCountLabel}" Style="{StaticResource T.Ter}"
+                                       VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <Button Content="{l:T btn.view_all}" Style="{StaticResource Btn.Quiet}"
+                                    Command="{Binding GoToCommand}" CommandParameter="1" />
+                        </StackPanel>
+                    </HeaderedContentControl.Tag>
+
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource S.TableHead}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3*" />
+                                    <ColumnDefinition Width="*" MinWidth="110" />
+                                    <ColumnDefinition Width="2*" MinWidth="260" />
+                                    <ColumnDefinition Width="*" MinWidth="120" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{l:T col.title}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="1" Text="{l:T col.platform}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="2" Text="{l:T col.capabilities}" Style="{StaticResource S.ColHeader}" />
+                                <TextBlock Grid.Column="3" Text="{l:T col.state}" Style="{StaticResource S.ColHeader}" />
+                            </Grid>
+                        </Border>
+
+                        <ListBox ItemsSource="{Binding GamesView}" SelectedItem="{Binding SelectedGame}"
+                                 Style="{StaticResource S.Rows}"
+                                 ItemContainerStyle="{StaticResource S.Row}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="42">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="3*" />
+                                            <ColumnDefinition Width="*" MinWidth="110" />
+                                            <ColumnDefinition Width="2*" MinWidth="260" />
+                                            <ColumnDefinition Width="*" MinWidth="120" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                   Style="{StaticResource T.Body}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   Margin="0,0,12,0" />
+
+                                        <TextBlock Grid.Column="1" Text="{Binding Platform}"
+                                                   Style="{StaticResource T.Sec}" VerticalAlignment="Center" />
+
+                                        <WrapPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding HasDlss, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="DLSS" Style="{StaticResource T.Tag}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding HasDlssG, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="FG" Style="{StaticResource T.Tag}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding HasDlssD, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="NR" Style="{StaticResource T.Tag}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}" BorderBrush="{DynamicResource BrAccentDim}"
+                                                    Visibility="{Binding HasMfgUnlock, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="MFG" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrAccent}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    BorderBrush="{DynamicResource BrAccentDim}"
+                                                    Visibility="{Binding HasDlss5, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="DLSS5" Style="{StaticResource T.Tag}"
+                                                           Foreground="{DynamicResource BrAccent}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding HasReShade, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="RESHADE" Style="{StaticResource T.Tag}" /></Border>
+                                            <Border Style="{StaticResource S.Tag}"
+                                                    Visibility="{Binding HasRenoDx, Converter={StaticResource BoolVis}}">
+                                                <TextBlock Text="HDR" Style="{StaticResource T.Tag}" /></Border>
+                                        </WrapPanel>
+
+                                        <TextBlock Grid.Column="3" Style="{StaticResource T.Label}"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource BrFg2}" Text="{Binding StateLabel}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
                 </HeaderedContentControl>
             </Grid>
-
-            <!-- ================================================= PIPELINE -->
-            <HeaderedContentControl Style="{StaticResource S.Box}" Margin="0,14,0,0"
-                                    Header="{l:T ov.pipeline}">
-                <HeaderedContentControl.Tag>
-                    <TextBlock Text="{Binding SelectedGame.Name}" Style="{StaticResource T.Ter}" />
-                </HeaderedContentControl.Tag>
-
-                <StackPanel Margin="14,14,14,6">
-                    <c:Pipeline Stages="{Binding Detail.Pipeline}" />
-                    <TextBlock Style="{StaticResource T.Prose}" Margin="0,4,0,6"
-                               Text="{l:T ov.pipeline_hint}" />
-                </StackPanel>
-            </HeaderedContentControl>
-
-            <!-- ========================================== JEUX DETECTES -->
-            <HeaderedContentControl Style="{StaticResource S.Box}" Margin="0,14,0,0"
-                                    Header="{l:T ov.detected}">
-                <HeaderedContentControl.Tag>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding GameCountLabel}" Style="{StaticResource T.Ter}"
-                                   VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <Button Content="{l:T btn.view_all}" Style="{StaticResource Btn.Quiet}" Height="22"
-                                Command="{Binding GoToCommand}" CommandParameter="1" />
-                    </StackPanel>
-                </HeaderedContentControl.Tag>
-
-                <StackPanel>
-                    <Border Style="{StaticResource S.TableHead}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="110" />
-                                <ColumnDefinition Width="230" />
-                                <ColumnDefinition Width="110" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{l:T col.title}" Style="{StaticResource S.ColHeader}" />
-                            <TextBlock Grid.Column="1" Text="{l:T col.platform}" Style="{StaticResource S.ColHeader}" />
-                            <TextBlock Grid.Column="2" Text="{l:T col.capabilities}" Style="{StaticResource S.ColHeader}" />
-                            <TextBlock Grid.Column="3" Text="{l:T col.state}" Style="{StaticResource S.ColHeader}" />
-                        </Grid>
-                    </Border>
-
-                    <ListBox ItemsSource="{Binding GamesView}" SelectedItem="{Binding SelectedGame}"
-                             Style="{StaticResource S.Rows}"
-                             ItemContainerStyle="{StaticResource S.Row}"
-                             MaxHeight="280">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Height="34">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="110" />
-                                        <ColumnDefinition Width="230" />
-                                        <ColumnDefinition Width="110" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
-                                               Style="{StaticResource T.Body}" FontSize="{DynamicResource SzSmall}"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                               Margin="0,0,12,0" />
-
-                                    <TextBlock Grid.Column="1" Text="{Binding Platform}"
-                                               Style="{StaticResource T.Ter}" VerticalAlignment="Center" />
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Style="{StaticResource S.Tag}"
-                                                Visibility="{Binding HasDlss, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="DLSS" Style="{StaticResource T.Tag}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}"
-                                                Visibility="{Binding HasDlssG, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="FG" Style="{StaticResource T.Tag}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}"
-                                                Visibility="{Binding HasDlssD, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="NR" Style="{StaticResource T.Tag}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}" BorderBrush="{DynamicResource BrAccentDim}"
-                                                Visibility="{Binding HasMfgUnlock, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="MFG" Style="{StaticResource T.Tag}"
-                                                       Foreground="{DynamicResource BrAccent}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}"
-                                                BorderBrush="{DynamicResource BrAccentDim}"
-                                                Visibility="{Binding HasDlss5, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="DLSS5" Style="{StaticResource T.Tag}"
-                                                       Foreground="{DynamicResource BrAccent}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}"
-                                                Visibility="{Binding HasReShade, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="RESHADE" Style="{StaticResource T.Tag}" /></Border>
-                                        <Border Style="{StaticResource S.Tag}"
-                                                Visibility="{Binding HasRenoDx, Converter={StaticResource BoolVis}}">
-                                            <TextBlock Text="HDR" Style="{StaticResource T.Tag}" /></Border>
-                                    </StackPanel>
-
-                                    <TextBlock Grid.Column="3" Style="{StaticResource T.Label}"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource BrFg3}" Text="{Binding StateLabel}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
-            </HeaderedContentControl>
-
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

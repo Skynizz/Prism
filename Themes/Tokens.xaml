@@ -55,29 +55,29 @@
     <FontFamily x:Key="FontUiTight">Inter Display, Segoe UI Variable Display, Segoe UI, sans-serif</FontFamily>
     <FontFamily x:Key="FontMono">Cascadia Mono, JetBrains Mono, Consolas, monospace</FontFamily>
 
-    <sys:Double x:Key="SzMicro">10</sys:Double>
-    <sys:Double x:Key="SzLabel">10.5</sys:Double>
-    <sys:Double x:Key="SzSmall">11.5</sys:Double>
-    <sys:Double x:Key="SzBody">12.5</sys:Double>
-    <sys:Double x:Key="SzStrong">13.5</sys:Double>
-    <sys:Double x:Key="SzTitle">16</sys:Double>
-    <sys:Double x:Key="SzDisplay">20</sys:Double>
+    <sys:Double x:Key="SzMicro">11</sys:Double>
+    <sys:Double x:Key="SzLabel">11.5</sys:Double>
+    <sys:Double x:Key="SzSmall">12.5</sys:Double>
+    <sys:Double x:Key="SzBody">13.5</sys:Double>
+    <sys:Double x:Key="SzStrong">14.5</sys:Double>
+    <sys:Double x:Key="SzTitle">18</sys:Double>
+    <sys:Double x:Key="SzDisplay">24</sys:Double>
 
     <!-- ==================================================== Formes -->
     <!-- Rayons volontairement petits : l'arrondi genereux fait "application grand
          public", pas outil technique. -->
     <CornerRadius x:Key="RdCtrl">2</CornerRadius>
     <CornerRadius x:Key="RdPanel">3</CornerRadius>
-    <sys:Double x:Key="RowH">30</sys:Double>
-    <sys:Double x:Key="CtrlH">26</sys:Double>
+    <sys:Double x:Key="RowH">32</sys:Double>
+    <sys:Double x:Key="CtrlH">28</sys:Double>
 
     <!-- ================================================ Gabarit -->
     <!-- Dimensions de la coquille, pour qu'un theme puisse l'aerer sans toucher aux vues. -->
-    <GridLength x:Key="TitleBarH">32</GridLength>
-    <GridLength x:Key="StatusBarH">26</GridLength>
-    <GridLength x:Key="RailW">176</GridLength>
-    <Thickness x:Key="SysBarPad">16,9</Thickness>
-    <sys:Double x:Key="NavRowH">30</sys:Double>
+    <GridLength x:Key="TitleBarH">34</GridLength>
+    <GridLength x:Key="StatusBarH">28</GridLength>
+    <GridLength x:Key="RailW">220</GridLength>
+    <Thickness x:Key="SysBarPad">18,10</Thickness>
+    <sys:Double x:Key="NavRowH">32</sys:Double>
 
     <!-- ================================================ Durees -->
     <!-- Rien au-dela de 160 ms : l'application doit sembler instantanee. -->

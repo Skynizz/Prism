@@ -61,11 +61,12 @@
         </StackPanel>
 
         <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
-            <Grid Margin="20,18,20,24">
+            <!-- Voies et reglages partagent la largeur : la colonne de droite grandit avec l'ecran. -->
+            <Grid Margin="24,20,24,24">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="480" />
+                    <ColumnDefinition Width="3*" MinWidth="460" />
                     <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="330" />
+                    <ColumnDefinition Width="2*" MinWidth="340" />
                 </Grid.ColumnDefinitions>
 
                 <!-- ================================================ VOIES -->
@@ -226,12 +227,13 @@
                                                 <TextBlock Text="{Binding Detail}" Style="{StaticResource T.Mono}"
                                                            Foreground="{DynamicResource BrFg}"
                                                            HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis" MaxWidth="150" />
+                                                           TextTrimming="CharacterEllipsis" Margin="120,0,0,0"
+                                                           ToolTip="{Binding Detail}" />
                                             </Grid>
                                             <TextBlock Text="{Binding Hint}" Style="{StaticResource T.Prose}"
                                                        Margin="13,4,0,0" />
                                             <Button Content="{Binding FixLabel}" Style="{StaticResource Btn}"
-                                                    Height="22" Margin="13,6,0,0" HorizontalAlignment="Left"
+                                                    Margin="13,6,0,0" HorizontalAlignment="Left"
                                                     Visibility="{Binding Actionable, Converter={StaticResource BoolVis}}"
                                                     Command="{Binding DataContext.Detail.FixPrereqCommand,
                                                               RelativeSource={RelativeSource AncestorType=UserControl}}"

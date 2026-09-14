@@ -63,7 +63,7 @@
 
         <!-- ================================================ RUBRIQUES -->
         <ScrollViewer>
-            <Grid Margin="22,18,22,24" MaxWidth="920" HorizontalAlignment="Left">
+            <Grid Margin="24,20,24,24">
 
                 <!-- ============================================== LANGUE -->
                 <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,

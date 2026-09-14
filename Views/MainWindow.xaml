@@ -5,7 +5,7 @@
         xmlns:v="clr-namespace:Prism.Views"
         xmlns:c="clr-namespace:Prism.Views.Controls"
         xmlns:m="clr-namespace:Prism.Models"
-        Title="Prism" Height="900" Width="1480" MinHeight="640" MinWidth="1180"
+        Title="Prism" Height="900" Width="1480" MinHeight="620" MinWidth="1024"
         Background="{DynamicResource BrBase}"
         Foreground="{DynamicResource BrFg}"
         FontFamily="{DynamicResource FontUi}"
@@ -44,7 +44,8 @@
 
     <Border x:Name="RootShell" Background="{DynamicResource BrBase}"
             BorderBrush="{DynamicResource BrLine}" BorderThickness="1">
-        <Grid>
+        <!-- Mis a l'echelle avec la fenetre : voir MainWindow.ApplyScale. -->
+        <Grid x:Name="ShellGrid">
             <Grid.RowDefinitions>
                 <RowDefinition Height="{DynamicResource TitleBarH}" />
                 <RowDefinition Height="Auto" />

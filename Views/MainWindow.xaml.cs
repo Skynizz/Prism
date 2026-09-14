@@ -28,6 +28,42 @@ public partial class MainWindow : Window
 
         StateChanged += OnStateChanged;
         Loaded += OnLoaded;
+        SizeChanged += (_, _) => ApplyScale();
+    }
+
+    /// <summary>Taille de fenetre pour laquelle l'interface est dessinee a l'echelle 1.</summary>
+    private const double BaseWidth = 1480, BaseHeight = 900;
+
+    /// <summary>Agrandissement maximal : 1,6 couvre un plein ecran 2560 × 1440.</summary>
+    private const double MaxScale = 1.6;
+
+    private double _scale = 1;
+
+    /// <summary>
+    /// Interface proportionnelle a la fenetre : en plein ecran, texte, controles et marges
+    /// grandissent ensemble au lieu de laisser un outil minuscule au milieu du vide. Jamais
+    /// en dessous de 1 : une petite fenetre gagne des colonnes en moins, pas du texte illisible.
+    /// Par paliers de 5 % pour ne pas refaire la mise en page a chaque pixel.
+    /// </summary>
+    private void ApplyScale()
+    {
+        var w = RootShell.ActualWidth;
+        var h = RootShell.ActualHeight;
+        if (w <= 0 || h <= 0) return;
+
+        var s = Math.Clamp(Math.Min(w / BaseWidth, h / BaseHeight), 1.0, MaxScale);
+        s = Math.Round(s * 20) / 20;
+        if (Math.Abs(s - _scale) < 0.001 && ShellGrid.LayoutTransform is not null) return;
+        _scale = s;
+
+        ShellGrid.LayoutTransform = s == 1 ? Transform.Identity : new ScaleTransform(s, s);
+        // Le rendu « Display » aligne le texte sur les pixels a sa taille d'origine : agrandi,
+        // il deviendrait flou. « Ideal » le redessine net a la taille reelle.
+        TextOptions.SetTextFormattingMode(this, s == 1 ? TextFormattingMode.Display : TextFormattingMode.Ideal);
+
+        if (System.Windows.Shell.WindowChrome.GetWindowChrome(this) is { } chrome
+            && TryFindResource("TitleBarH") is GridLength title)
+            chrome.CaptionHeight = title.Value * s;
     }
 
     public MainViewModel ViewModel => _vm;
@@ -35,6 +71,7 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         ApplyChromeState();
+        ApplyScale();
         if (_startup) await _vm.StartupAsync();
     }
 
