@@ -109,9 +109,14 @@
     <Geometry x:Key="IcoRestore">M4.5,4.5 H13.5 V13.5 H4.5 Z M2.5,11.5 V2.5 H11.5</Geometry>
     <Geometry x:Key="IcoClose">M3,3 L13,13 M13,3 L3,13</Geometry>
 
-    <!-- Marque : un prisme, faisceau entrant a gauche, spectre sortant a droite. -->
-    <Geometry x:Key="MarkPrism">M11,2 L20,18 H2 Z</Geometry>
-    <Geometry x:Key="MarkBeam">M0,11 H8</Geometry>
-    <Geometry x:Key="MarkSpectrum">M14,10 L22,6 M14,11.5 L22,10 M14,13 L22,14</Geometry>
+    <!-- Marque : un faisceau entre dans le prisme et ressort en trois rayons — le jeu entre,
+         la pile graphique sort. Meme dessin que Assets\Prism.ico, sur une grille de 26 x 20. -->
+    <Geometry x:Key="MarkPrism">M12.8,2.4 L20,15.6 H5.6 Z</Geometry>
+    <Geometry x:Key="MarkBeam">M1.6,12.2 L8.44,10.4</Geometry>
+    <Geometry x:Key="MarkInner">M8.44,10.4 L16.5,9.2</Geometry>
+    <Geometry x:Key="MarkRayHi">M16.5,9.2 L23.6,5.8</Geometry>
+    <Geometry x:Key="MarkRay">M16.5,9.2 L23.8,9.2</Geometry>
+    <Geometry x:Key="MarkRayLo">M16.5,9.2 L23.6,12.6</Geometry>
+    <Geometry x:Key="MarkSpectrum">M16.5,9.2 L23.6,5.8 M16.5,9.2 L23.8,9.2 M16.5,9.2 L23.6,12.6</Geometry>
 
 </ResourceDictionary>

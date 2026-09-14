@@ -6,6 +6,7 @@
         xmlns:c="clr-namespace:Prism.Views.Controls"
         xmlns:m="clr-namespace:Prism.Models"
         Title="Prism" Height="900" Width="1480" MinHeight="620" MinWidth="1024"
+        Icon="/Assets/Prism.ico"
         Background="{DynamicResource BrBase}"
         Foreground="{DynamicResource BrFg}"
         FontFamily="{DynamicResource FontUi}"
@@ -21,6 +22,30 @@
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
+
+        <!--
+            Marque Prism : un faisceau blanc entre dans le prisme et ressort en trois rayons
+            verts. Le meme dessin sert a la barre de titre et a l'ecran de chargement.
+        -->
+        <ControlTemplate x:Key="BrandMark" TargetType="Control">
+            <Viewbox Stretch="Uniform">
+                <Canvas Width="26" Height="18">
+                    <Path Data="{DynamicResource MarkPrism}" Fill="{DynamicResource BrAccent}" Opacity="0.12" />
+                    <Path Data="{DynamicResource MarkInner}" Stroke="{DynamicResource BrFg}" Opacity="0.45"
+                          StrokeThickness="0.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Path Data="{DynamicResource MarkRayLo}" Stroke="{DynamicResource BrAccentDim}"
+                          StrokeThickness="1.15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Path Data="{DynamicResource MarkRay}" Stroke="{DynamicResource BrAccent}"
+                          StrokeThickness="1.15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Path Data="{DynamicResource MarkRayHi}" Stroke="#A6DB45"
+                          StrokeThickness="1.15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Path Data="{DynamicResource MarkPrism}" Stroke="{DynamicResource BrFg2}"
+                          StrokeThickness="1.15" StrokeLineJoin="Round" />
+                    <Path Data="{DynamicResource MarkBeam}" Stroke="{DynamicResource BrFg}"
+                          StrokeThickness="1.15" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                </Canvas>
+            </Viewbox>
+        </ControlTemplate>
 
         <!-- Pages : TabControl sans bandeau, pilote par le rail. -->
         <Style x:Key="Pages" TargetType="TabControl">
@@ -60,14 +85,8 @@
                     <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
 
                         <!-- Marque : prisme, faisceau entrant, spectre sortant. -->
-                        <Canvas Width="24" Height="20" VerticalAlignment="Center" Margin="0,0,9,0">
-                            <Path Data="{DynamicResource MarkBeam}" Stroke="{DynamicResource BrFg3}"
-                                  StrokeThickness="1.2" Canvas.Left="-1" Canvas.Top="0" />
-                            <Path Data="{DynamicResource MarkPrism}" Stroke="{DynamicResource BrAccent}"
-                                  StrokeThickness="1.3" StrokeLineJoin="Round" Fill="#14200A" />
-                            <Path Data="{DynamicResource MarkSpectrum}" Stroke="{DynamicResource BrAccent}"
-                                  StrokeThickness="1.1" Opacity="0.85" />
-                        </Canvas>
+                        <Control Template="{StaticResource BrandMark}" Width="28" Height="20"
+                                 VerticalAlignment="Center" Margin="0,0,9,0" Focusable="False" />
 
                         <TextBlock Text="PRISM" FontSize="12.5" FontWeight="Bold"
                                    Foreground="{DynamicResource BrFg}" VerticalAlignment="Center">
@@ -307,6 +326,52 @@
                     </StackPanel>
                 </Grid>
             </Border>
+
+            <!-- ======================================= ECRAN DE CHARGEMENT -->
+            <!--
+                Couvre la fenetre pendant le premier demarrage (catalogues, wiki, analyse des
+                jeux), puis s'efface en fondu : voir MainWindow.HideStartupOverlay. La barre de
+                titre reste visible et deplacable.
+            -->
+            <Grid x:Name="StartupOverlay" Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource BrBase}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Control Template="{StaticResource BrandMark}" Width="150" Height="104"
+                             HorizontalAlignment="Center" Focusable="False" />
+
+                    <TextBlock Text="PRISM" HorizontalAlignment="Center" Margin="0,26,0,0"
+                               FontFamily="{DynamicResource FontUiTight}" FontSize="34" FontWeight="SemiBold"
+                               Foreground="{DynamicResource BrFg}" />
+                    <TextBlock Text="{l:T app.tagline}" Style="{StaticResource T.Sec}"
+                               HorizontalAlignment="Center" Margin="0,6,0,0" />
+
+                    <!-- Barre de progression indeterminee : un segment vert qui parcourt le rail. -->
+                    <Border Width="240" Height="2" Margin="0,34,0,0" ClipToBounds="True"
+                            Background="{DynamicResource BrLine}" CornerRadius="1">
+                        <Border Width="72" HorizontalAlignment="Left" Background="{DynamicResource BrAccent}" CornerRadius="1">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="LoaderShift" X="-72" />
+                            </Border.RenderTransform>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetName="LoaderShift" Storyboard.TargetProperty="X"
+                                                             From="-72" To="240" Duration="0:0:1.3">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <SineEase EasingMode="EaseInOut" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Border.Triggers>
+                        </Border>
+                    </Border>
+
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource T.Ter}"
+                               HorizontalAlignment="Center" Margin="0,14,0,0" />
+                </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>

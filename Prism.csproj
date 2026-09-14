@@ -15,8 +15,19 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <Version>1.0.0</Version>
     <Product>Prism</Product>
-    <Company>Prism</Company>
+    <Company>Skynizz</Company>
+    <Authors>Skynizz</Authors>
+    <Copyright>© 2026 Skynizz</Copyright>
+    <Description>Prism — DLSS 5, Multi Frame Generation, HDR RenoDX and ReShade, installed and tracked file by file.</Description>
+    <!-- Icone de l'executable : explorateur, barre des taches, raccourcis. -->
+    <ApplicationIcon>Assets\Prism.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Icone de la fenetre, et ecran natif affiche des le lancement, avant WPF. -->
+    <Resource Include="Assets\Prism.ico" />
+    <SplashScreen Include="Assets\splash.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Traductions de l'interface, lues par Core/Loc.cs. -->

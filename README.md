@@ -1,6 +1,8 @@
 <div align="center">
 
-# ◆ Prism
+<img src="docs/logo.png" alt="Prism" width="600" />
+
+# Prism
 
 ### La pile graphique de vos jeux, maîtrisée de bout en bout.
 

@@ -26,6 +26,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm;
 
+        // L'ecran de chargement ne sert qu'au vrai demarrage, pas a la reconstruction de theme.
+        StartupOverlay.Visibility = startup ? Visibility.Visible : Visibility.Collapsed;
+
         StateChanged += OnStateChanged;
         Loaded += OnLoaded;
         SizeChanged += (_, _) => ApplyScale();
@@ -72,7 +75,21 @@ public partial class MainWindow : Window
     {
         ApplyChromeState();
         ApplyScale();
-        if (_startup) await _vm.StartupAsync();
+        if (!_startup) return;
+
+        try { await _vm.StartupAsync(); }
+        finally { HideStartupOverlay(); }
+    }
+
+    /// <summary>L'ecran de chargement s'efface en fondu une fois les jeux analyses.</summary>
+    private void HideStartupOverlay()
+    {
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(320))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        fade.Completed += (_, _) => StartupOverlay.Visibility = Visibility.Collapsed;
+        StartupOverlay.BeginAnimation(OpacityProperty, fade);
     }
 
     private void OnStateChanged(object? sender, EventArgs e) => ApplyChromeState();
