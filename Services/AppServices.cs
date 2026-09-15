@@ -35,6 +35,7 @@ public sealed class AppServices
         Restore = new RestoreService(Changes, Backups, Deployments, Hdr);
         Streamline = new StreamlineService(GitHub, Downloads, Backups, Deployments);
         Catalog = new ComponentCatalog(GitHub, ReShade, RenoDx, Manifest);
+        Updates = new UpdateService(Downloads);
         Scanner = new GameScanner { ExtraFolders = Settings.Current.ExtraLibraryFolders };
 
 
@@ -61,6 +62,7 @@ public sealed class AppServices
     public RestoreService Restore { get; }
     public StreamlineService Streamline { get; }
     public ComponentCatalog Catalog { get; }
+    public UpdateService Updates { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }

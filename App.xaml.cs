@@ -10,7 +10,10 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        Log.Info("app", "Demarrage de Prism");
+        Log.Info("app", $"Demarrage de Prism {UpdateService.CurrentLabel}");
+
+        // Fichiers .old laisses par une mise a jour : la nouvelle version tourne, ils partent.
+        UpdateService.CleanupPreviousVersion();
 
         // Une exception non geree dans un gestionnaire d'interface ne doit pas fermer
         // l'application au milieu d'une operation sur les fichiers d'un jeu.

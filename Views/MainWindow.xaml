@@ -310,6 +310,16 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Mise a jour disponible : un point vert et la version, vers Parametres ▸ Mises a jour. -->
+                        <Button Style="{StaticResource Btn.Quiet}" Height="20" Padding="8,0" Margin="0,0,12,0"
+                                Visibility="{Binding HasUpdate, Converter={StaticResource BoolVis}}"
+                                Command="{Binding OpenUpdatesCommand}" ToolTip="{Binding UpdateLabel}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{DynamicResource BrAccent}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding UpdateLabel}" Style="{StaticResource T.Ter}"
+                                           Foreground="{DynamicResource BrAccent}" Margin="7,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                         <TextBlock Text="{Binding GameCountLabel}" Style="{StaticResource T.Ter}"
                                    VerticalAlignment="Center" />
                         <Border Style="{StaticResource S.VRule}" Height="11" Margin="12,0" />

@@ -348,6 +348,40 @@ La langue d'affichage de Windows est choisie au premier lancement. Les textes vi
 
 ---
 
+## ✦ Mises à jour
+
+Prism se met à jour lui-même depuis les **releases GitHub** du dépôt défini dans
+`Services/UpdateService.cs` (`Repo`).
+
+| Étape | Garantie |
+|---|---|
+| Vérification au démarrage (désactivable), ou **Paramètres ▸ Mises à jour** | en arrière-plan, sans bloquer l'interface |
+| Téléchargement de `Prism-<version>-win-x64.zip` | refusé si l'empreinte ne correspond pas à `.zip.sha256` |
+| Signature | si Prism est signé, la mise à jour doit l'être par le même éditeur |
+| Remplacement des fichiers | fichiers en place renommés en `.old`, retour complet au moindre échec |
+| Redémarrage | les `.old` sont supprimés au lancement suivant |
+
+Les **versions de test** (prereleases GitHub) ne sont proposées qu'aux utilisateurs qui les
+activent.
+
+**Publier une version :**
+
+```powershell
+.\scripts\release.ps1 -Version 1.1.0 -Notes "Nouveautés"
+.\scripts\release.ps1 -Version 1.2.0-beta.1 -Prerelease -NotesFile notes.md
+.\scripts\release.ps1 -Version 1.1.0 -CertThumbprint <empreinte du certificat>
+```
+
+Le script fixe la version, publie un `Prism.exe` autonome (aucun runtime .NET à installer),
+signe si un certificat est fourni, crée l'archive et son empreinte, puis la release (`gh`).
+
+> [!IMPORTANT]
+> Les utilisateurs doivent pouvoir lire les releases : le dépôt qui les publie doit être
+> **public**. Code fermé : publier dans un dépôt dédié (ex. `Skynizz/Prism-releases`) et
+> changer `Repo`.
+
+---
+
 ## ✦ Compiler et lancer
 
 Prérequis : **SDK .NET 10**, Windows 10 ou 11.

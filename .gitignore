@@ -4,6 +4,9 @@ obj/
 build-invoker/
 app.invoker.manifest
 
+# Paquets de release (scripts/release.ps1)
+artifacts/
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/

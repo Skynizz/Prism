@@ -80,6 +80,9 @@ public sealed class MainViewModel : ObservableObject
         RevertChangeCommand = new RelayCommand(p => RevertChange(p as ChangeEntry));
         RevertGameCommand = new RelayCommand(p => RevertGame(p as string));
         RevertAllCommand = new RelayCommand(_ => RevertAll(), _ => HasChanges);
+        CheckUpdatesCommand = new AsyncRelayCommand(() => CheckUpdatesAsync(manual: true), () => !Updating);
+        InstallUpdateCommand = new AsyncRelayCommand(InstallUpdateAsync, () => AvailableUpdate is not null && !Updating);
+        OpenUpdatesCommand = new RelayCommand(_ => { SettingsSection = UpdatesSection; GoTo(8); });
 
         // Le journal est alimente depuis des threads de fond : on marshalle vers l'UI.
         // L'historique anterieur a l'abonnement est rejoue pour que la console montre
@@ -522,7 +525,103 @@ public sealed class MainViewModel : ObservableObject
     public string BackupsPath => AppPaths.Backups;
     public string CachePath => AppPaths.Cache;
     public string LogsPath => AppPaths.Logs;
-    public string AppVersion => "1.0.0";
+    public string AppVersion => UpdateService.CurrentLabel;
+
+    // -------------------------------------------------------- Mises a jour
+
+    /// <summary>Index de la rubrique « Mises a jour » dans les parametres.</summary>
+    private const int UpdatesSection = 6;
+
+    public AsyncRelayCommand CheckUpdatesCommand { get; }
+    public AsyncRelayCommand InstallUpdateCommand { get; }
+    public RelayCommand OpenUpdatesCommand { get; }
+
+    private UpdateInfo? _availableUpdate;
+    public UpdateInfo? AvailableUpdate
+    {
+        get => _availableUpdate;
+        private set
+        {
+            Set(ref _availableUpdate, value);
+            OnPropertyChanged(nameof(HasUpdate));
+            OnPropertyChanged(nameof(UpdateLabel));
+            InstallUpdateCommand.Raise();
+        }
+    }
+
+    public bool HasUpdate => AvailableUpdate is not null;
+
+    public string UpdateLabel => AvailableUpdate is { } u ? Loc.T("upd.available", u.Version.ToString(3)) : "";
+
+    private string _updateStatus = "—";
+    public string UpdateStatus { get => _updateStatus; private set => Set(ref _updateStatus, value); }
+
+    private bool _updating;
+    public bool Updating
+    {
+        get => _updating;
+        private set
+        {
+            Set(ref _updating, value);
+            CheckUpdatesCommand.Raise();
+            InstallUpdateCommand.Raise();
+        }
+    }
+
+    private double _updateProgress;
+    public double UpdateProgress { get => _updateProgress; private set => Set(ref _updateProgress, value); }
+
+    public bool AutoCheckUpdates
+    {
+        get => Settings.AutoCheckUpdates;
+        set { Settings.AutoCheckUpdates = value; _svc.Settings.Save(); OnPropertyChanged(); }
+    }
+
+    /// <summary>Versions de test : les prereleases GitHub sont proposees elles aussi.</summary>
+    public bool ShowDevBuilds
+    {
+        get => Settings.ShowDevBuilds;
+        set { Settings.ShowDevBuilds = value; _svc.Settings.Save(); OnPropertyChanged(); }
+    }
+
+    private async Task CheckUpdatesAsync(bool manual)
+    {
+        UpdateStatus = Loc.T("upd.checking");
+        var info = await _svc.Updates.CheckAsync(Settings.ShowDevBuilds);
+        AvailableUpdate = info;
+
+        UpdateStatus = info is not null ? Loc.T("upd.available", info.Version.ToString(3))
+            : _svc.Updates.LastError ?? Loc.T("upd.uptodate", AppVersion);
+
+        if (manual) Notify(UpdateStatus, info is null && _svc.Updates.LastError is not null);
+    }
+
+    /// <summary>Telecharge, verifie, remplace les fichiers et redemarre ; en cas d'echec, rien ne change.</summary>
+    private async Task InstallUpdateAsync()
+    {
+        if (AvailableUpdate is not { } info) return;
+
+        Updating = true;
+        try
+        {
+            UpdateStatus = Loc.T("upd.downloading", info.Version.ToString(3));
+            var staging = await _svc.Updates.DownloadAsync(info, new Progress<double>(p => UpdateProgress = p));
+
+            UpdateStatus = Loc.T("upd.installing");
+            UpdateService.Apply(staging);
+            UpdateService.Restart();
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = Loc.T("upd.err.failed", ex.Message);
+            Notify(UpdateStatus, true);
+        }
+        finally
+        {
+            Updating = false;
+            UpdateProgress = 0;
+        }
+    }
 
     public AsyncRelayCommand ScanCommand { get; }
     public AsyncRelayCommand RefreshCatalogsCommand { get; }
@@ -566,6 +665,9 @@ public sealed class MainViewModel : ObservableObject
 
         await ScanAsync();
         _processTimer.Start();
+
+        // En arriere-plan : une verification lente ou hors ligne ne retarde rien.
+        if (Settings.AutoCheckUpdates) _ = CheckUpdatesAsync(manual: false);
     }
 
     private void RaiseCatalogProps()

@@ -57,6 +57,14 @@
                             <TextBlock Text="{l:T set.sec.safety}" Style="{StaticResource T.Sec}" Margin="10,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                     </ListBoxItem>
+                    <ListBoxItem AutomationProperties.Name="updates">
+                        <StackPanel Orientation="Horizontal" Margin="6,9">
+                            <Path Data="{DynamicResource IcoRefresh}" Style="{StaticResource S.IconSm}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T set.sec.updates}" Style="{StaticResource T.Sec}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            <Ellipse Width="6" Height="6" Fill="{DynamicResource BrAccent}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding HasUpdate, Converter={StaticResource BoolVis}}" />
+                        </StackPanel>
+                    </ListBoxItem>
                 </ListBox>
             </StackPanel>
         </Border>
@@ -291,6 +299,52 @@
 
                             <TextBlock Text="{l:T set.integrity}" Style="{StaticResource T.Strong}" />
                             <TextBlock Style="{StaticResource T.Prose}" Margin="0,6,0,0" Text="{l:T set.integrity_hint}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+                </StackPanel>
+
+                <!-- ============================================ MISES A JOUR -->
+                <StackPanel Visibility="{Binding SelectedIndex, ElementName=Sections,
+                                         Converter={StaticResource EqVis}, ConverterParameter=6}">
+                    <TextBlock Text="{l:T set.sec.updates}" Style="{StaticResource T.Title}" />
+                    <TextBlock Text="{l:T upd.hint}" Style="{StaticResource T.Prose}" Margin="0,5,0,0" />
+
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="PRISM" Margin="0,16,0,0">
+                        <HeaderedContentControl.Tag>
+                            <TextBlock Text="{Binding AppVersion, StringFormat=v{0}}" Style="{StaticResource T.Mono}"
+                                       Foreground="{DynamicResource BrFg2}" />
+                        </HeaderedContentControl.Tag>
+
+                        <StackPanel Margin="16,14,16,16">
+                            <c:Field Label="{l:T upd.current}" Value="{Binding AppVersion}" Mono="True" LabelWidth="150" />
+                            <c:Field Label="{l:T upd.latest}" Value="{Binding UpdateStatus}" LabelWidth="150" />
+
+                            <ProgressBar Value="{Binding UpdateProgress, Mode=OneWay}" Maximum="100" Margin="0,12,0,0"
+                                         Visibility="{Binding Updating, Converter={StaticResource BoolVis}}" />
+
+                            <!-- Notes de la release, telles que publiees sur GitHub. -->
+                            <Border Style="{StaticResource S.Sunken}" Padding="14,12" Margin="0,14,0,0"
+                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolVis}}">
+                                <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                                    <TextBlock Text="{Binding AvailableUpdate.Notes}" Style="{StaticResource T.Sec}"
+                                               TextWrapping="Wrap" />
+                                </ScrollViewer>
+                            </Border>
+
+                            <WrapPanel Margin="0,16,0,0">
+                                <Button Content="{l:T upd.install}" Style="{StaticResource Btn.Primary}" MinWidth="200"
+                                        Margin="0,0,8,8" Command="{Binding InstallUpdateCommand}" />
+                                <Button Content="{l:T upd.check}" Style="{StaticResource Btn}" MinWidth="120"
+                                        Margin="0,0,8,8" Command="{Binding CheckUpdatesCommand}" />
+                                <Button Content="{l:T upd.notes}" Style="{StaticResource Btn.Quiet}" Margin="0,0,8,8"
+                                        Command="{Binding OpenUrlCommand}" CommandParameter="{Binding AvailableUpdate.HtmlUrl}"
+                                        Visibility="{Binding HasUpdate, Converter={StaticResource BoolVis}}" />
+                            </WrapPanel>
+
+                            <Border Style="{StaticResource S.HRule}" Margin="0,8,0,12" />
+
+                            <CheckBox Content="{l:T upd.auto}" IsChecked="{Binding AutoCheckUpdates}" />
+                            <CheckBox Content="{l:T upd.dev}" IsChecked="{Binding ShowDevBuilds}" Margin="0,10,0,0" />
                         </StackPanel>
                     </HeaderedContentControl>
                 </StackPanel>
