@@ -59,17 +59,18 @@ public sealed class UpdateService
         {
             json = await _downloads.GetStringAsync($"https://api.github.com/repos/{Repo}/releases?per_page=20", ct);
         }
+        // Hors ligne, ou depot prive : cas normal. Consigne, mais jamais affiche a la place
+        // de l'etat courant — seule une verification demandee par l'utilisateur le signale.
         catch (HttpRequestException ex)
         {
-            // 404 : depot prive ou encore sans release.
             LastError = Loc.T("upd.err.offline");
-            Log.Warn(Src, $"Releases de {Repo} illisibles : {ex.Message}");
+            Log.Info(Src, $"Releases de {Repo} illisibles : {ex.Message}");
             return null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             LastError = Loc.T("upd.err.offline");
-            Log.Warn(Src, $"Verification des mises a jour impossible : {ex.Message}");
+            Log.Info(Src, $"Verification des mises a jour impossible : {ex.Message}");
             return null;
         }
 
@@ -112,7 +113,7 @@ public sealed class UpdateService
         catch (Exception ex)
         {
             LastError = Loc.T("upd.err.offline");
-            Log.Warn(Src, $"Reponse des releases illisible : {ex.Message}");
+            Log.Info(Src, $"Reponse des releases illisible : {ex.Message}");
             return null;
         }
 

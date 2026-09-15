@@ -6,7 +6,7 @@
         xmlns:c="clr-namespace:Prism.Views.Controls"
         xmlns:m="clr-namespace:Prism.Models"
         Title="Prism" Height="900" Width="1480" MinHeight="620" MinWidth="1024"
-        Icon="/Assets/Prism.ico"
+        Icon="pack://application:,,,/Prism;component/Assets/Prism.ico"
         Background="{DynamicResource BrBase}"
         Foreground="{DynamicResource BrFg}"
         FontFamily="{DynamicResource FontUi}"

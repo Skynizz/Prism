@@ -1,435 +1,426 @@
 <div align="center">
 
-<img src="docs/logo.png" alt="Prism" width="600" />
+<img src="docs/logo.png" alt="Prism" width="560" />
 
-# Prism
+### The graphics stack of your PC games — installed, verified, reversible.
 
-### La pile graphique de vos jeux, maîtrisée de bout en bout.
-
-DLSS 5 Neural Rendering · Multi Frame Generation · HDR RenoDX · ReShade
-<br/>installés en un clic, vérifiés avant chaque écriture, retirés en un clic.
+DLSS 5 Neural Rendering · Multi Frame Generation · RenoDX HDR · ReShade
 
 <br/>
 
-![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)
-![WPF](https://img.shields.io/badge/UI-WPF-0A84FF?style=flat-square)
-![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
-![NVIDIA RTX](https://img.shields.io/badge/NVIDIA-RTX%2020%20→%2050-76B900?style=flat-square&logo=nvidia&logoColor=white)
-![Langues](https://img.shields.io/badge/langues-18-2EA043?style=flat-square)
-![Dépendances](https://img.shields.io/badge/NuGet-0%20dépendance-6E7781?style=flat-square)
-![Statut](https://img.shields.io/badge/dépôt-privé-B31D28?style=flat-square)
+[![Release](https://img.shields.io/github/v/release/Skynizz/Prism?style=flat-square&color=76B900&label=release)](https://github.com/Skynizz/Prism/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Skynizz/Prism/total?style=flat-square&color=76B900)](https://github.com/Skynizz/Prism/releases)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078D4?style=flat-square&logo=windows&logoColor=white)
+![NVIDIA RTX](https://img.shields.io/badge/NVIDIA-RTX%2020%E2%80%9350-76B900?style=flat-square&logo=nvidia&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![Languages](https://img.shields.io/badge/languages-18-2EA043?style=flat-square)
+[![License](https://img.shields.io/badge/license-GPL--3.0-6E7781?style=flat-square)](LICENSE)
+
+**[Download](#download)** · [Features](#features) · [How it works](#how-it-works) · [DLSS 5](#dlss-5--neural-rendering) · [Frame Generation](#frame-generation) · [Safety](#safety) · [FAQ](#faq)
 
 <br/>
 
-[Fonctionnalités](#-fonctionnalités) ·
-[Installer, puis retirer](#-installer-puis-retirer) ·
-[DLSS 5](#-dlss-5--neural-rendering) ·
-[Frame Generation](#-frame-generation) ·
-[HDR](#-hdr-renodx-automatique) ·
-[Sécurité](#-sécurité) ·
-[Compiler](#-compiler-et-lancer)
+<img src="docs/screenshots/overview.png" alt="Prism — Overview" width="100%" />
 
 </div>
 
 ---
 
-## ✦ En bref
+## Overview
 
-Prism détecte les jeux installés sur le PC, lit ce que chacun embarque réellement —
-runtimes DLSS, Streamline, moteur, API de rendu — et pose la bonne pile pour la carte
-graphique présente. Chaque fichier vient d'une source publique suivie, chaque DLL NVIDIA
-est vérifiée avant d'être écrite, et tout ce que Prism ajoute reste visible sur le jeu,
-prêt à être retiré.
+Prism scans the games installed on your PC, reads what each one actually ships — DLSS
+runtimes, Streamline, engine, rendering API — and installs the right stack for your GPU
+in one click. Every file comes from a tracked public source, every NVIDIA DLL is verified
+before it is written, and everything Prism adds stays listed on the game, ready to be removed.
 
-> [!NOTE]
-> Outil **Windows**, application **WPF .NET 10**, **zéro dépendance NuGet**. Aucune
-> version de composant n'est figée dans le code : les sources sont interrogées à chaque
-> démarrage.
+- **One button.** *Install* downloads and places every prerequisite, then the mod itself.
+- **Nothing half-done.** Each install is a transaction: backed up, written, re-read, or fully rolled back.
+- **Nothing hidden.** Every file Prism wrote is tracked per game and removable in one click.
+- **Nothing bundled.** Prism ships no third-party binary; it fetches from the official sources.
 
 ---
 
-## ✦ Fonctionnalités
+## Download
+
+| Package | For | |
+|---|---|---|
+| **`Prism-Setup-<version>.exe`** | Most users — Start menu entry, uninstaller, automatic updates | **[Latest release →](https://github.com/Skynizz/Prism/releases/latest)** |
+| `Prism-<version>-win-x64.zip` | Portable use — extract anywhere in your user folder | [Releases](https://github.com/Skynizz/Prism/releases) |
+| Source code (`zip` / `tar.gz`) | Review or build it yourself | attached to every release |
+
+Each release publishes a `.sha256` checksum next to every file.
+
+### Requirements
+
+| | Minimum |
+|---|---|
+| OS | Windows 10 1809 or Windows 11, x64 |
+| GPU | Any GPU for ReShade and HDR · NVIDIA RTX 20 series or newer for DLSS paths |
+| Runtime | None — the .NET runtime is included |
+| Network | Required to download components and updates |
+
+> [!NOTE]
+> **Installs per user, no admin needed** (`%LOCALAPPDATA%\Programs\Prism`). Prism itself asks
+> for elevation at launch, because game folders often live under `Program Files`.
+>
+> Until the binaries are code-signed, Windows SmartScreen may show *“Windows protected your
+> PC”*: choose **More info → Run anyway**, after checking the file against its `.sha256`.
+
+---
+
+## Features
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-#### 🧠 DLSS 5 — Neural Rendering
-Le paquet **RenoDX DLSS 5** complet : addon, DLSS 310.8, Streamline 2.13 et le runtime
-neural adapté au GPU. Signature NVIDIA exigée, empreinte épinglée pour la build RTX 20–40.
+#### DLSS 5 — Neural Rendering
+The complete **RenoDX DLSS 5** package: add-on, DLSS 310.8, Streamline 2.13 and the neural
+runtime matched to your GPU. NVIDIA signature required; pinned checksum for the RTX 20–40 build.
 
 </td>
 <td width="50%" valign="top">
 
-#### 🎞️ Multi Frame Generation
-Voies filtrées par génération : MFG natif sur RTX 50, **RenoDX MFG Unlock** ×2 à ×6 sur
-RTX 40, DLSS-G porté sur RTX 30 et 20, repli FSR 3.1 partout.
+#### Multi Frame Generation
+Paths filtered by GPU generation: native MFG on RTX 50, **RenoDX MFG Unlock** ×2–×6 on RTX 40,
+ported DLSS-G on RTX 30 and 20, FSR 3.1 fallback everywhere.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-#### 🌈 HDR RenoDX automatique
-Le wiki RenoDX est lu **en direct** : bon mod par jeu, notes de la ligne appliquées
-(`Upgrade_R11G11B10_FLOAT`, `Engine.ini`…), rien de deviné.
+#### RenoDX HDR, automatic
+The RenoDX mod list is read **live**: the right mod per game, and the notes of its row applied
+(`Upgrade_R11G11B10_FLOAT`, `Engine.ini`…). Nothing guessed.
 
 </td>
 <td valign="top">
 
-#### 🧾 Tout est tracé, tout se retire
-Bandeau **AJOUTÉ PAR PRISM** sur chaque jeu : une pastille par installation, un bouton
-**Retirer**. Retour vanille complet avec vérification SHA-256.
+#### Tracked and reversible
+An **Added by Prism** strip on every game: one entry per install, one **Remove** button.
+Full vanilla restore with SHA-256 verification.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-#### 🔍 Diagnostic réel
-Chaîne de rendu effectivement chargée, matrice de compatibilité Streamline / DLSS-G,
-compilateur de shaders périmé détecté et remplacé.
+#### Real diagnostics
+The render chain actually loaded, a Streamline / DLSS-G compatibility matrix, outdated shader
+compilers detected and replaced, mods installed outside Prism detected.
 
 </td>
 <td valign="top">
 
-#### 🌍 18 langues
-Interface traduite, arabe de droite à gauche, bascule instantanée depuis
-**Paramètres ▸ Langue**.
+#### Built for everyone
+18 languages with right-to-left Arabic, two themes, an interface that scales from a laptop
+window to a 4K display, and self-updates from GitHub Releases.
 
 </td>
 </tr>
 </table>
 
+<div align="center">
+<img src="docs/screenshots/dlss.png" alt="DLSS page" width="49%" />
+<img src="docs/screenshots/framegen.png" alt="Frame Generation page" width="49%" />
+<img src="docs/screenshots/injection.png" alt="Injection page" width="49%" />
+<img src="docs/screenshots/games.png" alt="Games page" width="49%" />
+</div>
+
 ---
 
-## ✦ Installer, puis retirer
-
-### Un seul bouton : Installer
-
-Pas de « préparer », pas d'« installer seulement », pas de demi-mesure. **Installer**
-télécharge et pose **tout** ce que la voie exige, dans l'ordre, puis la voie elle-même.
-Le premier échec arrête la chaîne : une pile incomplète n'est jamais laissée en place.
+## How it works
 
 ```mermaid
 flowchart LR
-    A([Installer]) --> B{Prérequis<br/>manquants ?}
+    A([Install]) --> B{Missing<br/>prerequisites?}
     B -- ReShade --> C[reshade.me]
-    B -- Streamline --> D[SDK NVIDIA apparié]
-    B -- DLSS-G 310.x --> E[catalogue signé]
-    C & D & E --> F[Voie choisie]
-    B -- rien --> F
-    F --> G{Jeu fermé ?<br/>signature · SHA-256}
-    G -- refus --> H([Rien n'est écrit])
-    G -- OK --> I[Transaction :<br/>sauvegarde · pose · relecture]
-    I -- échec --> L([Retour à l'état d'avant])
-    I -- OK --> J[Registre]
-    J --> K([Visible dans<br/>AJOUTÉ PAR PRISM])
+    B -- Streamline --> D[Matched NVIDIA SDK]
+    B -- DLSS-G 310.x --> E[Signed catalog]
+    C & D & E --> F[Selected path]
+    B -- none --> F
+    F --> G{Game closed?<br/>signature · SHA-256}
+    G -- rejected --> H([Nothing written])
+    G -- ok --> I[Transaction:<br/>backup · write · re-read]
+    I -- failure --> L([Previous state restored])
+    I -- ok --> J[Change registry]
+    J --> K([Listed under<br/>Added by Prism])
 ```
 
-**Rien à moitié.** Chaque écriture dans un jeu passe par une transaction : l'original part
-en sauvegarde, le nouveau fichier est écrit à côté puis remplacé d'un geste, relu et comparé
-à sa source. Au premier échec, tout ce qui a été touché reprend son contenu d'avant. Prism
-refuse d'agir tant que le jeu tourne ou qu'un fichier visé est verrouillé — la cause n° 1
-des piles DLSS à moitié posées.
-
-### ReShade : gardé s'il est déjà là
-
-Inspiré de [RHI](https://github.com/RankFTW/RHI) :
-
-| Situation dans le jeu | Ce que fait Prism |
+| Guarantee | How |
 |---|---|
-| ReShade **add-on ≥ 6.8** déjà chargé, sous n'importe quel nom | rien — aucun téléchargement |
-| ReShade standard ou trop ancien | remplacé **sur place**, sous le même nom, original sauvegardé |
-| Absent | nom choisi d'après les imports de l'exécutable : `d3d9.dll`, `opengl32.dll`, sinon `dxgi.dll` |
-| Proxy déjà pris par OptiScaler | `ReShade64.dll` + `[Plugins] LoadReshade=true` |
-| Proxy pris par un autre outil | `d3d12.dll` / `d3d11.dll` selon l'API, sinon refus — jamais écrasé |
-| ReShade chargé deux fois | signalé, installation bloquée |
-| Jeu Vulkan | refus : ReShade passe par sa couche Vulkan globale |
+| No partial install | Every write goes through a transaction: original backed up, new file written beside it and swapped atomically, re-read and compared to its source. First failure → everything touched is restored. |
+| No write while the game runs | Prism refuses to act while the game executable is running or a target file is locked — the #1 cause of half-installed DLSS stacks. |
+| No original lost | The first version of every replaced file is kept; later installs never overwrite that backup. |
+| Exact uninstall | A per-file, per-install registry with checksums. *Remove* undoes a whole install, not a single file. |
 
-La DLL est extraite de l'installeur officiel de reshade.me **sans l'exécuter**. La version
-add-on se reconnaît sans supposition : la build standard contient le message
-*« only limited add-on functionality »*, absent de la build add-on.
+### ReShade: kept when it is already there
 
-### Ce que Prism a ajouté, sous les yeux
-
-En revenant sur un jeu — page **Jeux**, **DLSS** ou **Frame Gen** — le bandeau
-**AJOUTÉ PAR PRISM** liste chaque installation encore en place :
-
-```
-AJOUTÉ PAR PRISM   ● RenoDX DLSS 5  5.2.1  [Retirer]   ● RenoDX HDR  [Retirer]   ● ReShade  6.8.0  [Retirer]
-```
-
-Le survol détaille les fichiers posés ou remplacés. **Retirer** défait l'installation
-entière, pas un fichier isolé :
-
-| Installation | Ce que « Retirer » remet en état |
+| In the game | What Prism does |
 |---|---|
-| **RenoDX DLSS 5** | fichiers ajoutés supprimés, originaux restaurés (DLL NVIDIA, Streamline, compilateur), addon retiré de `LoadFromDllMain` |
-| **RenoDX HDR** | addon supprimé, clés `[renodx]` remises à leur valeur d'avant, `Engine.ini` restauré |
-| **RenoDX MFG Unlock** | addon et section `[RenoDX.MFGUnlock]` retirés |
-| **ReShade** | moteur et proxy retirés — presets et shaders de l'utilisateur conservés |
-| **DLSS SR / DLSS-G / Streamline** | versions d'origine du jeu restaurées |
+| ReShade **add-on ≥ 6.8** already loaded, under any name | nothing — no download |
+| Standard or outdated ReShade | replaced **in place**, same name, original backed up |
+| No ReShade | name chosen from the executable's imports: `d3d9.dll`, `opengl32.dll`, otherwise `dxgi.dll` |
+| Proxy already used by OptiScaler | `ReShade64.dll` + `[Plugins] LoadReshade=true` |
+| Proxy used by another tool | `d3d12.dll` / `d3d11.dll` depending on the API, otherwise refused — never overwritten |
+| ReShade loaded twice | reported, install blocked |
+| Vulkan game | refused: ReShade goes through its global Vulkan layer |
 
-Chaque fichier écrit est rattaché à l'installation qui l'a posé. Un original déjà
-restauré ne compte plus : le bandeau montre l'état réel du dossier, pas un historique.
+The DLL is extracted from the official reshade.me installer **without running it**. The add-on
+build is identified without guessing: the standard build contains the string
+*“only limited add-on functionality”*, the add-on build does not.
 
-### Ce qui a été ajouté sans Prism
+### Mods installed outside Prism
 
-Le même bandeau a une seconde ligne, **HORS PRISM** : tout ce que le jeu contient en plus
-de sa version d'origine sans que Prism l'y ait posé — ReShade, addons RenoDX, OptiScaler,
-DLSS Enabler, dlssg-to-fsr3, Special K, DLSSTweaks, chargeurs ASI, `nvngx_dlssnr.dll`.
-
-| Indice | Certitude | Action |
-|---|---|---|
-| Fichier propre à un mod (`.addon64`, `OptiScaler.ini`, `.asi`…) | certain | **Mettre de côté** |
-| DLL proxy (`dxgi.dll`, `winmm.dll`…) dont la description se réclame d'une surcouche | certain | **Mettre de côté** |
-| Runtime NVIDIA ou Streamline créé bien après l'exécutable, absent du registre | *probable* | signalé seulement |
-
-**Mettre de côté** copie chaque fichier dans les sauvegardes de Prism avant de le retirer
-du jeu : l'historique des modifications le restaure. Un runtime NVIDIA remplacé à la main
-n'a pas d'original connu — Prism l'indique et renvoie à la vérification des fichiers du
-launcher plutôt que de deviner.
-
-### Retour vanille
-
-La page **Changes** va plus loin, titre par titre : vérification SHA-256 de chaque
-fichier écrit (*intact · modifié depuis · disparu · sauvegarde perdue*), détection des
-orphelins laissés par d'autres outils, et restauration complète. Un fichier modifié hors
-de Prism n'est jamais écrasé en silence.
+The same strip lists what the game contains beyond its original files without Prism having
+placed it — ReShade, RenoDX add-ons, OptiScaler, DLSS Enabler, dlssg-to-fsr3, Special K,
+DLSSTweaks, ASI loaders, `nvngx_dlssnr.dll`. Known mod files can be **set aside** (copied to
+Prism's backups, then removed); NVIDIA runtimes replaced by hand are flagged, never guessed.
 
 ---
 
-## ✦ DLSS 5 — Neural Rendering
+## DLSS 5 — Neural Rendering
 
-La voie dépend de l'API du jeu :
-
-| API | Voie | Pourquoi |
+| API | Path | Why |
 |---|---|---|
-| **DirectX 12** | **RenoDX DLSS 5** *(recommandé)* | pile complète, vérifiée fichier par fichier |
-| DirectX 12 | OptiScaler DLSSNR · PreSR Multipass | passe neurale dans le pipeline, ReShade non requis |
-| DirectX 11 · Vulkan | DLSS 5 Bridge | le pont reflète l'appel DLSS natif |
-| DX11 ou DX12 | DLSS5 One-Click | installeur unique, RTX 20–50 |
+| **DirectX 12** | **RenoDX DLSS 5** *(recommended)* | full stack, verified file by file |
+| DirectX 12 | OptiScaler DLSSNR · PreSR Multipass | neural pass inside the pipeline, no ReShade needed |
+| DirectX 11 · Vulkan | DLSS 5 Bridge | mirrors the native DLSS call |
+| DirectX 11 or 12 | DLSS5 One-Click | single installer, RTX 20–50 |
 
-### Le paquet RenoDX DLSS 5
+### The RenoDX DLSS 5 package
 
-| Composant | Source | Contrôle |
+| Component | Source | Check |
 |---|---|---|
-| `renodx-dlss5.addon64` | `RankFTW/rhi-repo`, build au choix (la plus récente par défaut) | inscrit en chargement précoce |
-| `nvngx_dlss` · `dlssg` · `dlssd` | `rhi-repo` — 310.8.0 · 310.8.0 · 310.7.129 | Authenticode NVIDIA |
-| `sl.*` | `rhi-repo` — Streamline 2.13 | Authenticode NVIDIA |
-| `nvngx_dlssnr.dll` | `rhi-repo`, selon le GPU | signé NVIDIA **ou** SHA-256 épinglé |
+| `renodx-dlss5.addon64` | `RankFTW/rhi-repo`, selectable build (latest by default) | registered for early loading |
+| `nvngx_dlss` · `dlssg` · `dlssd` | `rhi-repo` — 310.8.0 · 310.8.0 · 310.7.129 | NVIDIA Authenticode |
+| `sl.*` | `rhi-repo` — Streamline 2.13 | NVIDIA Authenticode |
+| `nvngx_dlssnr.dll` | `rhi-repo`, per GPU | NVIDIA-signed **or** pinned SHA-256 |
 
-- **RTX 50** — `dlssnr-310.8.0`, l'original signé NVIDIA.
-- **RTX 20 à 40** — l'original y échoue (`0xBAD00001`) : Prism pose `dlssnr-310.8.SF-v2`,
-  accepté **uniquement** si son empreinte figure dans `NeuralRuntimePins`.
+- **RTX 50** — `dlssnr-310.8.0`, the original NVIDIA-signed runtime.
+- **RTX 20 to 40** — the original fails there (`0xBAD00001`); Prism installs `dlssnr-310.8.SF-v2`,
+  accepted **only** if its checksum is pinned in `NeuralRuntimePins`.
 
-Le contrôle est **tout ou rien** : une seule DLL refusée, et le jeu n'est pas touché.
+The check is **all or nothing**: one rejected DLL and the game is not touched.
 
-**Placement.** Les DLL NGX et `sl.*` vont là où le jeu charge Streamline (sur Unreal,
-`Plugins\…\ThirdParty\Win64`). `nvngx_dlssnr.dll` va **aussi à côté de l'exécutable** : c'est
-là que l'addon le charge. Sans lui à cet endroit, l'addon se rabat sur le runtime du pilote,
-refusé sur RTX 20 à 40 — overlay *« NO NR FEATURE MATCHED »*, `0xBAD0000B`. Une copie modifiée
-ou inconnue (`0xBAD00005`) est signalée et remplacée, original sauvegardé.
+**Placement.** NGX DLLs and `sl.*` go where the game loads Streamline (on Unreal,
+`Plugins\…\ThirdParty\Win64`). `nvngx_dlssnr.dll` also goes **next to the executable**, where
+the add-on loads it.
 
-> [!TIP]
-> **`X3506: unrecognized compiler target 'cs_5_1'`** en boucle dans le journal ReShade ?
-> Le jeu embarque un `d3dcompiler_47.dll` de Windows 8.1, chargé avant celui du système.
-> Prism le signale (ligne **D3DCOMPILER**) et le remplace par la copie de Windows lors de
-> l'installation, original sauvegardé.
+<details>
+<summary><b>Troubleshooting</b></summary>
+
+| Symptom | Cause | Prism |
+|---|---|---|
+| Overlay shows *“NO NR FEATURE MATCHED”*, `0xBAD0000B` | `nvngx_dlssnr.dll` missing next to the executable: the add-on falls back to the driver runtime, rejected on RTX 20–40 | **NEURAL RT** row in error, *Install* places it |
+| `0xBAD00005` on every NR evaluation | a modified or unknown `nvngx_dlssnr.dll` | flagged as untrusted, replaced, original backed up |
+| `X3506: unrecognized compiler target 'cs_5_1'` in the ReShade log | the game ships a Windows 8.1 `d3dcompiler_47.dll` | **D3DCOMPILER** row, replaced by the Windows copy |
+| *“being used by another process”* | the game or its launcher is still running | install refused until it is closed |
+
+</details>
 
 ---
 
-## ✦ Frame Generation
+## Frame Generation
 
-Le jeu doit déjà intégrer Streamline DLSS-G : aucune surcouche ne crée la génération
-d'images à partir de rien. L'interface distingue le **moteur NVIDIA** du **pont FSR 3.1**.
+The game must already integrate Streamline DLSS-G: no overlay creates frame generation from
+nothing. The interface separates the **NVIDIA engine** from the **FSR 3.1 bridge**.
 
-| GPU | Voie recommandée | Alternatives |
+| GPU | Recommended path | Alternatives |
 |---|---|---|
-| RTX 50 · Blackwell | DLSS-G natif ×2–×4 | OptiScaler, DLSS Enabler |
-| RTX 40 · Ada | **RenoDX MFG Unlock** ×2–×6 | DLSS-G natif ×2, RTX40MFG-Unlock |
+| RTX 50 · Blackwell | Native DLSS-G ×2–×4 | OptiScaler, DLSS Enabler |
+| RTX 40 · Ada | **RenoDX MFG Unlock** ×2–×6 | Native DLSS-G ×2, RTX40MFG-Unlock |
 | RTX 30 · Ampere | **dlssg for sm_86** ×2–×4 | OptiScaler, DLSS Enabler |
 | RTX 20 · Turing | **dlssg for sm_75** ×2–×4 | OptiScaler, DLSS Enabler |
 
-Règles tenues par la matrice de compatibilité :
+Rules enforced by the compatibility matrix:
 
-- MFG dynamique = DLSS-G **310.9.1** + Streamline **2.14.1** + pilote **595.41+** + D3D12.
-- Streamline antérieur à **2.12.129** : le wrapper bloque, pas le runtime.
-- Les composants `sl.*` de deux paquets ne se mélangent **jamais**.
-
----
-
-## ✦ HDR RenoDX automatique
-
-Au démarrage, Prism lit la [liste des mods RenoDX](https://github.com/clshortfuse/renodx/wiki/Mods)
-et construit un **plan** par jeu, affiché sur la page **Injection** :
-
-1. **Ligne dédiée** du wiki (AppID Steam, puis nom) → l'addon du jeu.
-2. **Tableau moteur** — un jeu Unreal listé sous *UE Extended* reçoit l'addon générique,
-   **et les notes de sa ligne sont appliquées** : clés `ReShade.ini`, bloc `Engine.ini`
-   écrit dans `%LOCALAPPDATA%\<Projet>\Saved\Config\…` puis passé en lecture seule.
-3. Build dédiée de l'index snapshot, puis addon générique du moteur.
-
-Chaque étape porte son étiquette : `PRISM` (appliquée), `VÉRIFIER`, ou `VOUS` (à faire
-dans le jeu). Une note ambiguë n'est jamais convertie en réglage ; un mod publié
-uniquement sur Nexus ou Discord est signalé, pas deviné.
+- Dynamic MFG = DLSS-G **310.9.1** + Streamline **2.14.1** + driver **595.41+** + D3D12.
+- Streamline older than **2.12.129**: the wrapper blocks, not the runtime.
+- `sl.*` components from two different packages are **never** mixed.
 
 ---
 
-## ✦ Sécurité
+## RenoDX HDR
 
-| Garantie | Mise en œuvre |
+At startup Prism reads the [RenoDX mod list](https://github.com/clshortfuse/renodx/wiki/Mods)
+and builds a **plan** per game, shown on the **Injection** page:
+
+1. **Dedicated row** in the wiki (Steam AppID, then name) → the game's add-on.
+2. **Engine tables** — an Unreal game listed under *UE Extended* gets the generic add-on
+   **and the notes of its row applied**: `ReShade.ini` keys, the `Engine.ini` block written to
+   `%LOCALAPPDATA%\<Project>\Saved\Config\…` and set read-only.
+3. Dedicated snapshot build, then the engine's generic add-on.
+
+Each step is tagged `PRISM` (applied), `CHECK`, or `YOU` (to do in game). Ambiguous notes are
+never turned into settings; mods published only on Nexus or Discord are reported, not guessed.
+
+---
+
+## Safety
+
+| Guarantee | Implementation |
 |---|---|
-| DLL NVIDIA authentiques | `WinVerifyTrust` + signataire du certificat |
-| Runtime neural patché | accepté seulement sur SHA-256 épinglé |
-| Catalogue DLSS | manifeste signé + MD5 vérifié avant écriture |
-| Aucun original perdu | copie avant remplacement, première version conservée |
-| Jamais d'installation partielle | transaction par installation : relecture SHA-256, retour arrière complet |
-| Jeu en cours d'exécution | écriture refusée tant que l'exécutable tourne ou qu'un fichier est verrouillé |
-| Désinstallation exacte | registre par fichier, par installation, avec empreinte |
-| Fichiers de l'utilisateur | presets ReShade, `dxgi.dll` étrangers et fichiers modifiés hors Prism jamais écrasés |
+| Authentic NVIDIA DLLs | `WinVerifyTrust` + certificate signer |
+| Patched neural runtime | accepted only on a pinned SHA-256 |
+| DLSS catalog | signed manifest + MD5 verified before writing |
+| No partial install | per-install transaction, SHA-256 re-read, full rollback |
+| Game running | writes refused while the executable runs or a file is locked |
+| User files | ReShade presets, foreign `dxgi.dll` and files changed outside Prism are never overwritten |
+| Updates | SHA-256 required; once signed, same publisher required; rollback on failure |
 
-**Liste noire.** `Optiscaler-Client` est écarté : l'équipe OptiScaler déclare n'avoir
-aucune application de gestion officielle.
+**Blocklist.** `Optiscaler-Client` is excluded: the OptiScaler team states it has no official
+management application.
 
 > [!WARNING]
-> Les surcouches chargent une bibliothèque dans le processus du jeu. En multijoueur
-> protégé par un anti-triche, cela peut être interprété comme une intrusion. **À
-> réserver au solo.**
+> Overlays load a library into the game process. In multiplayer games protected by
+> anti-cheat this can be treated as tampering. **Use Prism for single-player games only.**
 
 ---
 
-## ✦ Sources suivies
+## Updates
 
-| Composant | Dépôt | Rôle |
+Prism checks GitHub Releases at startup (can be disabled) and from **Settings ▸ Updates**.
+
+| Step | Guarantee |
+|---|---|
+| Check | in the background, never blocks the interface |
+| Download `Prism-<version>-win-x64.zip` | rejected if it does not match its `.sha256` |
+| Signature | once Prism is signed, updates must carry the same publisher |
+| Replace files | current files renamed `.old`, full rollback on any error |
+| Restart | `.old` files removed on next launch |
+
+Pre-releases are offered only to users who enable **Test builds**.
+
+---
+
+## FAQ
+
+<details>
+<summary><b>Does Prism include NVIDIA or third-party DLLs?</b></summary>
+
+No. Prism downloads each component from its official public source at install time, verifies
+it, and records exactly what it wrote. See [Sources](#sources).
+</details>
+
+<details>
+<summary><b>Can I go back to the original game files?</b></summary>
+
+Yes. **Remove** undoes one install; **Changes ▸ Restore vanilla** undoes everything Prism did
+to a game, with SHA-256 verification. Backups live in `%LOCALAPPDATA%\Prism` and survive
+uninstalling Prism.
+</details>
+
+<details>
+<summary><b>Why does Prism ask for administrator rights?</b></summary>
+
+Many games are installed under `Program Files`, where replacing DLLs requires elevation.
+The installer itself does not need admin rights.
+</details>
+
+<details>
+<summary><b>Is it safe with online games?</b></summary>
+
+Do not use overlays in multiplayer games with anti-cheat. Prism is meant for single-player.
+</details>
+
+<details>
+<summary><b>My antivirus or SmartScreen warns about Prism.</b></summary>
+
+Unsigned tools that download DLLs and modify game folders often trigger heuristics. Verify the
+download against its `.sha256`, or build Prism from source.
+</details>
+
+---
+
+## Sources
+
+Prism builds on the work of these projects. All credit for the mods goes to their authors.
+
+| Component | Repository | Role |
 |---|---|---|
-| RenoDX DLSS 5 | [`RankFTW/rhi-repo`](https://github.com/RankFTW/rhi-repo/releases) | addon + pile DLSS / Streamline / runtime neural |
-| RenoDX HDR | [`clshortfuse/renodx`](https://github.com/clshortfuse/renodx) · [wiki](https://github.com/clshortfuse/renodx/wiki/Mods) | mods HDR par jeu |
-| RenoDX MFG Unlock | [`mavismmg/MFGAdaUnlock-RenoDx`](https://github.com/mavismmg/MFGAdaUnlock-RenoDx) | MFG sur Ada |
-| Runtimes DLSS | [`beeradmoore/dlss-swapper`](https://github.com/beeradmoore/dlss-swapper) | manifeste signé + MD5 |
-| Streamline SDK | [`NVIDIA-RTX/Streamline`](https://github.com/NVIDIA-RTX/Streamline) | `sl.*` apparié, source officielle |
-| ReShade | [reshade.me](https://reshade.me/) | hôte des addons |
-| RTX40MFG-Unlock | [`dashdogy/RTX40MFG-Unlock`](https://github.com/dashdogy/RTX40MFG-Unlock) | MFG Ada via proxy |
+| RenoDX DLSS 5 | [`RankFTW/rhi-repo`](https://github.com/RankFTW/rhi-repo/releases) | add-on + DLSS / Streamline / neural runtime stack |
+| RenoDX HDR | [`clshortfuse/renodx`](https://github.com/clshortfuse/renodx) · [wiki](https://github.com/clshortfuse/renodx/wiki/Mods) | per-game HDR mods |
+| RenoDX MFG Unlock | [`mavismmg/MFGAdaUnlock-RenoDx`](https://github.com/mavismmg/MFGAdaUnlock-RenoDx) | MFG on Ada |
+| DLSS runtimes | [`beeradmoore/dlss-swapper`](https://github.com/beeradmoore/dlss-swapper) | signed manifest + MD5 |
+| Streamline SDK | [`NVIDIA-RTX/Streamline`](https://github.com/NVIDIA-RTX/Streamline) | matched `sl.*`, official source |
+| ReShade | [reshade.me](https://reshade.me/) | add-on host |
+| RTX40MFG-Unlock | [`dashdogy/RTX40MFG-Unlock`](https://github.com/dashdogy/RTX40MFG-Unlock) | MFG on Ada via proxy |
 | OptiScaler | [`optiscaler/OptiScaler`](https://github.com/optiscaler/OptiScaler) | FSR-FG / XeSS-FG |
-| OptiScaler DLSSNR | [`Dagherbou/OptiScaler_DLSSNR`](https://github.com/Dagherbou/OptiScaler_DLSSNR) | Neural Rendering DX12 |
-| PreSR Multipass | [`wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass`](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass) | Neural Rendering DX12 |
-| DLSS 5 Bridge | [`NIGos/dlss5-bridge`](https://github.com/NIGos/dlss5-bridge) | Neural Rendering DX11 / Vulkan |
-| DLSS5 One-Click | [`faisalkindi/DLSS5oneclick`](https://github.com/faisalkindi/DLSS5oneclick) | installeur unique |
-| dlssg for sm_86 | [`sdli1995/dlssg_for_sm86`](https://github.com/sdli1995/dlssg_for_sm86) | DLSS-G porté RTX 30 |
-| dlssg for sm_75 | [`Coldwood1026/dlssg_for_sm75`](https://github.com/Coldwood1026/dlssg_for_sm75) | DLSS-G porté RTX 20 |
-| DLSS Enabler | [`artur-graniszewski/DLSS-Enabler`](https://github.com/artur-graniszewski/DLSS-Enabler) | repli FSR 3.1 |
+| OptiScaler DLSSNR | [`Dagherbou/OptiScaler_DLSSNR`](https://github.com/Dagherbou/OptiScaler_DLSSNR) | Neural Rendering on DX12 |
+| PreSR Multipass | [`wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass`](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass) | Neural Rendering on DX12 |
+| DLSS 5 Bridge | [`NIGos/dlss5-bridge`](https://github.com/NIGos/dlss5-bridge) | Neural Rendering on DX11 / Vulkan |
+| DLSS5 One-Click | [`faisalkindi/DLSS5oneclick`](https://github.com/faisalkindi/DLSS5oneclick) | single installer |
+| dlssg for sm_86 | [`sdli1995/dlssg_for_sm86`](https://github.com/sdli1995/dlssg_for_sm86) | DLSS-G on RTX 30 |
+| dlssg for sm_75 | [`Coldwood1026/dlssg_for_sm75`](https://github.com/Coldwood1026/dlssg_for_sm75) | DLSS-G on RTX 20 |
+| DLSS Enabler | [`artur-graniszewski/DLSS-Enabler`](https://github.com/artur-graniszewski/DLSS-Enabler) | FSR 3.1 fallback |
+
+Approach inspired by [RHI](https://github.com/RankFTW/RHI).
 
 ---
 
-## ✦ Apparence
+## Languages
 
-**Paramètres ▸ Apparence** propose deux thèmes, appliqués sans redémarrer :
+English · Français · Deutsch · Español · Italiano · Português (Brasil) · Русский · Українська ·
+Polski · Türkçe · العربية · हिन्दी · 日本語 · 한국어 · 简体中文 · 繁體中文 · Bahasa Indonesia · Tiếng Việt
 
-| Thème | Esprit |
-|---|---|
-| **Classique** | graphite dense, outil technique |
-| **Studio** | graphite presque noir, typographie Segoe UI Variable, surfaces calmes, arrondis retenus, transitions de 150 à 250 ms, pages en fondu |
-
-L'interface s'en tient aux **mots-clés**. Les explications détaillées restent à portée de
-main : le bouton **?** de la barre de titre les affiche ou les masque partout, et le choix
-est mémorisé.
+The Windows display language is used on first launch. Strings live in `Lang/<code>.json`,
+embedded in the executable, with a *language → English → key* fallback. Translation fixes
+are welcome.
 
 ---
 
-## ✦ Langues
+## Build from source
 
-English · Français · Deutsch · Español · Italiano · Português (Brasil) · Русский ·
-Українська · Polski · Türkçe · العربية · हिन्दी · 日本語 · 한국어 · 简体中文 · 繁體中文 ·
-Bahasa Indonesia · Tiếng Việt
-
-La langue d'affichage de Windows est choisie au premier lancement. Les textes vivent dans
-`Lang/<code>.json`, embarqués dans l'exécutable, avec repli *langue → anglais → clé*.
-
----
-
-## ✦ Mises à jour
-
-Prism se met à jour lui-même depuis les **releases GitHub** du dépôt défini dans
-`Services/UpdateService.cs` (`Repo`).
-
-| Étape | Garantie |
-|---|---|
-| Vérification au démarrage (désactivable), ou **Paramètres ▸ Mises à jour** | en arrière-plan, sans bloquer l'interface |
-| Téléchargement de `Prism-<version>-win-x64.zip` | refusé si l'empreinte ne correspond pas à `.zip.sha256` |
-| Signature | si Prism est signé, la mise à jour doit l'être par le même éditeur |
-| Remplacement des fichiers | fichiers en place renommés en `.old`, retour complet au moindre échec |
-| Redémarrage | les `.old` sont supprimés au lancement suivant |
-
-Les **versions de test** (prereleases GitHub) ne sont proposées qu'aux utilisateurs qui les
-activent.
-
-**Publier une version :**
+Requirements: **.NET 10 SDK**, Windows 10 or 11.
 
 ```powershell
-.\scripts\release.ps1 -Version 1.1.0 -Notes "Nouveautés"
-.\scripts\release.ps1 -Version 1.2.0-beta.1 -Prerelease -NotesFile notes.md
-.\scripts\release.ps1 -Version 1.1.0 -CertThumbprint <empreinte du certificat>
-```
-
-Le script fixe la version, publie un `Prism.exe` autonome (aucun runtime .NET à installer),
-signe si un certificat est fourni, crée l'archive et son empreinte, puis la release (`gh`).
-
-> [!IMPORTANT]
-> Les utilisateurs doivent pouvoir lire les releases : le dépôt qui les publie doit être
-> **public**. Code fermé : publier dans un dépôt dédié (ex. `Skynizz/Prism-releases`) et
-> changer `Repo`.
-
----
-
-## ✦ Compiler et lancer
-
-Prérequis : **SDK .NET 10**, Windows 10 ou 11.
-
-```powershell
+git clone https://github.com/Skynizz/Prism.git
+cd Prism
 dotnet build -c Release
-Start-Process .\bin\Release\net10.0-windows\Prism.exe -Verb RunAs
+.\bin\Release\net10.0-windows\Prism.exe
 ```
 
-L'élévation est demandée au lancement (`app.manifest`) : les dossiers de jeux vivent
-souvent sous `Program Files`, où le remplacement de DLL échouerait sans droits.
+Release packages (portable zip, installer, checksums, GitHub release):
 
-> [!IMPORTANT]
-> Si Prism est ouvert, `Prism.exe` est verrouillé et la compilation échoue à la copie.
-> Fermez l'application, ou compilez ailleurs : `dotnet build -c Release -o build`.
+```powershell
+.\scripts\release.ps1 -Version 1.1.0 -Notes "What's new"      # requires gh and Inno Setup 6
+.\scripts\release.ps1 -Version 1.1.0 -NoPublish               # build everything locally
+```
 
----
-
-## ✦ Architecture
+<details>
+<summary><b>Project layout</b></summary>
 
 ```
 Prism/
-├─ Core/            MVVM minimal, convertisseurs, localisation (Loc), molette
-├─ Lang/            18 fichiers de traduction, embarqués
-├─ Models/          jeux, DLL, GPU, voies, registre, plans HDR
-├─ Services/        scan, détection, téléchargement, signature, installeurs,
-│                   registre des modifications, retour vanille, wiki RenoDX
-├─ ViewModels/      MainViewModel (coquille), GameDetailViewModel
-├─ Views/           fenêtre + 9 pages
-│  └─ Controls/     GameBar, InstalledStrip, StatusDot, Field, Pipeline
-└─ Themes/          Tokens, Base, Inputs, Data — Tokens.Studio, Studio
+├─ Core/          minimal MVVM, converters, localization, adaptive layout panels
+├─ Lang/          18 translation files, embedded
+├─ Models/        games, DLLs, GPU, paths, change registry, HDR plans
+├─ Services/      scan, detection, downloads, signatures, installers, transactions,
+│                 change registry, vanilla restore, RenoDX wiki, self-update
+├─ ViewModels/    MainViewModel (shell), GameDetailViewModel
+├─ Views/         window + 9 pages, Controls/
+├─ Themes/        Classic and Studio design tokens and styles
+├─ Assets/        icon, splash screen, installer artwork
+├─ installer/     Inno Setup script
+└─ scripts/       release.ps1
 ```
 
-| Page | Rôle |
-|---|---|
-| **Overview** | pile graphique, capacités DLSS, pipeline de rendu |
-| **Games** | bibliothèque + inspecteur, **ajouté par Prism** |
-| **DLSS** | runtimes SR / DLSS-G / RR, DLSS 5 |
-| **Frame Gen** | voies par GPU, multiplicateur, réglages MFG |
-| **Injection** | chaîne chargée, ReShade, plan HDR |
-| **Changes** | registre complet, vérification, retour vanille |
-| **Components** | sources suivies et provenance |
-| **Logs** | journal structuré, filtre, export |
-| **Settings** | langue, bibliothèques, sauvegardes, sécurité |
+Zero NuGet dependencies.
+</details>
 
 ---
 
+## License
+
+Prism is free software released under the [GNU General Public License v3.0](LICENSE).
+
+Prism is an independent project. It is not affiliated with, endorsed by, or sponsored by NVIDIA,
+AMD, Intel, crosire (ReShade) or any mod author listed above. NVIDIA, RTX, DLSS and GeForce are
+trademarks of NVIDIA Corporation; other names belong to their respective owners.
+
 <div align="center">
-<sub>Prism ne distribue aucun binaire tiers : il télécharge depuis les sources officielles,
-vérifie, et garde la trace de chaque octet écrit.</sub>
+<br/>
+<sub>Prism distributes no third-party binaries: it downloads from official sources, verifies, and keeps a record of every byte it writes.</sub>
 </div>
