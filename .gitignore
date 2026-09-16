@@ -7,6 +7,10 @@ app.invoker.manifest
 # Paquets de release (scripts/release.ps1)
 artifacts/
 
+# Notes de travail : restent en local, jamais publiees
+docs/launch-video.md
+docs/claude-design-prompt.md
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/
