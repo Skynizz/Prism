@@ -54,7 +54,7 @@ public sealed class BackupService
             }
             catch (Exception ex)
             {
-                Log.Write($"Sauvegarde impossible pour {filePath} : {ex.Message}");
+                Log.Write($"Cannot back up {filePath}: {ex.Message}");
                 return null;
             }
 
@@ -86,12 +86,12 @@ public sealed class BackupService
             // Un Engine.ini passe en lecture seule refuserait sinon d'etre remplace.
             DllInstaller.ClearReadOnly(entry.OriginalPath);
             File.Copy(entry.BackupPath, entry.OriginalPath, overwrite: true);
-            Log.Write($"Restauration : {entry.OriginalPath}");
+            Log.Write($"Restored: {entry.OriginalPath}");
             return true;
         }
         catch (Exception ex)
         {
-            Log.Write($"Restauration impossible pour {entry.OriginalPath} : {ex.Message}");
+            Log.Write($"Cannot restore {entry.OriginalPath}: {ex.Message}");
             return false;
         }
     }
@@ -105,7 +105,7 @@ public sealed class BackupService
         {
             _entries.RemoveAll(e => string.Equals(e.OriginalPath, entry.OriginalPath, StringComparison.OrdinalIgnoreCase));
             try { if (File.Exists(entry.BackupPath)) File.Delete(entry.BackupPath); }
-            catch (Exception ex) { Log.Write($"Suppression de sauvegarde impossible : {ex.Message}"); }
+            catch (Exception ex) { Log.Write($"Cannot delete backup: {ex.Message}"); }
             Persist();
         }
     }

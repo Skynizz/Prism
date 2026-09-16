@@ -364,7 +364,7 @@ public sealed class MainViewModel : ObservableObject
         if (found?.Id == RunningGame?.Id) return;
 
         RunningGame = found;
-        if (found is not null) Log.Info(Src, $"Jeu actif : {found.Name}");
+        if (found is not null) Log.Info(Src, $"Active game: {found.Name}");
         Detail?.Refresh();
     }
 
@@ -469,7 +469,9 @@ public sealed class MainViewModel : ObservableObject
     {
         Log.Push(entry);
         LastLog = entry;
-        if (entry.Level >= LogLevel.Warn) Status = entry.Message;
+        // La barre d'etat ne repete pas le journal : ses messages sont techniques et d'une
+        // seule langue, alors que l'interface en parle dix-huit. Seules les notifications
+        // traduites de Notify s'y affichent ; le detail reste dans la page Journal.
     }
 
     private LogEntry? _lastLog;
@@ -478,7 +480,7 @@ public sealed class MainViewModel : ObservableObject
     private void ClearLog()
     {
         Log.Buffer.Clear();
-        Log.Info(Src, "Journal efface.");
+        Log.Info(Src, "Log cleared.");
     }
 
     private void ExportLog()
@@ -732,7 +734,7 @@ public sealed class MainViewModel : ObservableObject
                     DllDetector.Inspect(game, raise: false);
                     app.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => game.RaiseAll());
                 }
-                catch (Exception ex) { Log.Warn(Src, $"Inspection de {game.Name} impossible : {ex.Message}"); }
+                catch (Exception ex) { Log.Warn(Src, $"Cannot inspect {game.Name}: {ex.Message}"); }
             }
         });
 
@@ -740,7 +742,7 @@ public sealed class MainViewModel : ObservableObject
         {
             GamesView.Refresh();
             Detail?.Refresh();
-            Log.Info(Src, $"{pending.Count} titre(s) analyses.");
+            Log.Info(Src, $"{pending.Count} title(s) inspected.");
         }).Task;
     }
 

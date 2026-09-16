@@ -10,7 +10,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        Log.Info("app", $"Demarrage de Prism {UpdateService.CurrentLabel}");
+        Log.Info("app", $"Prism {UpdateService.CurrentLabel} starting");
 
         // Fichiers .old laisses par une mise a jour : la nouvelle version tourne, ils partent.
         UpdateService.CleanupPreviousVersion();
@@ -19,7 +19,7 @@ public partial class App : Application
         // l'application au milieu d'une operation sur les fichiers d'un jeu.
         DispatcherUnhandledException += OnDispatcherException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-            Log.Error("app", $"Exception non geree : {args.ExceptionObject}");
+            Log.Error("app", $"Unhandled exception: {args.ExceptionObject}");
 
         var settings = new SettingsStore().Current;
 
@@ -61,15 +61,15 @@ public partial class App : Application
         if (old.WindowState == WindowState.Maximized) fresh.WindowState = WindowState.Maximized;
         old.Close();
 
-        Log.Info("app", $"Theme : {Theme.Current}");
+        Log.Info("app", $"Theme: {Theme.Current}");
     }
 
     private void OnDispatcherException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        Log.Error("app", $"Exception interface : {e.Exception}");
+        Log.Error("app", $"UI exception: {e.Exception}");
         MessageBox.Show(
-            $"{e.Exception.Message}\n\nDetail consigne dans :\n{Log.CurrentFile}",
-            "Prism — erreur inattendue",
+            $"{e.Exception.Message}\n\nDetails written to:\n{Log.CurrentFile}",
+            "Prism — unexpected error",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
         e.Handled = true;

@@ -41,7 +41,7 @@ public sealed class GameScanner
         ct.ThrowIfCancellationRequested();
         progress?.Report(Loc.T("scan.progress", label));
         try { action(); }
-        catch (Exception ex) { Log.Write($"Scanner {label} en echec : {ex.Message}"); }
+        catch (Exception ex) { Log.Write($"Scanner {label} failed: {ex.Message}"); }
     }
 
     // ---------------------------------------------------------------- Steam
@@ -126,7 +126,7 @@ public sealed class GameScanner
                     Executable = Str(r, "LaunchExecutable") is { } exe ? Path.Combine(loc, exe) : null
                 };
             }
-            catch (Exception ex) { Log.Write($"Manifeste Epic illisible ({Path.GetFileName(file)}) : {ex.Message}"); }
+            catch (Exception ex) { Log.Write($"Epic manifest unreadable ({Path.GetFileName(file)}): {ex.Message}"); }
 
             if (game is not null) yield return game;
         }

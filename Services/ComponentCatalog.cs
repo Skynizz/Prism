@@ -143,9 +143,9 @@ public sealed class ComponentCatalog
                     component.LastCommit = repo.PushedAt;
 
                     if (repo.Archived)
-                        Log.Warn(Src, $"{component.Name} : depot archive en amont.");
+                        Log.Warn(Src, $"{component.Name}: upstream repository archived.");
                     else if (component.IsStale)
-                        Log.Warn(Src, $"{component.Name} : aucun commit depuis {component.FreshnessLabel}.");
+                        Log.Warn(Src, $"{component.Name}: no commit for {component.FreshnessLabel}.");
                 }
             }
 
@@ -153,7 +153,7 @@ public sealed class ComponentCatalog
         }
         catch (Exception ex)
         {
-            Log.Warn(Src, $"Verification de {component.Name} impossible : {ex.Message}");
+            Log.Warn(Src, $"Cannot check {component.Name}: {ex.Message}");
         }
     }
 }

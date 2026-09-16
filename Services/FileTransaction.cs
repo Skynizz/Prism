@@ -156,14 +156,14 @@ public sealed class FileTransaction
                 }
             }
 
-            Log.Info(Src, $"{_game.Name} : {_steps.Count} ecriture(s) validee(s){(_origin is null ? "" : $" ({_origin})")}");
+            Log.Info(Src, $"{_game.Name}: {_steps.Count} write(s) committed{(_origin is null ? "" : $" ({_origin})")}");
             return new InstallResult(true, "", _steps.Count(s => s.Touched));
         }
         catch (Exception ex)
         {
             var rolledBack = Rollback();
             var name = Path.GetFileName(current?.Dest ?? "");
-            Log.Error(Src, $"{_game.Name} : echec sur {current?.Dest} ({ex.Message}), {rolledBack} fichier(s) remis en l'etat");
+            Log.Error(Src, $"{_game.Name}: failed on {current?.Dest} ({ex.Message}), {rolledBack} file(s) restored");
 
             return new InstallResult(false, GameGuard.IsSharingViolation(ex)
                 ? Loc.T("guard.locked", name)
@@ -197,7 +197,7 @@ public sealed class FileTransaction
             }
             catch (Exception ex)
             {
-                Log.Error(Src, $"Annulation impossible pour {step.Dest} : {ex.Message}");
+                Log.Error(Src, $"Rollback failed for {step.Dest}: {ex.Message}");
             }
         }
         return restored;

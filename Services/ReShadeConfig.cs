@@ -91,7 +91,7 @@ public static class ReShadeConfig
             s.ForceFlipMeteringOff = Int(values, "ForceFlipMeteringOff", 0) != 0;
             s.RaiseFrameCeiling = Int(values, "RaiseFrameCeiling", 0) != 0;
         }
-        catch (Exception ex) { Log.Warn(Src, $"Lecture de {FileName} impossible : {ex.Message}"); }
+        catch (Exception ex) { Log.Warn(Src, $"Cannot read {FileName}: {ex.Message}"); }
 
         return s;
     }
@@ -132,7 +132,7 @@ public static class ReShadeConfig
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Ecriture de {FileName} impossible : {ex.Message}");
+            Log.Error(Src, $"Cannot write {FileName}: {ex.Message}");
             return new InstallResult(false, Loc.T("err.config_failed", ex.Message));
         }
     }
@@ -168,7 +168,7 @@ public static class ReShadeConfig
             DllInstaller.ClearReadOnly(path);
             File.WriteAllLines(path, lines);
 
-            Log.Info(Src, $"Chargement precoce active pour {addonFileName} dans {dir}");
+            Log.Info(Src, $"Early loading enabled for {addonFileName} in {dir}");
             return new InstallResult(true,
                 Loc.T("early.ok", addonFileName), 1);
         }
@@ -239,13 +239,13 @@ public static class ReShadeConfig
             if (removed > 0)
             {
                 File.WriteAllLines(path, lines);
-                Log.Info(Src, $"{FileName} nettoye dans {dir} ({removed} entree(s))");
+                Log.Info(Src, $"{FileName} cleaned in {dir} ({removed} entries)");
             }
             return removed;
         }
         catch (Exception ex)
         {
-            Log.Warn(Src, $"Nettoyage de {FileName} impossible : {ex.Message}");
+            Log.Warn(Src, $"Cannot clean {FileName}: {ex.Message}");
             return 0;
         }
     }

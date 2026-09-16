@@ -45,7 +45,7 @@ public static class GpuService
         }
         catch (Exception ex)
         {
-            Log.Write($"Detection GPU impossible : {ex.Message}");
+            Log.Write($"GPU detection failed: {ex.Message}");
         }
 
         // Priorite au GPU NVIDIA : sur un portable Optimus, l'iGPU Intel apparait aussi.

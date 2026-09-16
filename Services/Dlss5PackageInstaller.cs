@@ -164,7 +164,7 @@ public sealed class Dlss5PackageInstaller
                 .ToList();
             if (absent.Count > 0)
             {
-                Log.Error(Src, $"Paquet incomplet, rien n'est ecrit : {string.Join(", ", absent)}");
+                Log.Error(Src, $"Incomplete package, nothing written: {string.Join(", ", absent)}");
                 return new InstallResult(false, Loc.T("dlss5.err.pack_incomplete", string.Join(", ", absent)));
             }
 
@@ -176,7 +176,7 @@ public sealed class Dlss5PackageInstaller
                 if (f.Name.Equals(NeuralRuntimeFile, StringComparison.OrdinalIgnoreCase))
                 {
                     if (IsTrustedRuntime(f.Source)) continue;
-                    Log.Error(Src, $"Runtime neural refuse ({f.From.Tag}) : empreinte inconnue");
+                    Log.Error(Src, $"Neural runtime rejected ({f.From.Tag}): unknown checksum");
                     return new InstallResult(false, Loc.T("dlss5.err.pin", f.Name));
                 }
 
@@ -184,7 +184,7 @@ public sealed class Dlss5PackageInstaller
                 if (!sig.IsNvidia)
                 {
                     var who = sig.Valid ? sig.Signer ?? "?" : Loc.T("sig.invalid");
-                    Log.Error(Src, $"Signature refusee pour {f.Name} ({f.From.Tag}) : {who}");
+                    Log.Error(Src, $"Signature rejected for {f.Name} ({f.From.Tag}): {who}");
                     return new InstallResult(false, Loc.T("dlss5.err.signature", f.Name, who));
                 }
             }
@@ -230,7 +230,7 @@ public sealed class Dlss5PackageInstaller
             }
 
             var written = committed.FilesChanged;
-            if (strays.Count > 0) Log.Info(Src, $"Copies hors Streamline retirees : {string.Join(", ", strays)}");
+            if (strays.Count > 0) Log.Info(Src, $"Copies outside Streamline removed: {string.Join(", ", strays)}");
 
             var early = ReShadeConfig.EnableEarlyLoading(exeDir, AddonFileName);
 
@@ -241,12 +241,12 @@ public sealed class Dlss5PackageInstaller
             var msg = Loc.T("dlss5.ok.installed", addon.Version, written) + " " + Loc.T("dlss5.ok.location", where);
             if (!early.Success) msg += " " + early.Message;
 
-            Log.Info(Src, $"RenoDX DLSS 5 {addon.Version} : {written} fichier(s) poses et verifies, pile dans {where}");
+            Log.Info(Src, $"RenoDX DLSS 5 {addon.Version}: {written} file(s) written and verified, stack in {where}");
             return new InstallResult(true, msg, written);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Error(Src, $"Installation DLSS 5 echouee : {ex.Message}");
+            Log.Error(Src, $"DLSS 5 install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }

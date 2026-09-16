@@ -69,7 +69,7 @@ public static class OptiScalerConfig
                 if (SetKey(lines, section, key, value)) applied++;
 
             File.WriteAllLines(path, lines);
-            Log.Info(Src, $"{FileName} : profil {profile}, {applied} cle(s) ecrite(s) dans {dir}");
+            Log.Info(Src, $"{FileName}: profile {profile}, {applied} key(s) written in {dir}");
 
             var label = profile switch
             {
@@ -81,7 +81,7 @@ public static class OptiScalerConfig
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Ecriture de {FileName} impossible : {ex.Message}");
+            Log.Error(Src, $"Cannot write {FileName}: {ex.Message}");
             return new InstallResult(false, Loc.T("err.config_failed", ex.Message));
         }
     }

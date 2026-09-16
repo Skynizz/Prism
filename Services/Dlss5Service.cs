@@ -185,7 +185,7 @@ public sealed class Dlss5Service
         }
         catch (Exception ex)
         {
-            Log.Warn(Src, $"Inspection du driver store impossible : {ex.Message}");
+            Log.Warn(Src, $"Cannot inspect the driver store: {ex.Message}");
             return null;
         }
     }
@@ -393,7 +393,7 @@ public sealed class Dlss5Service
 
             BridgeVersion = release.Tag;
             DllDetector.Inspect(game);
-            Log.Info(Src, $"dlss5-bridge {release.Tag} depose dans {dir}");
+            Log.Info(Src, $"dlss5-bridge {release.Tag} placed in {dir}");
 
             var missing = new List<string>();
             if (!game.HasReShade) missing.Add(Loc.T("label.reshade_addon"));
@@ -405,7 +405,7 @@ public sealed class Dlss5Service
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation du pont echouee : {ex.Message}");
+            Log.Error(Src, $"Bridge install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -432,7 +432,7 @@ public sealed class Dlss5Service
         try
         {
             var archive = Path.Combine(AppPaths.ComponentCache, "dlss5", AppPaths.Sanitize(repo), asset.Name);
-            Log.Info(Src, $"Telechargement de {label} {release.Tag} ({asset.Size / 1024 / 1024} Mo)");
+            Log.Info(Src, $"Downloading {label} {release.Tag} ({asset.Size / 1024 / 1024} MB)");
             await _downloads.DownloadAsync(asset.Url, archive, null, progress, ct);
 
             var extractDir = Path.Combine(AppPaths.ComponentCache, "dlss5", AppPaths.Sanitize(repo), release.Tag);
@@ -477,7 +477,7 @@ public sealed class Dlss5Service
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation {label} echouee : {ex.Message}");
+            Log.Error(Src, $"{label} install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -566,12 +566,12 @@ public sealed class Dlss5Service
             File.Move(temp, dest, overwrite: true);
 
             DllDetector.Inspect(game);
-            Log.Info(Src, $"{NeuralRuntime} copie depuis le pilote vers {dest}");
+            Log.Info(Src, $"{NeuralRuntime} copied from the driver to {dest}");
             return new InstallResult(true, Loc.T("dlss5.adopt.ok"), 1);
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Copie du runtime neural echouee : {ex.Message}");
+            Log.Error(Src, $"Neural runtime copy failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.copy_failed", ex.Message));
         }
     }

@@ -52,7 +52,7 @@ public static class SystemInfo
                 return new DisplayInfo((int)dm.dmPelsWidth, (int)dm.dmPelsHeight,
                     (int)dm.dmDisplayFrequency, (int)dm.dmBitsPerPel);
         }
-        catch (Exception ex) { Log.Warn("system", $"Lecture de l'ecran impossible : {ex.Message}"); }
+        catch (Exception ex) { Log.Warn("system", $"Cannot read the display: {ex.Message}"); }
 
         return new DisplayInfo(0, 0, 0, 0);
     }
@@ -84,7 +84,7 @@ public static class SystemInfo
                 if (k.GetValue("HardwareInformation.MemorySize") is int mi && mi > 0) return mi;
             }
         }
-        catch (Exception ex) { Log.Warn("system", $"Lecture de la VRAM impossible : {ex.Message}"); }
+        catch (Exception ex) { Log.Warn("system", $"Cannot read VRAM: {ex.Message}"); }
 
         return 0;
     }
@@ -157,7 +157,7 @@ public static class ProcessWatcher
         }
         catch (Exception ex)
         {
-            Log.Warn("system", $"Enumeration des processus impossible : {ex.Message}");
+            Log.Warn("system", $"Cannot enumerate processes: {ex.Message}");
             return null;
         }
 

@@ -39,8 +39,8 @@ public sealed class AppServices
         Scanner = new GameScanner { ExtraFolders = Settings.Current.ExtraLibraryFolders };
 
 
-        Log.Info("system", $"GPU {Gpu.Name} · {Gpu.GenerationLabel} · pilote {Gpu.DriverBranch ?? Gpu.DriverVersion}");
-        Log.Info("system", $"Ecran {Display.Summary} · {Gpu.DirectXLevel}");
+        Log.Info("system", $"GPU {Gpu.Name} · {Gpu.GenerationLabel} · driver {Gpu.DriverBranch ?? Gpu.DriverVersion}");
+        Log.Info("system", $"Display {Display.Summary} · {Gpu.DirectXLevel}");
     }
 
     public SettingsStore Settings { get; }

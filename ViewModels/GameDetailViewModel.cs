@@ -115,7 +115,7 @@ public sealed class GameDetailViewModel : ObservableObject
         set
         {
             if (!Set(ref _selectedFg, value)) return;
-            Log.Trace("fg", $"voie -> {value?.Title ?? "(null)"}");
+            Log.Trace("fg", $"path -> {value?.Title ?? "(null)"}");
             InstallFgCommand.Raise();
             OnPropertyChanged(nameof(FgRequirements));
             OnPropertyChanged(nameof(FgHasRequirements));
@@ -676,11 +676,11 @@ public sealed class GameDetailViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                Log.Warn(Src, $"Mise de cote impossible pour {file} : {ex.Message}");
+                Log.Warn(Src, $"Cannot set aside {file}: {ex.Message}");
             }
         }
 
-        Log.Info(Src, $"{mod.Label} (hors Prism) mis de cote dans {Game.Name} : {moved} fichier(s)");
+        Log.Info(Src, $"{mod.Label} (outside Prism) set aside in {Game.Name}: {moved} file(s)");
         _notify(moved > 0 ? Loc.T("detected.removed", mod.Label, moved) : Loc.T("changes.msg.none_reverted"),
             moved == 0);
         Refresh();
@@ -742,7 +742,7 @@ public sealed class GameDetailViewModel : ObservableObject
             return;
         }
 
-        Log.Info(Src, $"{origin} retire de {Game.Name} ({done} element(s))");
+        Log.Info(Src, $"{origin} removed from {Game.Name} ({done} item(s))");
         _notify(done > 0 ? Loc.T("installed.removed", origin, Game.Name) : Loc.T("changes.msg.none_reverted"),
             done == 0);
         Refresh();
@@ -929,7 +929,7 @@ public sealed class GameDetailViewModel : ObservableObject
             {
                 var files = Directory.EnumerateFiles(TargetDir, "*.addon64")
                     .Select(Path.GetFileName).Where(n => n is not null).ToList();
-                return files.Count == 0 ? "Aucun" : string.Join(", ", files);
+                return files.Count == 0 ? Loc.T("common.none") : string.Join(", ", files);
             }
             catch { return "—"; }
         }

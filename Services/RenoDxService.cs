@@ -47,7 +47,7 @@ public sealed class RenoDxService
             .OrderBy(a => a.Slug, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        Log.Write($"Catalogue RenoDX : {Addons.Count} addons (snapshot du {PublishedAt:yyyy-MM-dd}).");
+        Log.Write($"RenoDX catalog: {Addons.Count} add-ons (snapshot of {PublishedAt:yyyy-MM-dd}).");
     }
 
     /// <summary>"renodx-cyberpunk2077.addon64" devient "cyberpunk2077".</summary>
@@ -177,7 +177,7 @@ public sealed class RenoDxService
         }
         catch (Exception ex)
         {
-            Log.Write($"Installation RenoDX echouee : {ex.Message}");
+            Log.Write($"RenoDX install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }

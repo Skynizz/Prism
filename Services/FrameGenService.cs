@@ -99,7 +99,7 @@ public sealed class FrameGenService
             if (!written.Success) return written;
 
             DllDetector.Inspect(game);
-            Log.Info(Src, $"MFGAdaUnlock {release.Tag} depose dans {dir}");
+            Log.Info(Src, $"MFGAdaUnlock {release.Tag} placed in {dir}");
 
             var warn = game.HasReShade ? "" : " " + Loc.T("fg.msg.reshade_needed");
             return new InstallResult(true,
@@ -107,7 +107,7 @@ public sealed class FrameGenService
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation MFGAdaUnlock echouee : {ex.Message}");
+            Log.Error(Src, $"MFGAdaUnlock install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -144,13 +144,13 @@ public sealed class FrameGenService
             if (!written.Success) return written;
 
             DllDetector.Inspect(game);
-            Log.Info(Src, $"RTX40MFG-Unlock {release.Tag} installe sous {proxy}");
+            Log.Info(Src, $"RTX40MFG-Unlock {release.Tag} installed as {proxy}");
             return new InstallResult(true,
                 Loc.T("fg.msg.rtx40_installed", release.Tag, proxy), 1);
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation MFG Unlock echouee : {ex.Message}");
+            Log.Error(Src, $"MFG Unlock install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -206,13 +206,13 @@ public sealed class FrameGenService
             var copied = staged.Count;
 
             DllDetector.Inspect(game);
-            Log.Info(Src, $"OptiScaler {release.Tag} installe sous {proxy} ({copied} fichiers)");
+            Log.Info(Src, $"OptiScaler {release.Tag} installed as {proxy} ({copied} files)");
             return new InstallResult(true,
                 Loc.T("opti.ok", "OptiScaler", release.Tag, proxy, copied), copied);
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation OptiScaler echouee : {ex.Message}");
+            Log.Error(Src, $"OptiScaler install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -278,7 +278,7 @@ public sealed class FrameGenService
                 File.Delete(file);
                 removed.Add(name);
             }
-            catch (Exception ex) { Log.Warn(Src, $"Suppression de {file} impossible : {ex.Message}"); }
+            catch (Exception ex) { Log.Warn(Src, $"Cannot delete {file}: {ex.Message}"); }
         }
 
         DllDetector.Inspect(game);

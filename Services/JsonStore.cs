@@ -38,7 +38,7 @@ public static class JsonStore
         }
         catch (Exception ex)
         {
-            Log.Write($"Echec d'ecriture de {path} : {ex.Message}");
+            Log.Write($"Write failed for {path}: {ex.Message}");
         }
     }
 }

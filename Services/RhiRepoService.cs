@@ -74,19 +74,19 @@ public sealed partial class RhiRepoService
             {
                 _releases = parsed;
                 await File.WriteAllTextAsync(cache, json, ct);
-                Log.Info(Src, $"rhi-repo : {parsed.Count} releases");
+                Log.Info(Src, $"rhi-repo: {parsed.Count} releases");
                 return;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Warn(Src, $"rhi-repo indisponible : {ex.Message}");
+            Log.Warn(Src, $"rhi-repo unavailable: {ex.Message}");
         }
 
         if (File.Exists(cache))
         {
             _releases = Parse(await File.ReadAllTextAsync(cache, ct));
-            Log.Info(Src, $"rhi-repo : {_releases.Count} releases (cache)");
+            Log.Info(Src, $"rhi-repo: {_releases.Count} releases (cache)");
         }
     }
 

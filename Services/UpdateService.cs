@@ -64,13 +64,13 @@ public sealed class UpdateService
         catch (HttpRequestException ex)
         {
             LastError = Loc.T("upd.err.offline");
-            Log.Info(Src, $"Releases de {Repo} illisibles : {ex.Message}");
+            Log.Info(Src, $"Releases of {Repo} unreadable: {ex.Message}");
             return null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             LastError = Loc.T("upd.err.offline");
-            Log.Info(Src, $"Verification des mises a jour impossible : {ex.Message}");
+            Log.Info(Src, $"Cannot check for updates: {ex.Message}");
             return null;
         }
 
@@ -113,13 +113,13 @@ public sealed class UpdateService
         catch (Exception ex)
         {
             LastError = Loc.T("upd.err.offline");
-            Log.Info(Src, $"Reponse des releases illisible : {ex.Message}");
+            Log.Info(Src, $"Releases response unreadable: {ex.Message}");
             return null;
         }
 
         Log.Info(Src, best is null
-            ? $"Prism {CurrentLabel} est a jour"
-            : $"Mise a jour disponible : {best.Tag}{(best.Prerelease ? " (test)" : "")}");
+            ? $"Prism {CurrentLabel} is up to date"
+            : $"Update available: {best.Tag}{(best.Prerelease ? " (test)" : "")}");
         return best;
     }
 
@@ -142,7 +142,7 @@ public sealed class UpdateService
         if (!actual.Equals(published, StringComparison.OrdinalIgnoreCase))
         {
             try { File.Delete(zip); } catch { }
-            Log.Error(Src, $"Empreinte refusee pour {info.Tag} : attendu {published}, obtenu {actual}");
+            Log.Error(Src, $"Checksum rejected for {info.Tag}: expected {published}, got {actual}");
             throw new InvalidDataException(Loc.T("upd.err.hash"));
         }
 
@@ -160,16 +160,16 @@ public sealed class UpdateService
             var theirs = Authenticode.Verify(exe);
             if (!theirs.Valid || !string.Equals(theirs.Signer, mine.Signer, StringComparison.OrdinalIgnoreCase))
             {
-                Log.Error(Src, $"Signature refusee pour {info.Tag} : {theirs.Signer ?? "aucune"} (attendu {mine.Signer})");
+                Log.Error(Src, $"Signature rejected for {info.Tag}: {theirs.Signer ?? "none"} (expected {mine.Signer})");
                 throw new InvalidDataException(Loc.T("upd.err.signature"));
             }
         }
         else
         {
-            Log.Warn(Src, "Prism n'est pas signe : la signature de la mise a jour n'est pas exigee.");
+            Log.Warn(Src, "Prism is not signed: update signature not required.");
         }
 
-        Log.Info(Src, $"{info.Tag} telechargee et verifiee (SHA-256 {actual[..12]}…)");
+        Log.Info(Src, $"{info.Tag} downloaded and verified (SHA-256 {actual[..12]}…)");
         return Path.GetDirectoryName(exe)!;
     }
 
@@ -198,11 +198,11 @@ public sealed class UpdateService
 
                 File.Copy(source, dest, overwrite: true);
             }
-            Log.Info(Src, $"{done.Count} fichier(s) remplace(s) dans {appDir}");
+            Log.Info(Src, $"{done.Count} file(s) replaced in {appDir}");
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Installation interrompue ({ex.Message}) : retour a la version en place");
+            Log.Error(Src, $"Install interrupted ({ex.Message}): rolling back to the installed version");
             for (var i = done.Count - 1; i >= 0; i--)
             {
                 var (dest, hadOld) = done[i];
@@ -211,7 +211,7 @@ public sealed class UpdateService
                     if (File.Exists(dest)) File.Delete(dest);
                     if (hadOld) File.Move(dest + OldSuffix, dest);
                 }
-                catch (Exception rollback) { Log.Error(Src, $"Retour impossible pour {dest} : {rollback.Message}"); }
+                catch (Exception rollback) { Log.Error(Src, $"Rollback failed for {dest}: {rollback.Message}"); }
             }
             throw;
         }

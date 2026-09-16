@@ -75,7 +75,7 @@ public sealed class StreamlineService
         try
         {
             var zip = Path.Combine(AppPaths.ComponentCache, "streamline", asset.Name);
-            Log.Info(Src, $"Telechargement du SDK Streamline {tag} ({asset.Size / 1024 / 1024} Mo)");
+            Log.Info(Src, $"Downloading the Streamline SDK {tag} ({asset.Size / 1024 / 1024} MB)");
             await _downloads.DownloadAsync(asset.Url, zip, null, progress, ct);
 
             var extractDir = Path.Combine(AppPaths.ComponentCache, "streamline", tag);
@@ -127,7 +127,7 @@ public sealed class StreamlineService
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Deploiement Streamline echoue : {ex.Message}");
+            Log.Error(Src, $"Streamline deployment failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.deploy_failed", ex.Message));
         }
     }

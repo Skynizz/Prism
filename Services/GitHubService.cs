@@ -62,7 +62,7 @@ public sealed class GitHubService
         }
         catch (Exception ex)
         {
-            Log.Warn("github", $"Metadonnees illisibles pour {repo} : {ex.Message}");
+            Log.Warn("github", $"Metadata unreadable for {repo}: {ex.Message}");
             return null;
         }
     }
@@ -85,7 +85,7 @@ public sealed class GitHubService
         }
         catch (Exception ex)
         {
-            Log.Warn("github", $"API indisponible ({ex.Message}) — repli sur le cache.");
+            Log.Warn("github", $"API unavailable ({ex.Message}) — falling back to the cache.");
             if (!File.Exists(cacheFile)) return null;
             try { return await File.ReadAllTextAsync(cacheFile, ct); } catch { return null; }
         }
@@ -113,7 +113,7 @@ public sealed class GitHubService
             }
             catch (Exception ex)
             {
-                Log.Write($"API GitHub indisponible pour {repo} ({ex.Message}) — tentative de repli sur le cache.");
+                Log.Write($"GitHub API unavailable for {repo} ({ex.Message}) — trying the cache.");
                 // Le cache perime vaut mieux que rien : on affiche une version, meme datee.
                 if (File.Exists(cacheFile))
                 {
@@ -151,7 +151,7 @@ public sealed class GitHubService
         }
         catch (Exception ex)
         {
-            Log.Write($"Release GitHub illisible pour {repo} : {ex.Message}");
+            Log.Write($"GitHub release unreadable for {repo}: {ex.Message}");
             return null;
         }
     }

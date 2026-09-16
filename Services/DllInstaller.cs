@@ -95,7 +95,7 @@ public sealed class DllInstaller
         }
         catch (Exception ex)
         {
-            Log.Error(Src, $"Telechargement de {fileName} {record.Version} echoue : {ex.Message}");
+            Log.Error(Src, $"Download of {fileName} {record.Version} failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.download_failed", ex.Message));
         }
 

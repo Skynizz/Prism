@@ -60,17 +60,17 @@ public sealed class ReShadeService
 
             if (m is null)
             {
-                Log.Write("Version de ReShade introuvable sur la page d'accueil.");
+                Log.Write("ReShade version not found on the home page.");
                 return;
             }
 
             LatestVersion = m.Groups[1].Value;
             LatestUrl = DownloadBase + m.Value;
-            Log.Write($"ReShade disponible : {LatestVersion}");
+            Log.Write($"ReShade available: {LatestVersion}");
         }
         catch (Exception ex)
         {
-            Log.Write($"Verification de ReShade impossible : {ex.Message}");
+            Log.Write($"Cannot check ReShade: {ex.Message}");
         }
     }
 
@@ -88,7 +88,7 @@ public sealed class ReShadeService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Write($"Telechargement de ReShade echoue : {ex.Message}");
+            Log.Write($"ReShade download failed: {ex.Message}");
             return CachedSetup();
         }
     }
@@ -127,7 +127,7 @@ public sealed class ReShadeService
         // Deja pret : on ne telecharge rien et on ne touche a rien.
         if (state.Ready)
         {
-            Log.Info(Src, $"{game.Name} : ReShade {state.VersionLabel} add-on deja en place ({state.Primary!.Name})");
+            Log.Info(Src, $"{game.Name}: ReShade {state.VersionLabel} add-on already in place ({state.Primary!.Name})");
             return new InstallResult(true, Loc.T("reshade.ok.present", state.VersionLabel, state.Primary.Name), 0);
         }
 
@@ -145,7 +145,7 @@ public sealed class ReShadeService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Error(Src, $"Preparation de ReShade echouee : {ex.Message}");
+            Log.Error(Src, $"ReShade preparation failed: {ex.Message}");
             return new InstallResult(false, ex.Message);
         }
 
@@ -167,7 +167,7 @@ public sealed class ReShadeService
         var after = ReShadeLocator.Scan(dir);
         if (!after.Ready)
         {
-            Log.Error(Src, $"{game.Name} : ReShade pose sous {target.Name} mais etat final {after.Label}");
+            Log.Error(Src, $"{game.Name}: ReShade placed as {target.Name} but final state {after.Label}");
             return new InstallResult(false, Loc.T("reshade.err.verify", after.Label), result.FilesChanged);
         }
 
@@ -175,7 +175,7 @@ public sealed class ReShadeService
             : target.ViaOptiScaler ? Loc.T("reshade.ok.opti", version)
             : Loc.T("reshade.ok.installed", version, target.Name);
 
-        Log.Info(Src, $"{game.Name} : ReShade {version} add-on sous {target.Name}");
+        Log.Info(Src, $"{game.Name}: ReShade {version} add-on as {target.Name}");
         return new InstallResult(true, msg, result.FilesChanged);
     }
 
@@ -244,9 +244,9 @@ public sealed class ReShadeService
             IniFile.Set(lines, "Plugins", "LoadReshade", "true");
             DllInstaller.ClearReadOnly(ini);
             File.WriteAllLines(ini, lines);
-            Log.Info(Src, $"OptiScaler.ini : LoadReshade=true ({dir})");
+            Log.Info(Src, $"OptiScaler.ini: LoadReshade=true ({dir})");
         }
-        catch (Exception ex) { Log.Warn(Src, $"OptiScaler.ini non modifie : {ex.Message}"); }
+        catch (Exception ex) { Log.Warn(Src, $"OptiScaler.ini not changed: {ex.Message}"); }
     }
 
     /// <summary>
@@ -273,7 +273,7 @@ public sealed class ReShadeService
             throw new InvalidDataException(Loc.T("reshade.err.extract", name));
         }
 
-        Log.Info(Src, $"{name} {version} extrait de {Path.GetFileName(setup)}");
+        Log.Info(Src, $"{name} {version} extracted from {Path.GetFileName(setup)}");
         return dll;
     }
 
@@ -367,7 +367,7 @@ public sealed class ReShadeService
                 File.Delete(path);
                 removed++;
             }
-            catch (Exception ex) { Log.Warn(Src, $"Suppression de {path} impossible : {ex.Message}"); }
+            catch (Exception ex) { Log.Warn(Src, $"Cannot delete {path}: {ex.Message}"); }
         }
 
         DllDetector.Inspect(game);

@@ -52,7 +52,7 @@ public static class ShaderCompiler
         DllInstaller.ClearReadOnly(dest);
         File.Copy(src, dest, overwrite: true);
 
-        Log.Info("dlss5", $"{FileName} du jeu remplace : {before} -> {FileVersionInfo.GetVersionInfo(dest).FileVersion}");
+        Log.Info("dlss5", $"Game {FileName} replaced: {before} -> {FileVersionInfo.GetVersionInfo(dest).FileVersion}");
         return true;
     }
 

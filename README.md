@@ -8,8 +8,7 @@ DLSS 5 Neural Rendering · Multi Frame Generation · RenoDX HDR · ReShade
 
 <br/>
 
-[![Release](https://img.shields.io/github/v/release/Skynizz/Prism?style=flat-square&color=76B900&label=release)](https://github.com/Skynizz/Prism/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Skynizz/Prism/total?style=flat-square&color=76B900)](https://github.com/Skynizz/Prism/releases)
+[![Download](https://img.shields.io/badge/download-installer%20%C2%B7%20portable-76B900?style=flat-square)](https://github.com/Skynizz/Prism/releases/latest)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![NVIDIA RTX](https://img.shields.io/badge/NVIDIA-RTX%2020%E2%80%9350-76B900?style=flat-square&logo=nvidia&logoColor=white)
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)

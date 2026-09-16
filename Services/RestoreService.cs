@@ -191,7 +191,7 @@ public sealed class RestoreService
                 if (kind is not null) orphans.Add(new OrphanFile(file, kind));
             }
         }
-        catch (Exception ex) { Log.Warn(Src, $"Balayage des orphelins impossible : {ex.Message}"); }
+        catch (Exception ex) { Log.Warn(Src, $"Orphan scan failed: {ex.Message}"); }
 
         return orphans;
     }
@@ -317,12 +317,12 @@ public sealed class RestoreService
                     DllInstaller.ClearReadOnly(orphan.Path);
                     File.Delete(orphan.Path);
                     removed++;
-                    Log.Info(Src, $"Orphelin retire : {orphan.Path}");
+                    Log.Info(Src, $"Orphan removed: {orphan.Path}");
                 }
                 catch (Exception ex)
                 {
                     refused.Add(orphan.FileName);
-                    Log.Warn(Src, $"Suppression de {orphan.Path} impossible : {ex.Message}");
+                    Log.Warn(Src, $"Cannot delete {orphan.Path}: {ex.Message}");
                 }
             }
         }

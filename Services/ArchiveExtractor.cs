@@ -44,7 +44,7 @@ public static class ArchiveExtractor
             // Garde-fou zip-slip : une entree ne doit jamais sortir du dossier cible.
             if (!dest.StartsWith(Path.GetFullPath(targetDir), StringComparison.OrdinalIgnoreCase))
             {
-                Log.Write($"Entree d'archive ignoree (chemin hors cible) : {entry.FullName}");
+                Log.Write($"Archive entry skipped (path outside target): {entry.FullName}");
                 continue;
             }
 
@@ -93,7 +93,7 @@ public static class ArchiveExtractor
             if (File.Exists(candidate)) return candidate;
         }
 
-        Log.Write("Telechargement de 7zr.exe pour l'extraction des archives .7z");
+        Log.Write("Downloading 7zr.exe to extract .7z archives");
         await new DownloadService().DownloadAsync(SevenZrUrl, exe, null, null, ct);
         return exe;
     }

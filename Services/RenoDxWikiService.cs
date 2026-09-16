@@ -65,12 +65,12 @@ public sealed partial class RenoDxWikiService
     public async Task LoadAsync(CancellationToken ct = default)
     {
         var md = await FetchAsync(WikiRawUrl, "Mods.md", text => Parse(text) >= 50, ct);
-        if (md is null) Log.Warn(Src, "Page Mods du wiki indisponible, et aucun cache.");
+        if (md is null) Log.Warn(Src, "Wiki Mods page unavailable, and no cache.");
 
         var json = await FetchAsync(GamesIndexUrl, "games-index.json", text => ParseIndex(text) > 0, ct);
-        if (json is null) Log.Warn(Src, "games-index.json indisponible, et aucun cache.");
+        if (json is null) Log.Warn(Src, "games-index.json unavailable, and no cache.");
 
-        Log.Info(Src, $"Wiki RenoDX : {Entries.Count} lignes, {_index.Count} jeux indexes"
+        Log.Info(Src, $"RenoDX wiki: {Entries.Count} rows, {_index.Count} indexed games"
                       + (FromCache ? " (cache)" : ""));
     }
 
@@ -91,11 +91,11 @@ public sealed partial class RenoDxWikiService
                 FetchedAt = DateTimeOffset.Now;
                 return text;
             }
-            Log.Warn(Src, $"{cacheName} : contenu inattendu, cache conserve.");
+            Log.Warn(Src, $"{cacheName}: unexpected content, cache kept.");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Warn(Src, $"{cacheName} : {ex.Message}");
+            Log.Warn(Src, $"{cacheName}: {ex.Message}");
         }
 
         if (!File.Exists(cache)) return null;

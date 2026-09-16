@@ -123,12 +123,12 @@ public sealed class HdrInstaller
             var msg = Loc.T("hdr.ok.applied", plan.Title, applied);
             if (engineNote is not null) msg += " " + engineNote;
 
-            Log.Info(Src, $"{plan.Title} : {file} pose, {applied} reglage(s) ecrit(s)");
+            Log.Info(Src, $"{plan.Title}: {file} placed, {applied} setting(s) written");
             return new InstallResult(true, msg, 1 + applied);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            Log.Error(Src, $"Installation HDR echouee : {ex.Message}");
+            Log.Error(Src, $"HDR install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }
@@ -194,7 +194,7 @@ public sealed class HdrInstaller
         }
         catch (Exception ex)
         {
-            Log.Warn(Src, $"Engine.ini non ecrit : {ex.Message}");
+            Log.Warn(Src, $"Engine.ini not written: {ex.Message}");
             return new InstallResult(false, Loc.T("err.write_failed", Path.GetFileName(path), ex.Message));
         }
     }

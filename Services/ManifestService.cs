@@ -71,13 +71,13 @@ public sealed class ManifestService
             Loaded = true;
             FetchedAt = DateTimeOffset.Now;
             await File.WriteAllTextAsync(cached, json, ct);
-            Log.Write($"Manifeste recupere : {parsed.Dlss.Count} DLSS, {parsed.DlssG.Count} DLSS-G, {parsed.DlssD.Count} DLSS-D.");
+            Log.Write($"Manifest fetched: {parsed.Dlss.Count} DLSS, {parsed.DlssG.Count} DLSS-G, {parsed.DlssD.Count} DLSS-D.");
         }
         catch (Exception ex)
         {
-            Log.Write($"Recuperation du manifeste impossible ({ex.Message}) — repli sur le cache.");
+            Log.Write($"Cannot fetch the manifest ({ex.Message}) — falling back to the cache.");
             if (!TryLoadLocal(cached))
-                Log.Write("Aucun cache de manifeste disponible.");
+                Log.Write("No manifest cache available.");
         }
     }
 

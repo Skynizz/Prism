@@ -120,12 +120,12 @@ public sealed class DeploymentStore
                     DllInstaller.ClearReadOnly(entry.Path);
                     File.Delete(entry.Path);
                     removed = true;
-                    Log.Info(Src, $"Retire : {entry.Path}");
+                    Log.Info(Src, $"Removed: {entry.Path}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Warn(Src, $"Suppression impossible de {entry.Path} : {ex.Message}");
+                Log.Warn(Src, $"Cannot delete {entry.Path}: {ex.Message}");
                 return false;
             }
 

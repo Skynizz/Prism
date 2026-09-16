@@ -23,14 +23,14 @@ public static class GameGuard
     {
         if (RunningProcess(game) is { } running)
         {
-            Log.Warn("guard", $"{game.Name} : ecriture refusee, {running} est en cours d'execution");
+            Log.Warn("guard", $"{game.Name}: write refused, {running} is running");
             return new InstallResult(false, Loc.T("guard.running", running));
         }
 
         foreach (var path in paths ?? Enumerable.Empty<string>())
         {
             if (!IsLocked(path)) continue;
-            Log.Warn("guard", $"{game.Name} : ecriture refusee, {path} est verrouille");
+            Log.Warn("guard", $"{game.Name}: write refused, {path} is locked");
             return new InstallResult(false, Loc.T("guard.locked", Path.GetFileName(path)));
         }
 
