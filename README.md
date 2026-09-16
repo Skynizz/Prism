@@ -19,7 +19,7 @@ DLSS 5 Neural Rendering · Multi Frame Generation · RenoDX HDR · ReShade
 
 <br/>
 
-<img src="docs/screenshots/overview.png" alt="Prism — Overview" width="100%" />
+<img src="docs/ui-tour.gif" alt="Prism — interface tour" width="100%" />
 
 </div>
 
