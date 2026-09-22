@@ -890,10 +890,16 @@ public sealed class GameDetailViewModel : ObservableObject
     private string? _reShadeVersion;
     public string? ReShadeVersion { get => _reShadeVersion; private set => Set(ref _reShadeVersion, value); }
 
-    /// <summary>« 6.8.0 · add-on · dxgi.dll » : version, build et nom sous lequel le jeu le charge.</summary>
-    public string ReShadeStatus => ReShadeLocator.Scan(Game) is { Present: true } s ? s.Label : Loc.T("common.not_installed");
+    /// <summary>
+    /// Etat de ReShade, releve lors du rafraichissement. Ces proprietes sont lues par des
+    /// liaisons et des infobulles : elles ne doivent jamais toucher au disque a la volee.
+    /// </summary>
+    private Services.ReShadeState _reShade = ReShadeLocator.Empty;
 
-    public UiStatus ReShadeState => ReShadeLocator.Scan(Game) switch
+    /// <summary>« 6.8.0 · add-on · dxgi.dll » : version, build et nom sous lequel le jeu le charge.</summary>
+    public string ReShadeStatus => _reShade.Present ? _reShade.Label : Loc.T("common.not_installed");
+
+    public UiStatus ReShadeState => _reShade switch
     {
         { Ready: true } => UiStatus.Injected,
         { Present: true } => UiStatus.Warning,
@@ -1052,7 +1058,8 @@ public sealed class GameDetailViewModel : ObservableObject
                      ?? FgOptions.FirstOrDefault(o => o.Available);
 
         BuildHdr();
-        ReShadeVersion = ReShadeService.InstalledVersion(Game);
+        _reShade = ReShadeLocator.Scan(Game);
+        ReShadeVersion = _reShade.Present ? _reShade.VersionLabel : null;
         SyncMultipliers();
         RaiseDerived();
     }
@@ -1089,7 +1096,8 @@ public sealed class GameDetailViewModel : ObservableObject
     {
         DllDetector.Inspect(Game);
         foreach (var slot in Slots) slot.Reload();
-        ReShadeVersion = ReShadeService.InstalledVersion(Game);
+        _reShade = ReShadeLocator.Scan(Game);
+        ReShadeVersion = _reShade.Present ? _reShade.VersionLabel : null;
         RaiseDerived();
     }
 

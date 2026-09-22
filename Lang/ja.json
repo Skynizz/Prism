@@ -636,6 +636,8 @@
  "set.language_hint": "すぐに反映されます。ゲーム名、ファイル名、ログは変わりません。",
  "set.libraries": "追加ライブラリ",
  "set.libraries_hint": "ランチャー外のゲーム用：親フォルダーを選ぶと、各サブフォルダーが 1 本のゲームになります。",
+ "set.reduce_motion": "アニメーションを減らす",
+ "set.reduce_motion_hint": "画面のアニメーションを止めます。VRR を有効にした OLED では推奨：リフレッシュレートが変動するとパネルがちらつきます。",
  "set.safety": "安全性",
  "set.sec.appearance": "外観",
  "set.sec.backups": "バックアップ",

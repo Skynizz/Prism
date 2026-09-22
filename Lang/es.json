@@ -636,6 +636,8 @@
  "set.language_hint": "Se aplica al instante. Los nombres de juegos, archivos y registros no cambian.",
  "set.libraries": "BIBLIOTECAS ADICIONALES",
  "set.libraries_hint": "Para juegos fuera de un lanzador: elige una carpeta padre, cada subcarpeta es un juego.",
+ "set.reduce_motion": "Reducir animaciones",
+ "set.reduce_motion_hint": "Desactiva las animaciones de la interfaz. Recomendado en pantallas OLED con VRR: una frecuencia de refresco que cambia sin parar hace parpadear el panel.",
  "set.safety": "SEGURIDAD",
  "set.sec.appearance": "Apariencia",
  "set.sec.backups": "Copias de seguridad",

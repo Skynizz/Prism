@@ -74,6 +74,9 @@ public static class ReShadeLocator
     private static readonly ConcurrentDictionary<string, (long Size, DateTime At, bool Addon)> AddonCache =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Etat neutre, avant tout relevé : evite de balayer le disque depuis une liaison.</summary>
+    public static ReShadeState Empty { get; } = new() { Loaders = Array.Empty<ReShadeLoader>() };
+
     public static ReShadeState Scan(GameInfo game) => Scan(DllInstaller.TargetDirectory(game));
 
     public static ReShadeState Scan(string dir)

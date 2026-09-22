@@ -636,6 +636,8 @@
  "set.language_hint": "Applies instantly. Game names, file names and logs stay as they are.",
  "set.libraries": "ADDITIONAL LIBRARIES",
  "set.libraries_hint": "For games outside a launcher: pick a parent folder, each subfolder is a game.",
+ "set.reduce_motion": "Reduce animations",
+ "set.reduce_motion_hint": "Stops the interface animations. Recommended on an OLED screen with VRR: a refresh rate that keeps changing makes the panel flicker.",
  "set.safety": "SAFETY",
  "set.sec.appearance": "Appearance",
  "set.sec.backups": "Backups",

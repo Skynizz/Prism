@@ -636,6 +636,8 @@
  "set.language_hint": "S'applique immédiatement. Noms de jeux, fichiers et journaux restent tels quels.",
  "set.libraries": "BIBLIOTHÈQUES SUPPLÉMENTAIRES",
  "set.libraries_hint": "Pour les jeux hors lanceur : choisissez un dossier parent, chaque sous-dossier est un jeu.",
+ "set.reduce_motion": "Animations réduites",
+ "set.reduce_motion_hint": "Coupe les animations de l'interface. Recommandé sur un écran OLED avec VRR : un taux de rafraîchissement qui varie fait scintiller la dalle.",
  "set.safety": "SÉCURITÉ",
  "set.sec.appearance": "Apparence",
  "set.sec.backups": "Sauvegardes",

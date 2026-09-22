@@ -636,6 +636,8 @@
  "set.language_hint": "Działa od razu. Nazwy gier, plików i dzienniki się nie zmieniają.",
  "set.libraries": "DODATKOWE BIBLIOTEKI",
  "set.libraries_hint": "Dla gier spoza launcherów: wybierz folder nadrzędny, każdy podfolder to jedna gra.",
+ "set.reduce_motion": "Ogranicz animacje",
+ "set.reduce_motion_hint": "Wyłącza animacje interfejsu. Zalecane na ekranach OLED z VRR: stale zmieniające się odświeżanie powoduje migotanie panelu.",
  "set.safety": "BEZPIECZEŃSTWO",
  "set.sec.appearance": "Wygląd",
  "set.sec.backups": "Kopie zapasowe",

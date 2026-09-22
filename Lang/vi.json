@@ -636,6 +636,8 @@
  "set.language_hint": "Áp dụng ngay. Tên trò chơi, tên tệp và nhật ký không đổi.",
  "set.libraries": "THƯ VIỆN BỔ SUNG",
  "set.libraries_hint": "Cho trò chơi ngoài launcher: chọn thư mục cha, mỗi thư mục con là một trò chơi.",
+ "set.reduce_motion": "Giảm hiệu ứng động",
+ "set.reduce_motion_hint": "Tắt hiệu ứng động của giao diện. Nên bật trên màn OLED có VRR: tần số quét thay đổi liên tục khiến tấm nền nhấp nháy.",
  "set.safety": "AN TOÀN",
  "set.sec.appearance": "Giao diện",
  "set.sec.backups": "Sao lưu",

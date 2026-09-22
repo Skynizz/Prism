@@ -636,6 +636,8 @@
  "set.language_hint": "Wirkt sofort. Spielnamen, Dateinamen und Protokolle bleiben unverändert.",
  "set.libraries": "ZUSÄTZLICHE BIBLIOTHEKEN",
  "set.libraries_hint": "Für Spiele ohne Launcher: wählen Sie einen übergeordneten Ordner, jeder Unterordner ist ein Spiel.",
+ "set.reduce_motion": "Animationen reduzieren",
+ "set.reduce_motion_hint": "Schaltet die Animationen der Oberfläche ab. Empfohlen bei OLED-Bildschirmen mit VRR: eine ständig wechselnde Bildwiederholrate lässt das Panel flackern.",
  "set.safety": "SICHERHEIT",
  "set.sec.appearance": "Darstellung",
  "set.sec.backups": "Sicherungen",

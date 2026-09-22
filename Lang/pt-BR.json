@@ -636,6 +636,8 @@
  "set.language_hint": "Aplicado na hora. Nomes de jogos, arquivos e registros não mudam.",
  "set.libraries": "BIBLIOTECAS ADICIONAIS",
  "set.libraries_hint": "Para jogos fora de um launcher: escolha uma pasta principal, cada subpasta é um jogo.",
+ "set.reduce_motion": "Reduzir animações",
+ "set.reduce_motion_hint": "Desliga as animações da interface. Recomendado em telas OLED com VRR: uma taxa de atualização que muda o tempo todo faz o painel piscar.",
  "set.safety": "SEGURANÇA",
  "set.sec.appearance": "Aparência",
  "set.sec.backups": "Backups",

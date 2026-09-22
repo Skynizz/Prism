@@ -57,6 +57,9 @@ public sealed class AppSettings
 
     /// <summary>Explications affichees ; par defaut l'interface s'en tient aux mots-cles.</summary>
     public bool ShowDetails { get; set; }
+
+    /// <summary>Animations coupees : recommande sur un ecran OLED avec VRR active.</summary>
+    public bool ReduceMotion { get; set; }
     public bool ShowDevBuilds { get; set; }
     public bool AutoCheckUpdates { get; set; } = true;
     public DateTimeOffset? ManifestFetchedAt { get; set; }

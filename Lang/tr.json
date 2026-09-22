@@ -636,6 +636,8 @@
  "set.language_hint": "Hemen uygulanır. Oyun adları, dosya adları ve günlükler değişmez.",
  "set.libraries": "EK KÜTÜPHANELER",
  "set.libraries_hint": "Başlatıcı dışındaki oyunlar için: bir üst klasör seçin, her alt klasör bir oyundur.",
+ "set.reduce_motion": "Animasyonları azalt",
+ "set.reduce_motion_hint": "Arayüz animasyonlarını kapatır. VRR açık OLED ekranlarda önerilir: sürekli değişen yenileme hızı panelin titremesine yol açar.",
  "set.safety": "GÜVENLİK",
  "set.sec.appearance": "Görünüm",
  "set.sec.backups": "Yedekler",

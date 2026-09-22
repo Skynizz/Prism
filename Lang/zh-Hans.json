@@ -636,6 +636,8 @@
  "set.language_hint": "立即生效。游戏名、文件名和日志不会改变。",
  "set.libraries": "其他游戏库",
  "set.libraries_hint": "用于启动器之外的游戏：选择一个父文件夹，每个子文件夹即一个游戏。",
+ "set.reduce_motion": "减少动画",
+ "set.reduce_motion_hint": "关闭界面动画。建议在开启 VRR 的 OLED 屏幕上使用：刷新率不断变化会让面板闪烁。",
  "set.safety": "安全",
  "set.sec.appearance": "外观",
  "set.sec.backups": "备份",

@@ -636,6 +636,8 @@
  "set.language_hint": "즉시 적용됩니다. 게임 이름, 파일 이름, 로그는 바뀌지 않습니다.",
  "set.libraries": "추가 라이브러리",
  "set.libraries_hint": "런처 밖의 게임용: 상위 폴더를 고르면 각 하위 폴더가 하나의 게임이 됩니다.",
+ "set.reduce_motion": "애니메이션 줄이기",
+ "set.reduce_motion_hint": "인터페이스 애니메이션을 끕니다. VRR을 켠 OLED 화면에서 권장: 주사율이 계속 바뀌면 패널이 깜빡입니다.",
  "set.safety": "안전",
  "set.sec.appearance": "모양",
  "set.sec.backups": "백업",

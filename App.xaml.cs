@@ -28,6 +28,19 @@ public partial class App : Application
         Loc.I.Set(string.IsNullOrWhiteSpace(settings.Language) ? Loc.DetectDefault() : settings.Language);
         Theme.Apply(settings.Theme);
         UiPrefs.I.ShowDetails = settings.ShowDetails;
+        UiPrefs.I.ReduceMotion = settings.ReduceMotion;
+
+        // Cadence des animations. Par defaut WPF suit l'ecran : sur une dalle 120 ou 240 Hz,
+        // un simple survol fait redessiner la fenetre a cette frequence pour rien. La brider
+        // reduit la charge GPU et, surtout, limite les variations de frequence qui font
+        // scintiller les OLED en VRR.
+        try
+        {
+            System.Windows.Media.Animation.Timeline.DesiredFrameRateProperty.OverrideMetadata(
+                typeof(System.Windows.Media.Animation.Timeline),
+                new FrameworkPropertyMetadata { DefaultValue = settings.ReduceMotion ? 24 : 60 });
+        }
+        catch (Exception ex) { Log.Info("app", $"Animation frame rate not capped: {ex.Message}"); }
 
         // Molette fiable dans toutes les pages, y compris au-dessus des listes deployees.
         WheelScroll.Register();

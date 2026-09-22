@@ -143,7 +143,11 @@
                     </HeaderedContentControl>
 
                     <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T set.details}" Margin="0,12,0,0">
-                        <CheckBox Content="{l:T ui.details_tip}" IsChecked="{Binding ShowDetails}" Margin="14,14" />
+                        <StackPanel Margin="16,14,16,16">
+                            <CheckBox Content="{l:T ui.details_tip}" IsChecked="{Binding ShowDetails}" />
+                            <CheckBox Content="{l:T set.reduce_motion}" IsChecked="{Binding ReduceMotion}" Margin="0,12,0,0" />
+                            <TextBlock Style="{StaticResource T.Prose}" Text="{l:T set.reduce_motion_hint}" Margin="0,8,0,0" />
+                        </StackPanel>
                     </HeaderedContentControl>
                 </StackPanel>
 

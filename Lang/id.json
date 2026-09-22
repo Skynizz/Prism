@@ -636,6 +636,8 @@
  "set.language_hint": "Langsung diterapkan. Nama game, nama file, dan log tidak berubah.",
  "set.libraries": "PUSTAKA TAMBAHAN",
  "set.libraries_hint": "Untuk game di luar launcher: pilih folder induk, setiap subfolder adalah satu game.",
+ "set.reduce_motion": "Kurangi animasi",
+ "set.reduce_motion_hint": "Mematikan animasi antarmuka. Disarankan pada layar OLED dengan VRR: refresh rate yang terus berubah membuat panel berkedip.",
  "set.safety": "KEAMANAN",
  "set.sec.appearance": "Tampilan",
  "set.sec.backups": "Cadangan",

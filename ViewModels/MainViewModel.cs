@@ -193,6 +193,23 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Animations coupees. Recommande sur un ecran OLED avec VRR : une fenetre qui s'anime
+    /// fait varier la frequence d'affichage, et ces dalles scintillent alors.
+    /// </summary>
+    public bool ReduceMotion
+    {
+        get => UiPrefs.I.ReduceMotion;
+        set
+        {
+            if (value == UiPrefs.I.ReduceMotion) return;
+            UiPrefs.I.ReduceMotion = value;
+            _svc.Settings.Current.ReduceMotion = value;
+            _svc.Settings.Save();
+            OnPropertyChanged();
+        }
+    }
+
     private int _settingsSection;
 
     /// <summary>Rubrique ouverte dans les parametres, conservee quand la fenetre est reconstruite.</summary>

@@ -636,6 +636,8 @@
  "set.language_hint": "Si applica subito. Nomi dei giochi, dei file e registri restano invariati.",
  "set.libraries": "LIBRERIE AGGIUNTIVE",
  "set.libraries_hint": "Per i giochi fuori da un launcher: scegli una cartella principale, ogni sottocartella è un gioco.",
+ "set.reduce_motion": "Riduci le animazioni",
+ "set.reduce_motion_hint": "Disattiva le animazioni dell'interfaccia. Consigliato su schermi OLED con VRR: una frequenza di aggiornamento che cambia in continuazione fa sfarfallare il pannello.",
  "set.safety": "SICUREZZA",
  "set.sec.appearance": "Aspetto",
  "set.sec.backups": "Backup",

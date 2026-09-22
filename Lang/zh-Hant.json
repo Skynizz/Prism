@@ -636,6 +636,8 @@
  "set.language_hint": "立即生效。遊戲名稱、檔案名稱與記錄不會改變。",
  "set.libraries": "其他遊戲庫",
  "set.libraries_hint": "用於啟動器以外的遊戲：選擇上層資料夾，每個子資料夾即一款遊戲。",
+ "set.reduce_motion": "減少動畫",
+ "set.reduce_motion_hint": "關閉介面動畫。建議在開啟 VRR 的 OLED 螢幕上使用：更新率不斷變化會讓面板閃爍。",
  "set.safety": "安全性",
  "set.sec.appearance": "外觀",
  "set.sec.backups": "備份",

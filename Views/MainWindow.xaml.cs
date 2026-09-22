@@ -28,6 +28,7 @@ public partial class MainWindow : Window
 
         // L'ecran de chargement ne sert qu'au vrai demarrage, pas a la reconstruction de theme.
         StartupOverlay.Visibility = startup ? Visibility.Visible : Visibility.Collapsed;
+        if (startup && !UiPrefs.I.ReduceMotion) StartLoader();
 
         StateChanged += OnStateChanged;
         Loaded += OnLoaded;
@@ -81,14 +82,35 @@ public partial class MainWindow : Window
         finally { HideStartupOverlay(); }
     }
 
-    /// <summary>L'ecran de chargement s'efface en fondu une fois les jeux analyses.</summary>
+    /// <summary>Segment vert qui parcourt la barre, tant que le demarrage dure.</summary>
+    private void StartLoader() =>
+        LoaderShift.BeginAnimation(TranslateTransform.XProperty,
+            new DoubleAnimation(-72, 240, TimeSpan.FromSeconds(1.3))
+            {
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            });
+
+    /// <summary>
+    /// L'ecran de chargement s'efface une fois les jeux analyses. L'animation de la barre
+    /// est arretee explicitement : sans cela elle continue de tourner sous l'ecran masque,
+    /// et la fenetre redessine indefiniment (scintillement sur les OLED en VRR, charge GPU).
+    /// </summary>
     private void HideStartupOverlay()
     {
+        void Done()
+        {
+            StartupOverlay.Visibility = Visibility.Collapsed;
+            LoaderShift.BeginAnimation(TranslateTransform.XProperty, null);
+        }
+
+        if (UiPrefs.I.ReduceMotion) { Done(); return; }
+
         var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(320))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
-        fade.Completed += (_, _) => StartupOverlay.Visibility = Visibility.Collapsed;
+        fade.Completed += (_, _) => Done();
         StartupOverlay.BeginAnimation(OpacityProperty, fade);
     }
 
@@ -116,7 +138,7 @@ public partial class MainWindow : Window
     private void OnPageChanged(object sender, SelectionChangedEventArgs e)
     {
         // Les listes des pages remontent aussi leur SelectionChanged : seul le changement de page compte.
-        if (!Theme.IsStudio || !ReferenceEquals(e.OriginalSource, PagesHost)) return;
+        if (!Theme.IsStudio || UiPrefs.I.ReduceMotion || !ReferenceEquals(e.OriginalSource, PagesHost)) return;
 
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         PagesHost.BeginAnimation(OpacityProperty,
