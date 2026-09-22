@@ -63,15 +63,13 @@ Each release publishes a `.sha256` checksum next to every file.
 > **Installs per user, no admin needed** (`%LOCALAPPDATA%\Programs\Prism`). Prism itself asks
 > for elevation at launch, because game folders often live under `Program Files`.
 >
-> **Smart App Control blocks Prism today.** The binaries are not code-signed yet, and Smart
-> App Control refuses unsigned apps with no cloud reputation: both the installer and the
-> portable build are blocked, and nothing on the app side can change that. Check **Windows
-> Security ▸ App & browser control ▸ Smart App Control** — if it is *On*, Prism will not
-> start. Turning it off cannot be undone without reinstalling Windows, so the honest advice
-> is to wait for signed builds.
+> **A brand-new release has no reputation yet.** Prism is not code-signed, so Windows
+> Smart App Control can refuse to start a build published hours ago, until Microsoft's cloud
+> has seen it. Older releases are usually fine. If a new build does not start, use the
+> previous release or build from source — and SmartScreen's *“Windows protected your PC”*
+> is only a warning: **More info → Run anyway**, after checking the file against its `.sha256`.
 >
-> With Smart App Control off, SmartScreen still shows *“Windows protected your PC”* on an
-> unsigned app: choose **More info → Run anyway**, after checking the file against its `.sha256`.
+> Code-signed releases are being set up; that removes the problem for good.
 
 ---
 
