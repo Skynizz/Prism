@@ -63,8 +63,15 @@ Each release publishes a `.sha256` checksum next to every file.
 > **Installs per user, no admin needed** (`%LOCALAPPDATA%\Programs\Prism`). Prism itself asks
 > for elevation at launch, because game folders often live under `Program Files`.
 >
-> Until the binaries are code-signed, Windows SmartScreen may show *“Windows protected your
-> PC”*: choose **More info → Run anyway**, after checking the file against its `.sha256`.
+> **Smart App Control blocks Prism today.** The binaries are not code-signed yet, and Smart
+> App Control refuses unsigned apps with no cloud reputation: both the installer and the
+> portable build are blocked, and nothing on the app side can change that. Check **Windows
+> Security ▸ App & browser control ▸ Smart App Control** — if it is *On*, Prism will not
+> start. Turning it off cannot be undone without reinstalling Windows, so the honest advice
+> is to wait for signed builds.
+>
+> With Smart App Control off, SmartScreen still shows *“Windows protected your PC”* on an
+> unsigned app: choose **More info → Run anyway**, after checking the file against its `.sha256`.
 
 ---
 
@@ -328,8 +335,11 @@ Do not use overlays in multiplayer games with anti-cheat. Prism is meant for sin
 <details>
 <summary><b>My antivirus or SmartScreen warns about Prism.</b></summary>
 
-Unsigned tools that download DLLs and modify game folders often trigger heuristics. Verify the
-download against its `.sha256`, or build Prism from source.
+Two different things. **Smart App Control** *blocks* unsigned apps outright — Prism cannot run
+while it is enabled, and only a code-signed release fixes that. **SmartScreen** only warns, and
+you can proceed with **More info → Run anyway**. Antivirus heuristics also flag tools that
+download DLLs and modify game folders. Verify the download against its `.sha256`, or build
+Prism from source.
 </details>
 
 ---
