@@ -544,7 +544,7 @@ public sealed class MainViewModel : ObservableObject
     public string BackupsPath => AppPaths.Backups;
     public string CachePath => AppPaths.Cache;
     public string LogsPath => AppPaths.Logs;
-    public string AppVersion => UpdateService.CurrentLabel;
+    public string AppVersion => UpdateService.DisplayLabel;
 
     // -------------------------------------------------------- Mises a jour
 

@@ -46,6 +46,9 @@ public sealed class UpdateService
 
     public static string CurrentLabel => Current.ToString(3);
 
+    /// <summary>Version affichee : « 1.2.0 », ou « 1.2.0-dev » pour une build de test.</summary>
+    public static string DisplayLabel => CurrentLabel + AppPaths.Channel;
+
     /// <summary>Derniere erreur de verification, pour l'affichage ; null si tout va bien.</summary>
     public string? LastError { get; private set; }
 

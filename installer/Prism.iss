@@ -18,15 +18,34 @@
   #define OutputDir "..\artifacts"
 #endif
 
-#define AppName "Prism"
+; Canal : vide pour la version stable, "dev" pour une build de test. Une build de test
+; s'installe a cote de la stable, avec son propre identifiant de desinstallation et son
+; propre dossier — elle ne remplace jamais la version que l'utilisateur garde.
+#ifndef Channel
+  #define Channel ""
+#endif
+#ifndef FullVersion
+  #define FullVersion AppVersion
+#endif
+
+#if Channel == ""
+  #define AppName "Prism"
+  #define AppDir "Prism"
+  #define AppGuid "{{8F3C2A71-5B4E-4D2A-9C61-7E1B3D5A9F24}"
+#else
+  #define AppName "Prism (" + Channel + ")"
+  #define AppDir "Prism-" + Channel
+  #define AppGuid "{{2D7B5E64-9C31-4A8F-B0D2-5E4C1A7F3B96}"
+#endif
+
 #define AppExe "Prism.exe"
 #define AppUrl "https://github.com/Skynizz/Prism"
 
 [Setup]
-AppId={{8F3C2A71-5B4E-4D2A-9C61-7E1B3D5A9F24}
+AppId={#AppGuid}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppVerName={#AppName} {#AppVersion}
+AppVerName={#AppName} {#FullVersion}
 AppPublisher=Skynizz
 AppPublisherURL={#AppUrl}
 AppSupportURL={#AppUrl}/issues
@@ -36,7 +55,7 @@ VersionInfoVersion={#AppVersion}
 VersionInfoDescription={#AppName} Setup
 
 PrivilegesRequired=lowest
-DefaultDirName={autopf}\{#AppName}
+DefaultDirName={autopf}\{#AppDir}
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 UsePreviousAppDir=yes
@@ -56,7 +75,7 @@ WizardImageFile=..\Assets\installer\wizard.bmp,..\Assets\installer\wizard@2x.bmp
 WizardSmallImageFile=..\Assets\installer\wizard-small.bmp,..\Assets\installer\wizard-small@2x.bmp
 
 OutputDir={#OutputDir}
-OutputBaseFilename=Prism-Setup-{#AppVersion}
+OutputBaseFilename=Prism-Setup-{#FullVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 

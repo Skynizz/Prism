@@ -30,6 +30,12 @@ $dist = Join-Path $root 'artifacts'
 $numeric = ($Version -split '-')[0]
 if ($numeric -notmatch '^\d+\.\d+\.\d+$') { throw "Version attendue : 1.2.3 ou 1.2.3-beta.1 (recu : $Version)" }
 
+# Etiquette de preversion : "1.2.0-dev.1" -> "dev". Elle pilote tout le canal : dossier de
+# donnees de l'application, identite de l'installeur, et publication en preversion.
+$label = if ($Version -ne $numeric) { (($Version -split '-', 2)[1] -split '\.')[0] } else { '' }
+$isPre = $Prerelease -or $label -ne ''
+if ($label) { Write-Host "Canal de test : $label (donnees dans %LOCALAPPDATA%\Prism-$label)" }
+
 $dotnet = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet\dotnet.exe'
 if (-not (Test-Path $dotnet)) { $dotnet = 'dotnet' }
 
@@ -58,11 +64,13 @@ $xml = [regex]::Replace($xml, '<Version>[^<]*</Version>', "<Version>$numeric</Ve
 Write-Host "Version $Version dans Prism.csproj"
 
 # 2. Publication autonome : un seul Prism.exe, runtime .NET inclus.
-$out = Join-Path $dist "publish-$numeric"
+$out = Join-Path $dist "publish-$Version"
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
+# InformationalVersion porte l'etiquette : c'est elle que l'application lit pour savoir
+# dans quel dossier de donnees ecrire (Services\AppPaths.cs).
 & $dotnet publish $project -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:DebugType=none -o $out
+    -p:DebugType=none -p:Version=$numeric -p:InformationalVersion=$Version -o $out
 if ($LASTEXITCODE -ne 0) { throw "Publication echouee" }
 
 # 3. Signature de code (recommandee : sans elle, SmartScreen et Smart App Control avertissent).
@@ -70,7 +78,7 @@ if ($CertThumbprint) { Sign-File (Join-Path $out 'Prism.exe') }
 else { Write-Warning "Aucun certificat : les binaires ne sont pas signes." }
 
 # 4. Version portable et son empreinte (lues par les mises a jour automatiques).
-$zip = Join-Path $dist "Prism-$numeric-win-x64.zip"
+$zip = Join-Path $dist "Prism-$Version-win-x64.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip
 $assets = @($zip, (Write-Hash $zip))
@@ -79,9 +87,10 @@ $assets = @($zip, (Write-Hash $zip))
 $iscc = Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'
 if (-not (Test-Path $iscc)) { $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source }
 if ($iscc) {
-    & $iscc /Q "/DAppVersion=$numeric" "/DPublishDir=$out" "/DOutputDir=$dist" (Join-Path $root 'installer\Prism.iss')
+    & $iscc /Q "/DAppVersion=$numeric" "/DFullVersion=$Version" "/DChannel=$label" `
+        "/DPublishDir=$out" "/DOutputDir=$dist" (Join-Path $root 'installer\Prism.iss')
     if ($LASTEXITCODE -ne 0) { throw "Compilation de l'installeur echouee" }
-    $setup = Join-Path $dist "Prism-Setup-$numeric.exe"
+    $setup = Join-Path $dist "Prism-Setup-$Version.exe"
     Sign-File $setup
     $assets += @($setup, (Write-Hash $setup))
 } else {
@@ -93,7 +102,7 @@ if ($NoPublish) { Write-Host "Publication GitHub ignoree (-NoPublish)."; return 
 # 6. Release GitHub : c'est elle que les Prism installes lisent.
 $ghArgs = @('release', 'create', "v$Version") + $assets + @('--repo', $Repo, '--title', "Prism $Version")
 if ($NotesFile) { $ghArgs += @('--notes-file', $NotesFile) } else { $ghArgs += @('--notes', $Notes) }
-if ($Prerelease) { $ghArgs += '--prerelease' }
+if ($isPre) { $ghArgs += '--prerelease' }
 & gh @ghArgs
 if ($LASTEXITCODE -ne 0) { throw "Creation de la release echouee" }
 Write-Host "Release v$Version publiee sur $Repo"
