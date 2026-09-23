@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_doc": "Signatures lues dans ReShade.log, a cote de l'executable du jeu. Chaque motif a ete releve dans un vrai journal avant d'entrer ici. severity : failed | degraded | working | ignore. fix : none | reinstall | reshade | shortfuse. unlessPinned : ignore la ligne si l'empreinte capturee (?<sha>) est une build epinglee par Prism. Ce fichier est embarque dans Prism et relu depuis GitHub au demarrage : une signature ajoutee ici profite a tous sans nouvelle version.",
+  "signatures": [
+    {
+      "id": "nr-missing",
+      "pattern": "nvngx_dlssnr\\.dll was not found in",
+      "severity": "failed",
+      "title": "diag.f.nr_missing",
+      "fix": "reinstall",
+      "_seen": "Stellar Blade, RenoDX DLSS5 Generic 5.2.1 : l'addon ne trouve pas le runtime neural a cote de l'executable et se rabat sur celui du pilote."
+    },
+    {
+      "id": "nr-untrusted",
+      "pattern": "evaluate failed with 0xbad00005",
+      "severity": "failed",
+      "title": "diag.f.nr_untrusted",
+      "fix": "reinstall",
+      "_seen": "The Blood of Dawnwalker : runtime neural modifie, signature NVIDIA rompue et empreinte inconnue."
+    },
+    {
+      "id": "nr-refused",
+      "pattern": "0xbad0000b|0xbad00001",
+      "severity": "failed",
+      "title": "diag.f.nr_refused",
+      "fix": "reinstall",
+      "_seen": "RTX 40 : runtime signe du pilote ou build d'origine refuse a l'initialisation."
+    },
+    {
+      "id": "nr-custom",
+      "pattern": "signed runtime sha256 (?<sha>[0-9a-f]{64}) \\(custom runtime accepted",
+      "severity": "degraded",
+      "title": "diag.f.nr_custom",
+      "fix": "reinstall",
+      "unlessPinned": true,
+      "_seen": "Cyberpunk 2077 : runtime E67DEE... accepte par l'addon comme « untested build ». La build SF-v2 epinglee ecrit la meme ligne : elle est ignoree."
+    },
+    {
+      "id": "compiler",
+      "pattern": "unrecognized compiler target 'cs_5_1'",
+      "severity": "failed",
+      "title": "diag.f.compiler",
+      "fix": "reinstall",
+      "_seen": "Marvel's Spider-Man Miles Morales : d3dcompiler_47.dll de Windows 8.1 livre avec le jeu."
+    },
+    {
+      "id": "pre-sr-declined",
+      "pattern": "pre-SR NR declined",
+      "severity": "degraded",
+      "title": "diag.f.pre_sr",
+      "fix": "shortfuse",
+      "_seen": "Stellar Blade : « guides do not match render-res color ... the frame runs undenoised ». L'overlay affiche actif, l'image ne change pas."
+    },
+    {
+      "id": "image-unchanged",
+      "pattern": "image is unchanged|output was retained|fell back to native",
+      "severity": "degraded",
+      "title": "diag.f.unchanged",
+      "fix": "shortfuse",
+      "_seen": "The Blood of Dawnwalker : « the game DLSS output was retained (the image is unchanged) »."
+    },
+    {
+      "id": "reshade-limited",
+      "pattern": "only limited add-on functionality",
+      "severity": "failed",
+      "title": "diag.f.reshade_limited",
+      "fix": "reshade",
+      "_seen": "Chaine presente dans la build standard de ReShade 6.8.0, absente de la build add-on : les .addon64 n'y sont pas charges."
+    },
+    {
+      "id": "evaluated",
+      "pattern": "evaluation succeeded",
+      "severity": "working",
+      "_seen": "Passe neurale executee : « inline feature 18 evaluation succeeded »."
+    },
+    {
+      "id": "evaluatefeature-c",
+      "pattern": "Failed to find NVSDK_NGX_D3D12_EvaluateFeature_C",
+      "severity": "ignore",
+      "_seen": "Present dans tous les jeux, y compris ceux ou le rendu neural fonctionne : sans consequence."
+    }
+  ]
+}

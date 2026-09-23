@@ -268,7 +268,7 @@ public sealed class RestoreService
         if (ReShadeConfig.ReadMfg(dir).MaxCount != 4 ||
             ReShadeConfig.ReadMfg(dir).ForceMultiplier != 0) n++;
 
-        foreach (var addon in new[] { "renodx-dlss5.addon64", "renodx-mfgunlock.addon64", "dlss5-bridge.addon64" })
+        foreach (var addon in new[] { "renodx-dlss5.addon64", "renodx-dlss.addon64", "renodx-mfgunlock.addon64", "dlss5-bridge.addon64" })
             if (ReShadeConfig.IsEarlyLoaded(dir, addon)) n++;
 
         return n;
@@ -329,7 +329,7 @@ public sealed class RestoreService
 
         var dir = DllInstaller.TargetDirectory(game);
         var ini = ReShadeConfig.CleanUp(dir,
-            new[] { "renodx-dlss5.addon64", "renodx-mfgunlock.addon64", "dlss5-bridge.addon64" });
+            new[] { "renodx-dlss5.addon64", "renodx-dlss.addon64", "renodx-mfgunlock.addon64", "dlss5-bridge.addon64" });
 
         // Cles [renodx] ecrites pour le HDR : remises a leur valeur d'avant Prism.
         ini += _hdr.ForgetTraces(game);

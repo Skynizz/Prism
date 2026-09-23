@@ -11,8 +11,41 @@ public enum Dlss5Backend
     OneClick,
     /// <summary>Pont ReShade — utile uniquement en DirectX 11 et Vulkan.</summary>
     Bridge,
-    /// <summary>Addon RenoDX DLSS5 servi par un paquet local, avec sa pile appariee.</summary>
-    RenoDxDlss5
+    /// <summary>Addon RenoDX « DLSS5 Tool », avec sa pile appariee.</summary>
+    RenoDxDlss5,
+    /// <summary>
+    /// Addon « DLSS Tool » de ShortFuse, l'auteur de RenoDX, avec la pile complete. C'est la
+    /// methode que RHI recommande pour la plupart des jeux ayant DLSS.
+    /// </summary>
+    ShortFuse
+}
+
+/// <summary>
+/// Variante de l'addon RenoDX de rendu neural. Les deux s'excluent : un seul addon neural par
+/// jeu, sinon ils se disputent la meme evaluation NGX.
+/// </summary>
+public sealed record Dlss5Addon(string TagPrefix, string FileName, string Origin, string Label)
+{
+    /// <summary>« DLSS5 Tool » : renodx-dlss5.addon64, tags renodx-dlss5-x.y.z.</summary>
+    public static readonly Dlss5Addon Tool =
+        new("renodx-dlss5-", "renodx-dlss5.addon64", "RenoDX DLSS 5", "RenoDX DLSS 5");
+
+    /// <summary>ShortFuse : renodx-dlss.addon64, tags renodx-dlss-SF-aa.mmjj.hhmm.</summary>
+    public static readonly Dlss5Addon ShortFuse =
+        new("renodx-dlss-SF-", "renodx-dlss.addon64", "RenoDX DLSS ShortFuse", "RenoDX DLSS · ShortFuse");
+
+    public static readonly Dlss5Addon[] All = { Tool, ShortFuse };
+
+    /// <summary>L'autre variante, a retirer quand celle-ci est posee.</summary>
+    public Dlss5Addon Other => this == Tool ? ShortFuse : Tool;
+
+    /// <summary>Variante posee par une voie DLSS 5, ou null si la voie n'utilise pas d'addon RenoDX.</summary>
+    public static Dlss5Addon? For(Dlss5Backend? backend) => backend switch
+    {
+        Dlss5Backend.RenoDxDlss5 => Tool,
+        Dlss5Backend.ShortFuse => ShortFuse,
+        _ => null
+    };
 }
 
 /// <summary>

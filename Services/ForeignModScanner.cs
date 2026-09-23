@@ -136,6 +136,7 @@ public static class ForeignModScanner
     /// <summary>Famille d'un addon ReShade, alignee sur les noms des installations Prism.</summary>
     private static string AddonLabel(string name) =>
         name.StartsWith("renodx-dlss5") ? "RenoDX DLSS 5"
+        : name == "renodx-dlss.addon64" ? "RenoDX DLSS ShortFuse"
         : name.Contains("mfg") ? "RenoDX MFG Unlock"
         : name.StartsWith("dlss5-bridge") ? "DLSS 5 Bridge"
         : name.StartsWith("renodx") ? "RenoDX HDR"

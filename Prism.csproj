@@ -13,7 +13,8 @@
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <Version>1.0.1</Version>
+    <!-- Branche dev : l'etiquette -dev envoie les donnees dans %LOCALAPPDATA%\Prism-dev. -->
+    <Version>1.1.0-dev.1</Version>
     <Product>Prism</Product>
     <Company>Skynizz</Company>
     <Authors>Skynizz</Authors>
@@ -32,6 +33,8 @@
   <ItemGroup>
     <!-- Traductions de l'interface, lues par Core/Loc.cs. -->
     <EmbeddedResource Include="Lang\*.json" LogicalName="Lang.%(Filename)%(Extension)" />
+    <!-- Signatures du diagnostic, aussi relues depuis GitHub au demarrage. -->
+    <EmbeddedResource Include="Diagnostics\signatures.json" LogicalName="Diagnostics.signatures.json" />
   </ItemGroup>
 
 </Project>

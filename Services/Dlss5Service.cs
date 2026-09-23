@@ -86,19 +86,38 @@ public sealed class Dlss5Service
 
         var options = new List<Dlss5Option>();
 
-        // RenoDX DLSS 5, paquet complet depuis rhi-repo. En tete sur DirectX 12 : c'est
-        // la voie qui pose l'addon et toute sa pile, signatures NVIDIA verifiees.
-        var addon = _rhi.Family(RhiRepoService.Dlss5AddonPrefix).FirstOrDefault();
+        var (dlssVersion, slVersion) = Dlss5PackageInstaller.StackVersions();
+
+        // ShortFuse, l'auteur de RenoDX : la methode que RHI recommande « pour la plupart des jeux
+        // ayant DLSS natif ». Paquet complet depuis rhi-repo, signatures NVIDIA verifiees. Vulkan
+        // est ecarte : ReShade y passe par sa couche globale, que Prism ne pose pas.
+        var sfApi = dx12 || api is GameApi.DirectX11;
+        var sf = _rhi.Family(Dlss5Addon.ShortFuse.TagPrefix).FirstOrDefault();
         options.Add(new Dlss5Option
         {
-            Title = "RenoDX DLSS 5",
-            Description = Loc.T("dlss5.renodx.desc"),
+            Title = Dlss5Addon.ShortFuse.Label,
+            Description = Loc.T("dlss5.sf.desc", dlssVersion, slVersion),
+            Backend = Dlss5Backend.ShortFuse,
+            Apis = new[] { GameApi.DirectX12, GameApi.DirectX11 },
+            SourceUrl = RhiRepoService.ReleasesPage,
+            Version = sf?.Version,
+            AutoInstall = true,
+            Recommended = sfApi,
+            BlockedReason = Gate(sfApi, "DirectX 12 / 11")
+                            ?? (sf is null ? Loc.T("dlss5.renodx.offline") : null)
+        });
+
+        // « DLSS5 Tool » : l'addon RenoDX historique, alternative plus legere a ShortFuse.
+        var addon = _rhi.Family(Dlss5Addon.Tool.TagPrefix).FirstOrDefault();
+        options.Add(new Dlss5Option
+        {
+            Title = Dlss5Addon.Tool.Label,
+            Description = Loc.T("dlss5.tool.desc", dlssVersion, slVersion),
             Backend = Dlss5Backend.RenoDxDlss5,
             Apis = new[] { GameApi.DirectX12 },
             SourceUrl = RhiRepoService.ReleasesPage,
             Version = addon?.Version,
             AutoInstall = true,
-            Recommended = dx12,
             BlockedReason = Gate(dx12, "DirectX 12")
                             ?? (addon is null ? Loc.T("dlss5.renodx.offline") : null)
         });
@@ -148,7 +167,7 @@ public sealed class Dlss5Service
                 Version = BridgeVersion,
                 AutoInstall = true,
                 NonDestructive = true,
-                Recommended = legacyApi,
+                Recommended = api is GameApi.Vulkan,
                 BlockedReason = Gate(legacyApi, Loc.T("api.dx11_vulkan"))
             }
         });
@@ -161,10 +180,10 @@ public sealed class Dlss5Service
 
     // ------------------------------------------------------------- Detection
 
-    /// <summary>RenoDX DLSS 5 et sa pile complete, depuis rhi-repo.</summary>
-    public Task<InstallResult> InstallRenoDxDlss5Async(
-        GameInfo game, string? addonTag, IProgress<double>? progress = null, CancellationToken ct = default)
-        => _package.InstallAsync(game, addonTag, progress, ct);
+    /// <summary>Addon RenoDX (ShortFuse ou DLSS5 Tool) et sa pile complete, depuis rhi-repo.</summary>
+    public Task<InstallResult> InstallRenoDxAddonAsync(
+        GameInfo game, Dlss5Addon kind, string? addonTag, IProgress<double>? progress = null, CancellationToken ct = default)
+        => _package.InstallAsync(game, kind, addonTag, progress, ct);
 
     /// <summary>Le runtime neural est-il livre par le pilote installe sur ce poste ?</summary>
     public static bool NeuralRuntimeInDriverStore() => FindNeuralRuntimeInDriverStore() is not null;
@@ -220,7 +239,7 @@ public sealed class Dlss5Service
         });
 
         // ReShade n'est requis que pour la voie pont.
-        var needsReShade = option?.Backend is Dlss5Backend.Bridge or Dlss5Backend.RenoDxDlss5;
+        var needsReShade = option?.Backend is Dlss5Backend.Bridge or Dlss5Backend.RenoDxDlss5 or Dlss5Backend.ShortFuse;
         if (needsReShade)
         {
             checks.Add(FrameGenOptions.ReShadeCheck(game, Loc.T("dlss5.reshade.hint")));
@@ -236,7 +255,9 @@ public sealed class Dlss5Service
             Hint = sr is null ? Loc.T("dlss5.sr.hint") : null
         });
 
-        var renodx = option?.Backend == Dlss5Backend.RenoDxDlss5;
+        // Addon RenoDX de la voie choisie : ShortFuse ou DLSS5 Tool, null pour les autres voies.
+        var kind = Dlss5Addon.For(option?.Backend);
+        var renodx = kind is not null;
 
         // L'addon RenoDX charge nvngx_dlssnr.dll a cote de l'executable ; Streamline charge les DLL
         // NGX a cote de sl.interposer.dll. Absent de l'un d'eux, le runtime du pilote prend le
@@ -325,14 +346,16 @@ public sealed class Dlss5Service
                 });
             }
 
-            var early = ReShadeConfig.IsEarlyLoaded(dir, Dlss5PackageInstaller.AddonFileName);
+            // L'addon de la voie choisie precisement : l'autre variante presente ne compte pas.
+            var addonPresent = File.Exists(Path.Combine(dir, kind!.FileName));
+            var early = ReShadeConfig.IsEarlyLoaded(dir, kind.FileName);
             checks.Add(new PrereqCheck
             {
                 Label = "ADDON",
-                State = game.HasDlss5Addon ? (early ? UiStatus.Ready : UiStatus.Warning) : UiStatus.Error,
-                Detail = game.HasDlss5Addon ? Dlss5PackageInstaller.AddonFileName : Loc.T("common.absent"),
+                State = addonPresent ? (early ? UiStatus.Ready : UiStatus.Warning) : UiStatus.Error,
+                Detail = addonPresent ? kind.FileName : Loc.T("common.absent"),
                 Fix = PrereqFix.InstallDlss5Addon,
-                Hint = game.HasDlss5Addon
+                Hint = addonPresent
                     ? (early ? null : Loc.T("dlss5.addon.hint_early"))
                     : Loc.T("dlss5.addon.hint_absent")
             });
@@ -356,7 +379,8 @@ public sealed class Dlss5Service
         string? addonTag = null)
         => option.Backend switch
         {
-            Dlss5Backend.RenoDxDlss5 => InstallRenoDxDlss5Async(game, addonTag, progress, ct),
+            Dlss5Backend.ShortFuse => InstallRenoDxAddonAsync(game, Dlss5Addon.ShortFuse, addonTag, progress, ct),
+            Dlss5Backend.RenoDxDlss5 => InstallRenoDxAddonAsync(game, Dlss5Addon.Tool, addonTag, progress, ct),
             Dlss5Backend.Bridge => InstallBridgeAsync(game, progress, ct),
             Dlss5Backend.OptiScalerNr => InstallOptiNrAsync(game, OptiNrRepo, "OptiScaler DLSSNR", progress, ct),
             Dlss5Backend.OptiScalerMultipass => InstallOptiNrAsync(game, MultipassRepo, "OptiScaler PreSR Multipass", progress, ct),

@@ -111,6 +111,74 @@
                 <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Margin="0,14,0,0"
                              Visibility="{Binding Busy, Converter={StaticResource BoolVis}}" />
 
+                <!-- ============================================ DIAGNOSTIC -->
+                <!--
+                    Ce que le dernier lancement a reellement fait : l'overlay RenoDX peut dire
+                    actif alors que la passe neurale a ete refusee. Lu dans ReShade.log.
+                -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T diag.header}" Margin="0,18,0,0"
+                                        Visibility="{Binding Diagnosis.Applies, Converter={StaticResource BoolVis}}">
+                    <HeaderedContentControl.Tag>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Diagnosis.LogLabel}" Style="{StaticResource T.Sec}"
+                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <c:StatusDot Status="{Binding Diagnosis.State}" Text="{Binding Diagnosis.VerdictLabel}" />
+                        </StackPanel>
+                    </HeaderedContentControl.Tag>
+
+                    <StackPanel Margin="16,14,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Diagnosis.Summary}" Style="{StaticResource T.Body}"
+                                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="{l:T diag.open_log}" Style="{StaticResource Btn.Quiet}"
+                                        Command="{Binding OpenGameLogCommand}"
+                                        Visibility="{Binding Diagnosis.HasLog, Converter={StaticResource BoolVis}}" />
+                                <Button Content="{l:T diag.run}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                        Command="{Binding RunDiagnosisCommand}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding Diagnosis.Findings}" Margin="0,12,0,0"
+                                      Visibility="{Binding Diagnosis.HasFindings, Converter={StaticResource BoolVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource BrHair}" BorderThickness="0,1,0,0" Padding="0,9">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="7" Height="7" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                             Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+                                                    <TextBlock Text="{Binding Title}" Style="{StaticResource T.Strong}"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Evidence}" Style="{StaticResource T.MonoPath}"
+                                                           Margin="17,4,12,0" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Evidence}"
+                                                           Visibility="{Binding HasEvidence, Converter={StaticResource BoolVis}}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="{Binding FixLabel}" Style="{StaticResource Btn}"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{Binding HasFix, Converter={StaticResource BoolVis}}"
+                                                    Command="{Binding DataContext.Detail.ApplyDiagnosisFixCommand,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </HeaderedContentControl>
+
                 <!--
                     Deux colonnes des que la largeur le permet : DLSS 5 d'un cote, les runtimes de
                     l'autre ; chaque bloc rejoint la colonne la plus courte. Une seule en fenetre etroite.
@@ -191,7 +259,7 @@
 
                             <!-- Build de l'addon RenoDX DLSS 5 : la plus recente par defaut. -->
                             <Border Style="{StaticResource S.Sunken}" Padding="14,10" Margin="0,12,0,0"
-                                    Visibility="{Binding SelectedDlss5.Backend, Converter={StaticResource EqVis}, ConverterParameter=RenoDxDlss5}">
+                                    Visibility="{Binding HasDlss5Builds, Converter={StaticResource BoolVis}}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />

@@ -53,6 +53,9 @@ public sealed class GameDetailViewModel : ObservableObject
         QuarantineDetectedCommand = new RelayCommand(p => QuarantineDetected(p as DetectedMod), _ => !Busy);
         ApplyOptiProfileCommand = new RelayCommand(p => ApplyOptiProfile(p), _ => !Busy);
         RevertGameCommand = new RelayCommand(_ => RevertGame());
+        RunDiagnosisCommand = new RelayCommand(_ => RunDiagnosis());
+        ApplyDiagnosisFixCommand = new AsyncRelayCommand(p => ApplyDiagnosisFixAsync(p), _ => !Busy);
+        OpenGameLogCommand = new RelayCommand(_ => OpenUrl(Diagnosis.LogPath));
         ApplyMfgSettingsCommand = new RelayCommand(_ => ApplyMfgSettings(), _ => Game.HasReShade);
         EarlyLoadCommand = new RelayCommand(p => EnableEarlyLoad(p as string), _ => Game.HasReShade);
         VerifyCommand = new RelayCommand(_ => VerifyIntegrity());
@@ -277,6 +280,11 @@ public sealed class GameDetailViewModel : ObservableObject
             if (!Set(ref _selectedDlss5, value)) return;
             InstallDlss5Command.Raise();
             RefreshDlss5Checks();
+            // Les builds proposees suivent l'addon de la voie : ShortFuse ou DLSS5 Tool.
+            _selectedDlss5Build = null;
+            OnPropertyChanged(nameof(Dlss5Builds));
+            OnPropertyChanged(nameof(SelectedDlss5Build));
+            OnPropertyChanged(nameof(HasDlss5Builds));
         }
     }
 
@@ -405,10 +413,65 @@ public sealed class GameDetailViewModel : ObservableObject
         OnPropertyChanged(nameof(Dlss5EarlyLoaded));
     }
 
+    // ----------------------------------------------------------- Diagnostic
+
+    private Diagnosis _diagnosis = Diagnosis.Empty;
+
+    /// <summary>Ce que le dernier lancement du jeu dit du rendu neural, lu dans ReShade.log.</summary>
+    public Diagnosis Diagnosis { get => _diagnosis; private set => Set(ref _diagnosis, value); }
+
+    public RelayCommand RunDiagnosisCommand { get; }
+    public AsyncRelayCommand ApplyDiagnosisFixCommand { get; }
+    public RelayCommand OpenGameLogCommand { get; }
+
+    private void RunDiagnosis() => Diagnosis = _svc.Diagnostics.Diagnose(Game);
+
+    /// <summary>Applique le correctif d'une constatation, puis relit le journal.</summary>
+    private async Task ApplyDiagnosisFixAsync(object? p)
+    {
+        if (p is not DiagnosisFinding finding || !Guard()) return;
+
+        switch (finding.Fix)
+        {
+            case DiagnosisFix.Reinstall:
+                // La variante deja posee est reinstallee, dans sa derniere version stable.
+                var installed = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(TargetDir, a.FileName)));
+                SelectDlss5(installed ?? Dlss5Addon.ShortFuse);
+                await PrepareDlss5Async();
+                break;
+            case DiagnosisFix.ReShade:
+                await InstallReShadeAsync();
+                break;
+            case DiagnosisFix.ShortFuse:
+                // Une suggestion, pas une installation d'office : la voie est choisie, l'utilisateur installe.
+                SelectDlss5(Dlss5Addon.ShortFuse);
+                _notify(Loc.T("diag.shortfuse_selected"), false);
+                break;
+        }
+
+        RunDiagnosis();
+    }
+
+    private void SelectDlss5(Dlss5Addon kind)
+    {
+        var option = Dlss5Options.FirstOrDefault(o => Dlss5Addon.For(o.Backend) == kind && o.Available);
+        if (option is not null) SelectedDlss5 = option;
+    }
+
     // --------------------------------------------------------- Builds DLSS 5
 
-    /// <summary>Builds publiees de l'addon RenoDX DLSS 5, la plus recente d'abord.</summary>
-    public IReadOnlyList<RhiRepoService.Release> Dlss5Builds => _svc.Rhi.Family(RhiRepoService.Dlss5AddonPrefix);
+    /// <summary>Addon RenoDX de la voie choisie, ou null si elle n'en pose pas.</summary>
+    private Dlss5Addon? SelectedAddon => Dlss5Addon.For(SelectedDlss5?.Backend);
+
+    /// <summary>Le choix de build n'a de sens que pour une voie a addon RenoDX.</summary>
+    public bool HasDlss5Builds => SelectedAddon is not null;
+
+    /// <summary>
+    /// Builds stables de l'addon de la voie choisie, la plus recente d'abord. Les versions
+    /// candidates (rc) n'y figurent pas.
+    /// </summary>
+    public IReadOnlyList<RhiRepoService.Release> Dlss5Builds =>
+        SelectedAddon is { } addon ? _svc.Rhi.Family(addon.TagPrefix) : Array.Empty<RhiRepoService.Release>();
 
     private string? _selectedDlss5Build;
 
@@ -523,7 +586,7 @@ public sealed class GameDetailViewModel : ObservableObject
             PrereqFix.AdoptNeuralRuntime => AdoptNeural(),
             PrereqFix.InstallMfgAddon => await RunAsync(p => _svc.FrameGen.InstallMfgAdaAsync(Game, p)),
             PrereqFix.InstallDlss5Addon => await RunAsync(p =>
-                _svc.Dlss5.InstallRenoDxDlss5Async(Game, SelectedDlss5Build?.Tag, p)),
+                _svc.Dlss5.InstallRenoDxAddonAsync(Game, SelectedAddon ?? Dlss5Addon.ShortFuse, SelectedDlss5Build?.Tag, p)),
             _ => true
         };
     }
@@ -586,7 +649,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
         // Le paquet RenoDX DLSS 5 apporte lui-meme DLSS SR, le runtime neural et l'addon :
         // les poser a part avant lui serait telecharger deux fois.
-        var covered = option.Backend == Dlss5Backend.RenoDxDlss5
+        var covered = option.Backend is Dlss5Backend.RenoDxDlss5 or Dlss5Backend.ShortFuse
             ? new[] { PrereqFix.InstallDlss5Addon, PrereqFix.DeployDlss }
             : Array.Empty<PrereqFix>();
 
@@ -732,6 +795,8 @@ public sealed class GameDetailViewModel : ObservableObject
                     new[] { Dlss5PackageInstaller.AddonFileName }, removeMfgSection: false),
                 "RenoDX MFG Unlock" => ReShadeConfig.CleanUp(dir, new[] { "renodx-mfgunlock.addon64" }),
                 "DLSS 5 Bridge" => ReShadeConfig.CleanUp(dir, new[] { "dlss5-bridge.addon64" }, removeMfgSection: false),
+                _ when origin == Dlss5Addon.ShortFuse.Origin => ReShadeConfig.CleanUp(dir,
+                    new[] { Dlss5Addon.ShortFuse.FileName }, removeMfgSection: false),
                 _ => 0
             };
         }
@@ -1008,6 +1073,7 @@ public sealed class GameDetailViewModel : ObservableObject
             InstallReShadeCommand.Raise();
             RemoveInstalledCommand.Raise();
             QuarantineDetectedCommand.Raise();
+            ApplyDiagnosisFixCommand?.Raise();
         }
     }
 
@@ -1090,6 +1156,7 @@ public sealed class GameDetailViewModel : ObservableObject
         RemoveRenoDxCommand.Raise();
         RemoveReShadeCommand.Raise();
         BuildPipeline();
+        RunDiagnosis();
     }
 
     public void Refresh()

@@ -91,13 +91,24 @@ public sealed class Dlss5PackageInstaller
 
     private sealed record PackageFile(string Source, string Name, RhiRepoService.Release From);
 
+    /// <summary>Versions de la pile, pour les textes : « 310.9.1 » et « 2.14.1.0 ».</summary>
+    public static (string Dlss, string Streamline) StackVersions()
+    {
+        string Of(string prefix) => RhiRepoService.Dlss5BaseStack
+            .FirstOrDefault(t => t.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..] ?? "?";
+        return (Of("dlss-"), Of("streamline-"));
+    }
+
     public async Task<InstallResult> InstallAsync(
-        GameInfo game, string? addonTag, IProgress<double>? progress = null, CancellationToken ct = default)
+        GameInfo game, Dlss5Addon kind, string? addonTag, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         if (!_rhi.IsLoaded) await _rhi.LoadAsync(ct);
 
-        var addon = (addonTag is null ? null : _rhi.ByTag(addonTag))
-                    ?? _rhi.Family(RhiRepoService.Dlss5AddonPrefix).FirstOrDefault();
+        // Une build choisie ne vaut que pour sa propre variante : une build DLSS5 Tool ne sert
+        // jamais d'addon ShortFuse, et inversement.
+        var chosen = addonTag is not null && addonTag.StartsWith(kind.TagPrefix, StringComparison.OrdinalIgnoreCase)
+            ? _rhi.ByTag(addonTag) : null;
+        var addon = chosen ?? _rhi.Family(kind.TagPrefix).FirstOrDefault();
         if (addon is null) return new InstallResult(false, Loc.T("dlss5.err.no_release"));
 
         var stack = RhiRepoService.Dlss5StackFor(_gpu());
@@ -113,9 +124,12 @@ public sealed class Dlss5PackageInstaller
 
         var runtimeDirs = RuntimeDirectories(game);
 
-        // Un seul addon neural par dossier. Un autre, pose a la main, n'est pas le notre.
+        // Un seul addon neural par dossier : l'autre variante, ou une autre build, est retiree si
+        // Prism l'a posee. Posee a la main, elle n'est pas la notre : on s'arrete.
         var others = Directory.EnumerateFiles(exeDir, "renodx-dlss5*.addon64")
-            .Where(p => !Path.GetFileName(p).Equals(AddonFileName, StringComparison.OrdinalIgnoreCase))
+            .Concat(Directory.EnumerateFiles(exeDir, Dlss5Addon.ShortFuse.FileName))
+            .Where(p => !Path.GetFileName(p).Equals(kind.FileName, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         var foreign = others.Where(p => !_deployments.WasDeployed(p)).Select(Path.GetFileName).ToList();
         if (foreign.Count > 0)
@@ -150,7 +164,7 @@ public sealed class Dlss5PackageInstaller
                         && !ext.Equals(".addon64", StringComparison.OrdinalIgnoreCase)) continue;
 
                     // L'addon garde un nom stable : c'est lui qu'on inscrit en chargement precoce.
-                    if (r == addon && ext.Equals(".addon64", StringComparison.OrdinalIgnoreCase)) name = AddonFileName;
+                    if (r == addon && ext.Equals(".addon64", StringComparison.OrdinalIgnoreCase)) name = kind.FileName;
 
                     // Le premier composant qui fournit un nom l'emporte : addon, runtime neural, puis la pile.
                     if (files.All(x => !x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
@@ -191,7 +205,7 @@ public sealed class Dlss5PackageInstaller
 
             // 3 et 4. Pose en une transaction : chaque fichier est relu et compare a sa source,
             // et au moindre echec — jeu lance, fichier verrouille — tout revient a l'etat d'avant.
-            var tx = new FileTransaction(game, _backups, _deployments, Origin);
+            var tx = new FileTransaction(game, _backups, _deployments, kind.Origin);
             foreach (var old in others) tx.Delete(old);
 
             var neuralDirs = NeuralRuntimeDirectories(game);
@@ -232,16 +246,18 @@ public sealed class Dlss5PackageInstaller
             var written = committed.FilesChanged;
             if (strays.Count > 0) Log.Info(Src, $"Copies outside Streamline removed: {string.Join(", ", strays)}");
 
-            var early = ReShadeConfig.EnableEarlyLoading(exeDir, AddonFileName);
+            // Chargement precoce pour la variante posee, et plus pour l'autre.
+            var early = ReShadeConfig.EnableEarlyLoading(exeDir, kind.FileName);
+            ReShadeConfig.CleanUp(exeDir, new[] { kind.Other.FileName }, removeMfgSection: false);
 
             DllDetector.Inspect(game);
             progress?.Report(100);
 
             var where = Describe(game, runtimeDirs);
-            var msg = Loc.T("dlss5.ok.installed", addon.Version, written) + " " + Loc.T("dlss5.ok.location", where);
+            var msg = Loc.T("dlss5.ok.addon", kind.Label, addon.Version, written) + " " + Loc.T("dlss5.ok.location", where);
             if (!early.Success) msg += " " + early.Message;
 
-            Log.Info(Src, $"RenoDX DLSS 5 {addon.Version}: {written} file(s) written and verified, stack in {where}");
+            Log.Info(Src, $"{kind.Label} {addon.Version}: {written} file(s) written and verified, stack in {where}");
             return new InstallResult(true, msg, written);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -253,7 +269,8 @@ public sealed class Dlss5PackageInstaller
 
     private static string ComponentOf(string tag) => tag switch
     {
-        _ when tag.StartsWith(RhiRepoService.Dlss5AddonPrefix, StringComparison.OrdinalIgnoreCase) => "RenoDX DLSS 5",
+        _ when tag.StartsWith(Dlss5Addon.Tool.TagPrefix, StringComparison.OrdinalIgnoreCase) => Dlss5Addon.Tool.Origin,
+        _ when tag.StartsWith(Dlss5Addon.ShortFuse.TagPrefix, StringComparison.OrdinalIgnoreCase) => Dlss5Addon.ShortFuse.Origin,
         _ when tag.StartsWith("dlssnr-", StringComparison.OrdinalIgnoreCase) => "DLSS-NR",
         _ when tag.StartsWith("dlssg-", StringComparison.OrdinalIgnoreCase) => "DLSS-G",
         _ when tag.StartsWith("dlssd-", StringComparison.OrdinalIgnoreCase) => "DLSS-RR",

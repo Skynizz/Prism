@@ -127,7 +127,8 @@ public static class DllDetector
                 // prefixe renodx sans etre des mods HDR : ne pas les compter comme tels.
                 var isMfgAddon = name.Contains("MFG", StringComparison.OrdinalIgnoreCase);
                 if (name.StartsWith("dlss5-bridge", StringComparison.OrdinalIgnoreCase)) game.HasDlss5Bridge = true;
-                else if (name.StartsWith("renodx-dlss5", StringComparison.OrdinalIgnoreCase)) game.HasDlss5Addon = true;
+                else if (name.StartsWith("renodx-dlss5", StringComparison.OrdinalIgnoreCase)
+                         || name.Equals(Dlss5Addon.ShortFuse.FileName, StringComparison.OrdinalIgnoreCase)) game.HasDlss5Addon = true;
                 else if (isMfgAddon) game.HasMfgUnlock = true;
                 else if (name.StartsWith("renodx", StringComparison.OrdinalIgnoreCase)) game.HasRenoDx = true;
             }

@@ -22,13 +22,18 @@ public sealed partial class RhiRepoService
 
     public const string Dlss5AddonPrefix = "renodx-dlss5-";
 
-    /// <summary>Pile runtime posee avec l'addon DLSS 5 : DLSS 310.8.0 + Streamline 2.13.</summary>
+    /// <summary>
+    /// Pile runtime posee avec l'addon : DLSS SR, RR et FG 310.9.1 + Streamline 2.14.1. Ce sont
+    /// les versions les plus recentes du manifeste de RHI (dlss_manifest.json), celles qu'il pose
+    /// avec l'addon de ShortFuse. Plus ancienne, cette pile retrograderait les jeux qui livrent
+    /// deja 310.9.1 — et c'est aussi celle qu'exige le MFG dynamique.
+    /// </summary>
     public static readonly string[] Dlss5BaseStack =
     {
-        "dlss-310.8.0",
-        "dlssg-310.8.0",
-        "dlssd-310.7.129",
-        "streamline-2.13.0.0"
+        "dlss-310.9.1",
+        "dlssg-310.9.1",
+        "dlssd-310.9.1",
+        "streamline-2.14.1.0"
     };
 
     /// <summary>Runtime neural d'origine, signe NVIDIA : il ne s'initialise que sur RTX 50.</summary>
@@ -49,8 +54,11 @@ public sealed partial class RhiRepoService
 
     public sealed record Release(string Tag, string AssetName, string Url, long Size, DateTimeOffset Published)
     {
-        /// <summary>Version lisible : « 5.2.1 » pour « renodx-dlss5-5.2.1 ».</summary>
-        public string Version => VersionPart().Match(Tag) is { Success: true } m ? m.Value : Tag;
+        /// <summary>
+        /// Version lisible : « 5.2.1 » pour « renodx-dlss5-5.2.1 », « 7.0.0-rc1 » pour une version
+        /// candidate — le suffixe reste visible, pour qu'une rc ne passe jamais pour une stable.
+        /// </summary>
+        public string Version => VersionPart().Match(Tag) is { Success: true } m ? m.Groups[1].Value : Tag;
     }
 
     private readonly DownloadService _downloads;
@@ -125,13 +133,32 @@ public sealed partial class RhiRepoService
         return list;
     }
 
-    /// <summary>Releases dont le tag commence par le prefixe suivi d'un chiffre, la plus recente d'abord.</summary>
+    /// <summary>
+    /// Releases dont le tag commence par le prefixe suivi d'un chiffre, la plus recente d'abord.
+    /// Les versions candidates (« 7.0.0-rc1 », « -beta ») sont ecartees : sans cela, le tri par
+    /// chiffres les classerait au-dessus de la derniere stable et Prism les installerait par
+    /// defaut. RHI les ecarte de la meme facon.
+    /// </summary>
     public IReadOnlyList<Release> Family(string prefix)
         => _releases
             .Where(r => r.Tag.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                        && r.Tag.Length > prefix.Length && char.IsDigit(r.Tag[prefix.Length]))
+                        && r.Tag.Length > prefix.Length && char.IsDigit(r.Tag[prefix.Length])
+                        && !IsPrerelease(r.Tag, prefix))
             .OrderByDescending(r => VersionKey(r.Tag, prefix), VersionComparer.Instance)
             .ToList();
+
+    /// <summary>
+    /// Compare deux versions par leurs nombres : « 310.8.0.0 » &lt; « 310.9.1 », « 5.2.1 » &lt; « 6.5.3 ».
+    /// Les lettres sont ignorees : cette comparaison ne sert qu'a dire si une version est plus ancienne.
+    /// </summary>
+    public static int CompareVersions(string a, string b)
+        => VersionComparer.Instance.Compare(
+            Digits().Matches(a).Select(m => int.TryParse(m.Value, out var n) ? n : 0).ToArray(),
+            Digits().Matches(b).Select(m => int.TryParse(m.Value, out var n) ? n : 0).ToArray());
+
+    /// <summary>Vrai si la partie version du tag contient une lettre : rc, beta, alpha...</summary>
+    public static bool IsPrerelease(string tag, string prefix)
+        => tag.Length > prefix.Length && tag[prefix.Length..].Any(char.IsLetter);
 
     public Release? ByTag(string tag)
         => _releases.FirstOrDefault(r => r.Tag.Equals(tag, StringComparison.OrdinalIgnoreCase));
@@ -160,6 +187,10 @@ public sealed partial class RhiRepoService
     [GeneratedRegex(@"\d+")]
     private static partial Regex Digits();
 
-    [GeneratedRegex(@"\d+(\.\d+)*")]
+    /// <summary>
+    /// Tout ce qui suit le premier tiret suivi d'un chiffre. Le premier chiffre du tag ne suffit
+    /// pas : dans « renodx-dlss5-5.2.1 », ce serait le 5 de « dlss5 ».
+    /// </summary>
+    [GeneratedRegex(@"-(\d.*)$")]
     private static partial Regex VersionPart();
 }

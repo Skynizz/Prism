@@ -36,6 +36,7 @@ public sealed class AppServices
         Streamline = new StreamlineService(GitHub, Downloads, Backups, Deployments);
         Catalog = new ComponentCatalog(GitHub, ReShade, RenoDx, Manifest);
         Updates = new UpdateService(Downloads);
+        Diagnostics = new DiagnosticService(Downloads, Rhi, Deployments);
         Scanner = new GameScanner { ExtraFolders = Settings.Current.ExtraLibraryFolders };
 
 
@@ -63,6 +64,7 @@ public sealed class AppServices
     public StreamlineService Streamline { get; }
     public ComponentCatalog Catalog { get; }
     public UpdateService Updates { get; }
+    public DiagnosticService Diagnostics { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }
@@ -84,6 +86,7 @@ public sealed class AppServices
 
         progress?.Report(Loc.T("init.dlss5"));
         await Dlss5.LoadAsync(ct);
+        await Diagnostics.LoadAsync(ct);
 
         progress?.Report(Loc.T("init.streamline"));
         await Streamline.LoadAsync(ct);
