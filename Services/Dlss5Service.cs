@@ -471,7 +471,7 @@ public sealed class Dlss5Service
             if (core is null) return new InstallResult(false, Loc.T("err.missing_in_archive", "OptiScaler.dll"));
 
             var sourceDir = Path.GetDirectoryName(core)!;
-            var proxy = FrameGenService.PickProxyName(dir);
+            var proxy = FrameGenService.OptiScalerSlot(dir);
             if (proxy is null)
                 return new InstallResult(false, Loc.T("err.no_proxy"));
 

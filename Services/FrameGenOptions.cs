@@ -50,11 +50,11 @@ public static class FrameGenOptions
             Rtx40MfgUnlock(gpu, game, isAda, isAmpere, noFg ?? notDx12),
             DlssgSm86(gpu, game, isAmpere, noFg ?? notDx12),
             DlssgSm75(gpu, game, isTuring, noFg ?? notDx12),
-            OptiScaler(gpu, noFg),
-            DlssEnabler(noFg),
-            // Jeux sans generation d'images : on la fabrique depuis leur upscaler.
+            // OptiScaler : un seul paquet, deux sorties. FSR FG sur toute carte (depuis le DLSS-G du
+            // jeu, ou depuis son upscaler s'il n'en a pas) ; vrai DLSS-G injecte sur RTX 40/50.
+            OptiScaler(game, fgCapable),
             InjectedDlssG(gpu, game, fgCapable),
-            OptiFg(game, fgCapable)
+            DlssEnabler(noFg)
         };
 
         return options
@@ -330,21 +330,23 @@ public static class FrameGenOptions
     // ---------------------------------------------------------- Ponts FSR 3.1
 
     /// <summary>
-    /// OptiScaler officiel : FSR-FG en x2. Les notes de la 0.9.4 reservent le MFG de XeFG aux
-    /// cartes Arc, et FSR-FG ne genere qu'une image : afficher x3 ou x4 serait mentir.
+    /// OptiScaler, sortie FSR FG en x2 : depuis le DLSS-G du jeu s'il en a un, sinon depuis son
+    /// upscaler (OptiFG). Les notes de la 0.9.4 reservent le MFG de XeFG aux cartes Arc, et
+    /// FSR-FG ne genere qu'une image : afficher x3 ou x4 serait mentir.
     /// </summary>
-    private static FgOption OptiScaler(GpuInfo gpu, string? blocked) => new()
+    private static FgOption OptiScaler(GameInfo game, bool fgCapable) => new()
     {
-        Title = "OptiScaler",
-        Description = Loc.T("fg.opti.desc"),
+        Title = "OptiScaler · FSR FG",
+        Description = Loc.T(fgCapable ? "fg.opti.desc" : "fg.optifg.desc"),
         Backend = FgBackend.OptiScaler,
         MaxMultiplier = 2,
         Multipliers = new[] { 2 },
         Method = Loc.T("method.proxy"),
         Native = false,
         Experimental = true,
+        SourceUrl = "https://github.com/" + FrameGenService.OptiScalerRepo,
         Apis = new[] { GameApi.DirectX12 },
-        BlockedReason = blocked
+        Requirements = fgCapable ? Array.Empty<PrereqCheck>() : NoFgRequirements(game, hags: false)
     };
 
     // ------------------------------------------------------- Jeux sans FG
@@ -422,7 +424,7 @@ public static class FrameGenOptions
     /// </summary>
     private static FgOption InjectedDlssG(GpuInfo gpu, GameInfo game, bool fgCapable) => new()
     {
-        Title = Loc.T("fg.inj.title"),
+        Title = "OptiScaler · DLSS FG",
         Description = Loc.T("fg.inj.desc"),
         Backend = FgBackend.InjectedDlssG,
         MaxMultiplier = gpu.SupportsNativeMfg ? 4 : 2,
@@ -439,22 +441,6 @@ public static class FrameGenOptions
             : null
     };
 
-    /// <summary>FSR-FG x2 via OptiScaler officiel (FGInput=upscaler) : toute carte, jeu sans FG.</summary>
-    private static FgOption OptiFg(GameInfo game, bool fgCapable) => new()
-    {
-        Title = Loc.T("fg.optifg.title"),
-        Description = Loc.T("fg.optifg.desc"),
-        Backend = FgBackend.OptiFg,
-        MaxMultiplier = 2,
-        Multipliers = new[] { 2 },
-        Method = Loc.T("method.proxy"),
-        Native = false,
-        Experimental = true,
-        SourceUrl = "https://github.com/" + FrameGenService.OptiScalerRepo,
-        Apis = new[] { GameApi.DirectX12 },
-        Requirements = NoFgRequirements(game, hags: false),
-        BlockedReason = fgCapable ? Loc.T("fg.nofg.has_fg") : null
-    };
 
     private static FgOption DlssEnabler(string? blocked) => new()
     {

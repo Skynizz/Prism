@@ -191,6 +191,12 @@ public sealed class FrameGenService
             return new InstallResult(false, Loc.T("err.release_not_found", "OptiScaler"));
 
         var dir = TargetDir(game);
+
+        // Deja la (DLSS 5, autre voie) : un seul OptiScaler par jeu, seule sa configuration change.
+        // Le fork en place sait aussi sortir du FSR FG ; le remplacer casserait son DLSS 5.
+        if (LoadedOptiScaler(dir) is { } present)
+            return new InstallResult(true, Loc.T("opti.reuse", present), 0);
+
         try
         {
             var archive = Path.Combine(AppPaths.ComponentCache, "optiscaler", asset.Name);
@@ -286,14 +292,18 @@ public sealed class FrameGenService
             var core = ArchiveExtractor.FindFile(extractDir, "OptiScaler.dll");
             if (core is null) return new InstallResult(false, Loc.T("err.missing_in_archive", "OptiScaler.dll"));
 
-            var proxy = PickProxyName(dir);
+            // Un fork deja en place (DLSS 5) fait deja tout : on n'y ajoute que Streamline. Un
+            // OptiScaler officiel, lui, ne sait pas sortir du DLSS-G : le fork prend sa place.
+            var present = LoadedOptiScaler(dir);
+            var keepFork = present is not null && OptiScalerConfig.IsFork(dir);
+            var proxy = present ?? PickProxyName(dir);
             if (proxy is null) return new InstallResult(false, Loc.T("err.no_proxy"));
 
             var sdkBin = await _streamline.SdkBinAsync(InjectedFgStreamline, null, ct);
             if (sdkBin is null) return new InstallResult(false, Loc.T("sl.err.no_interposer"));
 
             var tx = new FileTransaction(game, _backups, _deployments, null);
-            foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(core)!))
+            foreach (var file in keepFork ? Array.Empty<string>() : Directory.EnumerateFiles(Path.GetDirectoryName(core)!))
             {
                 var name = Path.GetFileName(file);
                 if (!ArchiveExtractor.IsPayload(name)) continue;
@@ -321,7 +331,8 @@ public sealed class FrameGenService
 
             DllDetector.Inspect(game);
             Log.Info(Src, $"{InjectedFgOrigin} {release.Tag} installed as {proxy} ({tx.Count} files, Streamline {InjectedFgStreamline})");
-            return new InstallResult(true, Loc.T("fg.inj.ok", release.Tag, proxy, tx.Count), tx.Count);
+            return new InstallResult(true,
+                Loc.T("opti.ok", "OptiScaler · DLSS FG", release.Tag, proxy, tx.Count) + " " + Loc.T("fg.nofg.upscaler_on"), tx.Count);
         }
         catch (Exception ex)
         {
@@ -429,6 +440,20 @@ public sealed class FrameGenService
         => DllDetector.ProxyNames
             .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault(n => !File.Exists(Path.Combine(dir, n)));
+
+    /// <summary>Nom sous lequel un OptiScaler est deja charge dans ce dossier, s'il y en a un.</summary>
+    public static string? LoadedOptiScaler(string dir)
+        => DllDetector.ProxyNames
+            .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Append("nvngx.dll")
+            .FirstOrDefault(n => File.Exists(Path.Combine(dir, n)) && LeftoverCleaner.IsOptiScaler(Path.Combine(dir, n)));
+
+    /// <summary>
+    /// Un seul OptiScaler par jeu : il regroupe upscaler, generation d'images et DLSS 5. Un
+    /// deuxieme, pose sous un autre nom de proxy, serait charge en plus du premier — c'est le
+    /// conflit que son propre script d'installation traque. Sa place existante est donc reprise.
+    /// </summary>
+    public static string? OptiScalerSlot(string dir) => LoadedOptiScaler(dir) ?? PickProxyName(dir);
 
     private static IEnumerable<string> SafeFiles(string dir)
     {

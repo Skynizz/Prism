@@ -269,9 +269,23 @@
                                 HorizontalAlignment="Stretch"
                                 Command="{Binding DataContext.GoToCommand, ElementName=Page}" CommandParameter="4" />
 
-                        <Button Content="{l:T games.restore_originals}" Style="{StaticResource Btn.Danger}"
-                                HorizontalAlignment="Stretch"
-                                Command="{Binding RestoreEverythingCommand}" />
+                        <!-- Reinitialiser les injections : tout ce qui a ete ajoute au jeu, Prism ou non.
+                             Confirmation sur place, avec le compte exact, avant le moindre retrait. -->
+                        <Button Content="{l:T reset.button}" Style="{StaticResource Btn.Danger}" HorizontalAlignment="Stretch"
+                                Command="{Binding ArmResetCommand}" ToolTip="{l:T reset.tip}"
+                                Visibility="{Binding ResetArmed, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                        <Border Style="{StaticResource S.Sunken}" Padding="11,9"
+                                Visibility="{Binding ResetArmed, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ResetSummary}" Style="{StaticResource T.Sec}" TextWrapping="Wrap" />
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="{l:T reset.confirm}" Style="{StaticResource Btn.Danger}"
+                                            Command="{Binding ConfirmResetCommand}" />
+                                    <Button Content="{l:T reset.cancel}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                            Command="{Binding CancelResetCommand}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

@@ -62,6 +62,9 @@ public sealed class GameDetailViewModel : ObservableObject
         CopyFileListCommand = new RelayCommand(_ => CopyFileList());
         SteamVerifyCommand = new RelayCommand(_ => SteamVerify());
         ChooseExeCommand = new RelayCommand(_ => ChooseExe(), _ => !Busy);
+        ArmResetCommand = new RelayCommand(_ => ArmReset(), _ => !Busy);
+        ConfirmResetCommand = new RelayCommand(_ => ConfirmReset(), _ => !Busy);
+        CancelResetCommand = new RelayCommand(_ => ResetArmed = false);
         ToggleIdentifyCommand = new RelayCommand(_ => ToggleIdentify());
         SearchIdentityCommand = new AsyncRelayCommand(SearchIdentityAsync, () => !string.IsNullOrWhiteSpace(IdentitySearch));
         UseCandidateCommand = new RelayCommand(p => { if (p is IdentityCandidate c) UseIdentity(c.Name, c.AppId); });
@@ -160,7 +163,7 @@ public sealed class GameDetailViewModel : ObservableObject
                     OptiScalerConfig.Apply(TargetDir, OptiProfile.InjectedFg, value, nativeFg: false);
                 else
                     OptiScalerConfig.Apply(TargetDir, OptiProfile.MfgOnly, value,
-                        nativeFg: Profile.FgBackend != FgBackend.OptiFg && nativeFg);
+                        nativeFg: nativeFg);
                 OnPropertyChanged(nameof(OptiProfileLabel));
             }
         }
@@ -822,7 +825,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
         // Le multiplicateur choisi est ecrit dans la configuration quand la voie
         // passe par un paquet OptiScaler.
-        if (option.Backend is FgBackend.OptiScaler or FgBackend.OptiFg or FgBackend.InjectedDlssG)
+        if (option.Backend is FgBackend.OptiScaler or FgBackend.InjectedDlssG)
             ApplyFgConfig(option.Backend, Multiplier);
     }
 
@@ -836,7 +839,7 @@ public sealed class GameDetailViewModel : ObservableObject
         var result = backend == FgBackend.InjectedDlssG
             ? OptiScalerConfig.Apply(TargetDir, OptiProfile.InjectedFg, multiplier, nativeFg: false)
             : OptiScalerConfig.Apply(TargetDir, OptiProfile.MfgOnly, multiplier,
-                nativeFg: backend != FgBackend.OptiFg && nativeFg);
+                nativeFg: nativeFg);
         _notify(result.Message, !result.Success);
         OnPropertyChanged(nameof(OptiProfileLabel));
     }
@@ -970,10 +973,28 @@ public sealed class GameDetailViewModel : ObservableObject
         if (group is null || !Guard()) return;
 
         var origin = group.Origin;
+        int done;
+        try { done = RemoveGroup(group); }
+        catch (Exception ex)
+        {
+            _notify(Loc.T("err.remove_failed", ex.Message), true);
+            Refresh();
+            return;
+        }
+
+        Log.Info(Src, $"{origin} removed from {Game.Name} ({done} item(s))");
+        _notify(done > 0 ? Loc.T("installed.removed", origin, Game.Name) : Loc.T("changes.msg.none_reverted"),
+            done == 0);
+        Refresh();
+    }
+
+    /// <summary>Retire une installation et ce qu'elle avait inscrit ; renvoie le nombre d'elements defaits.</summary>
+    private int RemoveGroup(InstalledGroup group)
+    {
+        var origin = group.Origin;
         var dir = TargetDir;
         var done = 0;
 
-        try
         {
             if (origin == ReShadeService.Origin)
             {
@@ -1001,17 +1022,78 @@ public sealed class GameDetailViewModel : ObservableObject
                 _ => 0
             };
         }
-        catch (Exception ex)
+        return done;
+    }
+
+    // ------------------------------------------------- Reinitialiser les injections
+
+    private bool _resetArmed;
+    /// <summary>Confirmation affichee sur place : rien n'est retire avant le second clic.</summary>
+    public bool ResetArmed { get => _resetArmed; private set => Set(ref _resetArmed, value); }
+
+    private string _resetSummary = "";
+    public string ResetSummary { get => _resetSummary; private set => Set(ref _resetSummary, value); }
+
+    public RelayCommand ArmResetCommand { get; }
+    public RelayCommand ConfirmResetCommand { get; }
+    public RelayCommand CancelResetCommand { get; }
+
+    /// <summary>Ce que la reinitialisation va defaire, compte avant d'agir.</summary>
+    private void ArmReset()
+    {
+        var prism = _svc.Changes.For(Game.Id).Count(c => c.StillApplies);
+        var foreign = _svc.Cleaner.Plan(Game).Items.Count;
+        ResetSummary = Loc.T("reset.summary", Installed.Count, prism, foreign);
+        ResetArmed = true;
+    }
+
+    /// <summary>
+    /// Remet le jeu tel que sa plateforme l'a installe, en trois temps :
+    ///  1. chaque installation Prism, par son propre retrait (ReShade, HDR et Engine.ini, addons
+    ///     et leurs inscriptions dans ReShade.ini) ;
+    ///  2. ce que le registre connait encore, y compris les fichiers modifies depuis ;
+    ///  3. tout le reste — RHI, OptiScaler, mods poses a la main — par le nettoyage profond,
+    ///     qui met chaque fichier a l'abri et reste annulable.
+    /// Le profil repart de zero. L'executable choisi et l'identite du jeu sont gardes : ce ne
+    /// sont pas des injections.
+    /// </summary>
+    private void ConfirmReset()
+    {
+        ResetArmed = false;
+        if (!Guard()) return;
+
+        var done = 0;
+        var failed = new List<string>();
+
+        // Les mods « mis de cote » (origine « … · external ») ne sont pas des injections : les
+        // defaire remettrait le mod etranger dans le jeu, l'inverse d'une reinitialisation.
+        var groups = _svc.Changes.InstalledFor(Game.Id).Concat(Installed)
+            .Where(g => !g.Origin.EndsWith("· external", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(g => g.Origin).Select(g => g.First()).ToList();
+        foreach (var group in groups)
         {
-            _notify(Loc.T("err.remove_failed", ex.Message), true);
-            Refresh();
-            return;
+            try { done += RemoveGroup(group); }
+            catch (Exception ex)
+            {
+                failed.Add(group.Origin);
+                Log.Warn(Src, $"Reset: cannot remove {group.Origin}: {ex.Message}");
+            }
         }
 
-        Log.Info(Src, $"{origin} removed from {Game.Name} ({done} item(s))");
-        _notify(done > 0 ? Loc.T("installed.removed", origin, Game.Name) : Loc.T("changes.msg.none_reverted"),
-            done == 0);
-        Refresh();
+        done += _svc.Restore.RestoreVanilla(Game, includeOrphans: false, force: true).FilesChanged;
+
+        var plan = _svc.Cleaner.Plan(Game);
+        if (!plan.IsEmpty) done += _svc.Cleaner.Execute(Game, plan).FilesChanged;
+
+        Profile = new GameProfile { GameId = Game.Id };
+        _svc.Profiles.Update(Profile);
+        DllDetector.Inspect(Game);
+
+        var msg = done > 0 ? Loc.T("reset.done", Game.Name, done) : Loc.T("reset.nothing", Game.Name);
+        if (failed.Count > 0) msg += " " + Loc.T("restore.refused", string.Join(", ", failed));
+        Log.Info(Src, $"Reset {Game.Name}: {done} item(s), {failed.Count} refused");
+        _notify(msg, failed.Count > 0);
+        Build();
     }
 
     /// <summary>Etat reel du profil, lu dans OptiScaler.ini.</summary>

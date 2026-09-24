@@ -58,17 +58,16 @@ public static class OptiScalerConfig
                 case OptiProfile.MfgOnly:
                     wanted.Add(("FrameGen", "Enabled", "true"));
                     wanted.Add(("Menu", "OverlayMenu", "true"));
-                    if (fork)
+                    if (fork && nativeFg)
                     {
-                        // Notice du fork : InterpolationCount regle sa propre sortie DLSSG ;
-                        // OverrideInterpolationCount (entier 0..6, Config.cpp) vise les appels
-                        // Streamline natifs du jeu. Les deux comptent les images generees.
-                        var generated = (Math.Clamp(multiplier, 2, 6) - 1).ToString();
-                        wanted.Add(("DLSSG", nativeFg ? "OverrideInterpolationCount" : "InterpolationCount", generated));
+                        // Notice du fork : OverrideInterpolationCount (entier 0..6, Config.cpp) vise
+                        // les appels Streamline natifs du jeu, et compte les images generees.
+                        wanted.Add(("DLSSG", "OverrideInterpolationCount", (Math.Clamp(multiplier, 2, 6) - 1).ToString()));
                     }
                     else
                     {
-                        // Par defaut FGInput/FGOutput valent « nofg » : sans eux, rien ne s'active.
+                        // FSR-FG x2. Par defaut FGInput/FGOutput valent « nofg » : sans eux, rien ne
+                        // s'active. Les deux familles de fichiers acceptent ces valeurs.
                         wanted.Add(("FrameGen", "FGInput", nativeFg ? "dlssg" : "upscaler"));
                         wanted.Add(("FrameGen", "FGOutput", "fsrfg"));
                         if (!nativeFg) wanted.Add(("OptiFG", "HUDFix", "true"));
@@ -104,7 +103,7 @@ public static class OptiScalerConfig
             var label = profile switch
             {
                 OptiProfile.Dlss5Only => Loc.T("opti.profile.dlss5"),
-                OptiProfile.MfgOnly => Loc.T("opti.profile.mfg", fork ? Math.Clamp(multiplier, 2, 6) : 2),
+                OptiProfile.MfgOnly => Loc.T("opti.profile.mfg", fork && nativeFg ? Math.Clamp(multiplier, 2, 6) : 2),
                 OptiProfile.InjectedFg => Loc.T("opti.profile.mfg", Math.Clamp(multiplier, 2, 6)),
                 _ => Loc.T("opti.profile.full")
             };
@@ -157,6 +156,14 @@ public static class OptiScalerConfig
 
         lines.Insert(insert, $"{key}={value}");
         return true;
+    }
+
+    /// <summary>Fichier d'un fork DLSSNR (section [DLSSG]) plutot que d'OptiScaler officiel.</summary>
+    public static bool IsFork(string dir)
+    {
+        var path = Path.Combine(dir, FileName);
+        try { return File.Exists(path) && HasSection(File.ReadAllLines(path).ToList(), "DLSSG"); }
+        catch { return false; }
     }
 
     private static bool HasSection(List<string> lines, string section)

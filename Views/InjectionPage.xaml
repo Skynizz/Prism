@@ -251,6 +251,30 @@
                     </StackPanel>
                 </HeaderedContentControl>
 
+                <!-- ============================================ REINITIALISER -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T reset.header}" Margin="0,12,0,0">
+                    <StackPanel Margin="14,12,14,14">
+                        <TextBlock Style="{StaticResource T.Prose}" Text="{l:T reset.help}" Margin="0,0,0,10" />
+                        <!-- Reinitialiser les injections : tout ce qui a ete ajoute au jeu, Prism ou non.
+                             Confirmation sur place, avec le compte exact, avant le moindre retrait. -->
+                        <Button Content="{l:T reset.button}" Style="{StaticResource Btn.Danger}" HorizontalAlignment="Left"
+                                Command="{Binding ArmResetCommand}" ToolTip="{l:T reset.tip}"
+                                Visibility="{Binding ResetArmed, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                        <Border Style="{StaticResource S.Sunken}" Padding="11,9"
+                                Visibility="{Binding ResetArmed, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ResetSummary}" Style="{StaticResource T.Sec}" TextWrapping="Wrap" />
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Content="{l:T reset.confirm}" Style="{StaticResource Btn.Danger}"
+                                            Command="{Binding ConfirmResetCommand}" />
+                                    <Button Content="{l:T reset.cancel}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                            Command="{Binding CancelResetCommand}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </HeaderedContentControl>
+
             </StackPanel>
         </ScrollViewer>
     </DockPanel>
