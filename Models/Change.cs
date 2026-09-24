@@ -118,5 +118,7 @@ public enum OptiProfile
     /// <summary>Uniquement la generation d'images multi-images.</summary>
     MfgOnly,
     /// <summary>Tout ce que le paquet sait faire.</summary>
-    Full
+    Full,
+    /// <summary>DLSS-G injecte depuis l'upscaler du jeu (fork wilsjo2 : FGOutput=dlssg).</summary>
+    InjectedFg
 }

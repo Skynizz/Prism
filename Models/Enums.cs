@@ -50,7 +50,14 @@ public enum FgBackend
     /// <summary>OptiScaler : pont FSR 3.1 / XeSS-FG, marche sur Turing et Ampere.</summary>
     OptiScaler,
     /// <summary>DLSS Enabler : redirige DLSS-G vers FSR 3.1 FG.</summary>
-    DlssEnabler
+    DlssEnabler,
+    /// <summary>
+    /// Vrai DLSS-G de NVIDIA dans un jeu qui n'a qu'un upscaler : fork OptiScaler (wilsjo2),
+    /// FGInput=upscaler, FGOutput=dlssg, Streamline 2.14.1 epingle. x2 sur Ada, MFG sur Blackwell.
+    /// </summary>
+    InjectedDlssG,
+    /// <summary>OptiScaler officiel, FGInput=upscaler, FGOutput=fsrfg : x2, toute carte, jeu sans FG.</summary>
+    OptiFg
 }
 
 public enum InstallState

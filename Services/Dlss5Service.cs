@@ -442,10 +442,13 @@ public sealed class Dlss5Service
         GameInfo game, string repo, string label, IProgress<double>? progress, CancellationToken ct)
     {
         var release = await _github.LatestAsync(repo, ct);
+        // L'archive standard : le fork Multipass publie aussi une variante « rtx40-mfg »,
+        // non verifiee sur RTX 40 de l'aveu de son auteur, qu'on ne doit pas prendre par hasard.
         var asset = release?.Assets.FirstOrDefault(a =>
             (a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
              a.Name.EndsWith(".7z", StringComparison.OrdinalIgnoreCase)) &&
-            !a.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase));
+            !a.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase) &&
+            !a.Name.Contains("rtx40", StringComparison.OrdinalIgnoreCase));
 
         if (release is null || asset is null)
             return new InstallResult(false, Loc.T("err.archive_not_found", label));

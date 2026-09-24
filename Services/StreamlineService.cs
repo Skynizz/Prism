@@ -49,11 +49,10 @@ public sealed class StreamlineService
         => game.StreamlineVersion is { } v && v.StartsWith(version, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Telecharge le SDK officiel et remplace l'ensemble des composants Streamline du
-    /// titre par le jeu apparie. Chaque original part en sauvegarde.
+    /// Dossier des binaires de production (bin/x64) du SDK officiel, telecharge si besoin.
+    /// Null si la release ou l'archive manque.
     /// </summary>
-    public async Task<InstallResult> DeployAsync(
-        GameInfo game, string version, IProgress<double>? progress = null, CancellationToken ct = default)
+    public async Task<string?> SdkBinAsync(string version, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         var tag = version.StartsWith('v') ? version : "v" + version;
         var release = await _github.ByTagAsync(Repo, tag, ct);
@@ -64,28 +63,35 @@ public sealed class StreamlineService
             a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
             !a.Name.Contains("aarch64", StringComparison.OrdinalIgnoreCase) &&
             !a.Name.Contains("arm64", StringComparison.OrdinalIgnoreCase));
+        if (release is null || asset is null) return null;
 
-        if (release is null || asset is null)
-            return new InstallResult(false, Loc.T("sl.err.not_found", tag));
+        var zip = Path.Combine(AppPaths.ComponentCache, "streamline", asset.Name);
+        Log.Info(Src, $"Downloading the Streamline SDK {tag} ({asset.Size / 1024 / 1024} MB)");
+        await _downloads.DownloadAsync(asset.Url, zip, null, progress, ct);
 
+        var extractDir = Path.Combine(AppPaths.ComponentCache, "streamline", tag);
+        if (!Directory.Exists(extractDir) || !Directory.EnumerateFileSystemEntries(extractDir).Any())
+            await ArchiveExtractor.ExtractAsync(zip, extractDir, ct);
+
+        // Les binaires livrables vivent sous bin/x64 dans le SDK (development/ est a part).
+        return Directory.EnumerateDirectories(extractDir, "x64", SearchOption.AllDirectories)
+            .FirstOrDefault(d => Directory.EnumerateFiles(d, "sl.interposer.dll").Any());
+    }
+
+    /// <summary>
+    /// Telecharge le SDK officiel et remplace l'ensemble des composants Streamline du
+    /// titre par le jeu apparie. Chaque original part en sauvegarde.
+    /// </summary>
+    public async Task<InstallResult> DeployAsync(
+        GameInfo game, string version, IProgress<double>? progress = null, CancellationToken ct = default)
+    {
         var targetDir = DllInstaller.TargetDirectory(game);
         if (!Directory.Exists(targetDir))
             return new InstallResult(false, Loc.T("err.target_missing"));
 
         try
         {
-            var zip = Path.Combine(AppPaths.ComponentCache, "streamline", asset.Name);
-            Log.Info(Src, $"Downloading the Streamline SDK {tag} ({asset.Size / 1024 / 1024} MB)");
-            await _downloads.DownloadAsync(asset.Url, zip, null, progress, ct);
-
-            var extractDir = Path.Combine(AppPaths.ComponentCache, "streamline", tag);
-            if (!Directory.Exists(extractDir) || !Directory.EnumerateFileSystemEntries(extractDir).Any())
-                await ArchiveExtractor.ExtractAsync(zip, extractDir, ct);
-
-            // Les binaires livrables vivent sous bin/x64 dans le SDK.
-            var binDir = Directory.EnumerateDirectories(extractDir, "x64", SearchOption.AllDirectories)
-                .FirstOrDefault(d => Directory.EnumerateFiles(d, "sl.interposer.dll").Any());
-
+            var binDir = await SdkBinAsync(version, progress, ct);
             if (binDir is null)
                 return new InstallResult(false, Loc.T("sl.err.no_interposer"));
 

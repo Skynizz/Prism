@@ -26,18 +26,40 @@ public sealed class FrameGenService
 
     private const string Src = "framegen";
 
+    /// <summary>Fork OptiScaler qui sait sortir du vrai DLSS-G depuis l'upscaler du jeu (FGOutput=dlssg).</summary>
+    public const string InjectedFgRepo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass";
+    public const string InjectedFgOrigin = "OptiScaler DLSS FG";
+
+    /// <summary>
+    /// Les six binaires que le fork attend dans OptiScaler\streamline, tires du SDK officiel
+    /// Streamline 2.14.1 (bin/x64). Empreintes de son redist/streamline/manifest.json : un seul
+    /// octet different et rien n'est pose.
+    /// </summary>
+    public const string InjectedFgStreamline = "2.14.1";
+    private static readonly Dictionary<string, string> InjectedFgPins = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["sl.interposer.dll"] = "8C87C9499461DA561EDD529AA9BF7831D67D7B94EBB1C1A5ED54EF4934E1EA4C",
+        ["sl.common.dll"] = "82924A8954DD671E09351C5DE0EB87AD0EB25B944CC9F9AB955CA1D9950DE15D",
+        ["sl.dlss_g.dll"] = "F4A6B2B14DCC0B1485989E430D3B4E3A44AC1800B92BA1AD74F476E64FB2B09C",
+        ["sl.reflex.dll"] = "0CE9725E3E03EA9E7F81D008B57F33EE365973D2E349131C8B1C3E3378FE2DB0",
+        ["sl.pcl.dll"] = "F13D51CFA05F4CD514DF2026049E2DB8ADF359221713170AD386FD499915B582",
+        ["nvngx_dlssg.dll"] = "FF6E90EB78B827927DFF5B4ECC6B1C870C2E9BCA29ED9F48C7D348CC9E170B82",
+    };
+
     private readonly GitHubService _github;
     private readonly DownloadService _downloads;
     private readonly BackupService _backups;
     private readonly DeploymentStore _deployments;
+    private readonly StreamlineService _streamline;
 
     public FrameGenService(GitHubService github, DownloadService downloads, BackupService backups,
-        DeploymentStore deployments)
+        DeploymentStore deployments, StreamlineService streamline)
     {
         _github = github;
         _downloads = downloads;
         _backups = backups;
         _deployments = deployments;
+        _streamline = streamline;
     }
 
     /// <summary>Pose les fichiers en une transaction : tout, ou le jeu tel qu'il etait.</summary>
@@ -62,7 +84,8 @@ public sealed class FrameGenService
         {
             FgBackend.MfgAdaUnlock => InstallMfgAdaAsync(game, progress, ct),
             FgBackend.Rtx40MfgUnlock => InstallMfgUnlockAsync(game, progress, ct),
-            FgBackend.OptiScaler => InstallOptiScalerAsync(game, progress, ct),
+            FgBackend.OptiScaler or FgBackend.OptiFg => InstallOptiScalerAsync(game, progress, ct),
+            FgBackend.InjectedDlssG => InstallInjectedDlssGAsync(game, progress, ct),
             FgBackend.DlssEnabler => LaunchDlssEnablerAsync(game, progress, ct),
             // Ces portages ne publient pas d'archive de release : Prism ouvre la page
             // source plutot que de racler des binaires sans empreinte publiee.
@@ -213,6 +236,96 @@ public sealed class FrameGenService
         catch (Exception ex)
         {
             Log.Error(Src, $"OptiScaler install failed: {ex.Message}");
+            return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
+        }
+    }
+
+    // ------------------------------------------------------ DLSS-G injecte
+
+    /// <summary>
+    /// Vrai DLSS Frame Generation dans un jeu qui n'a qu'un upscaler, en suivant a la lettre la
+    /// notice du fork (docs/DLSS-FRAME-GENERATION.md) : son archive standard — jamais la variante
+    /// « rtx40-mfg », non verifiee sur RTX 40 de l'aveu de l'auteur —, controlee par son .sha256,
+    /// puis les binaires Streamline de production dans OptiScaler\streamline, controles un a un.
+    /// La configuration (FGInput=upscaler, FGOutput=dlssg) est ecrite ensuite, avec le multiplicateur.
+    /// </summary>
+    public async Task<InstallResult> InstallInjectedDlssGAsync(
+        GameInfo game, IProgress<double>? progress = null, CancellationToken ct = default)
+    {
+        var release = await _github.LatestAsync(InjectedFgRepo, ct);
+        var asset = release?.Assets.FirstOrDefault(a =>
+            a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+            !a.Name.Contains("rtx40", StringComparison.OrdinalIgnoreCase));
+        if (release is null || asset is null)
+            return new InstallResult(false, Loc.T("err.release_not_found", InjectedFgOrigin));
+
+        var dir = TargetDir(game);
+        try
+        {
+            var root = Path.Combine(AppPaths.ComponentCache, "injectedfg", AppPaths.Sanitize(release.Tag));
+            var archive = Path.Combine(root, asset.Name);
+            await _downloads.DownloadAsync(asset.Url, archive, null, progress, ct);
+
+            // Empreinte publiee a cote de l'archive : une archive alteree n'est jamais extraite.
+            var shaAsset = release.Assets.FirstOrDefault(a => a.Name.Equals(asset.Name + ".sha256", StringComparison.OrdinalIgnoreCase));
+            if (shaAsset is not null)
+            {
+                var published = (await _downloads.GetStringAsync(shaAsset.Url, ct)).Trim().Split(' ', '\t')[0];
+                var actual = DownloadService.Sha256Cached(archive);
+                if (!published.Equals(actual, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(archive);
+                    return new InstallResult(false, Loc.T("fg.inj.err.hash", asset.Name));
+                }
+            }
+
+            var extractDir = Path.Combine(root, "files");
+            if (!Directory.Exists(extractDir) || !Directory.EnumerateFileSystemEntries(extractDir).Any())
+                await ArchiveExtractor.ExtractAsync(archive, extractDir, ct);
+
+            var core = ArchiveExtractor.FindFile(extractDir, "OptiScaler.dll");
+            if (core is null) return new InstallResult(false, Loc.T("err.missing_in_archive", "OptiScaler.dll"));
+
+            var proxy = PickProxyName(dir);
+            if (proxy is null) return new InstallResult(false, Loc.T("err.no_proxy"));
+
+            var sdkBin = await _streamline.SdkBinAsync(InjectedFgStreamline, null, ct);
+            if (sdkBin is null) return new InstallResult(false, Loc.T("sl.err.no_interposer"));
+
+            var tx = new FileTransaction(game, _backups, _deployments, null);
+            foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(core)!))
+            {
+                var name = Path.GetFileName(file);
+                if (!ArchiveExtractor.IsPayload(name)) continue;
+                var dest = Path.Combine(dir, name.Equals("OptiScaler.dll", StringComparison.OrdinalIgnoreCase) ? proxy : name);
+                // Une configuration deja ajustee ne doit pas etre ecrasee.
+                if (name.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) && File.Exists(dest)) continue;
+                tx.Copy(file, dest, InjectedFgOrigin, release.Tag);
+            }
+
+            var slDir = Path.Combine(dir, "OptiScaler", "streamline");
+            foreach (var (name, pin) in InjectedFgPins)
+            {
+                var source = Path.Combine(sdkBin, name);
+                if (!File.Exists(source) || !DownloadService.Sha256Cached(source).Equals(pin, StringComparison.OrdinalIgnoreCase))
+                    return new InstallResult(false, Loc.T("fg.inj.err.pin", name));
+                tx.Copy(source, Path.Combine(slDir, name), InjectedFgOrigin, InjectedFgStreamline);
+            }
+            // Licences NVIDIA livrees avec les binaires, comme le demande la notice.
+            foreach (var license in new[] { "nvngx_dlss.license.txt", "reflex.license.txt" })
+                if (File.Exists(Path.Combine(sdkBin, license)))
+                    tx.Copy(Path.Combine(sdkBin, license), Path.Combine(slDir, license), InjectedFgOrigin, InjectedFgStreamline);
+
+            var written = tx.Commit();
+            if (!written.Success) return written;
+
+            DllDetector.Inspect(game);
+            Log.Info(Src, $"{InjectedFgOrigin} {release.Tag} installed as {proxy} ({tx.Count} files, Streamline {InjectedFgStreamline})");
+            return new InstallResult(true, Loc.T("fg.inj.ok", release.Tag, proxy, tx.Count), tx.Count);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(Src, $"{InjectedFgOrigin} install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }

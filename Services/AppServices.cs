@@ -27,13 +27,13 @@ public sealed class AppServices
         Wiki = new RenoDxWikiService(Downloads);
         Hdr = new HdrInstaller(Downloads, Deployments, Backups, Profiles);
         Rhi = new RhiRepoService(Downloads);
-        FrameGen = new FrameGenService(GitHub, Downloads, Backups, Deployments);
+        Streamline = new StreamlineService(GitHub, Downloads, Backups, Deployments);
+        FrameGen = new FrameGenService(GitHub, Downloads, Backups, Deployments, Streamline);
         Installer = new DllInstaller(Downloads, Backups, Deployments);
         Dlss5 = new Dlss5Service(GitHub, Downloads, Backups, Deployments, Rhi,
             new Dlss5PackageInstaller(Rhi, Downloads, Backups, Deployments, () => Gpu));
         Changes = new ChangesService(Backups, Deployments);
         Restore = new RestoreService(Changes, Backups, Deployments, Hdr);
-        Streamline = new StreamlineService(GitHub, Downloads, Backups, Deployments);
         Catalog = new ComponentCatalog(GitHub, ReShade, RenoDx, Manifest);
         Updates = new UpdateService(Downloads);
         Diagnostics = new DiagnosticService(Downloads, Rhi, Deployments);

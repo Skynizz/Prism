@@ -53,7 +53,10 @@ public static class DllDetector
     private static readonly string[] SkipDirs =
     {
         "_CommonRedist", "DirectX", "DotNetFX", "vcredist", "Redist", "__Installer",
-        "EasyAntiCheat", "BattlEye", "DXSETUP"
+        "EasyAntiCheat", "BattlEye", "DXSETUP",
+        // Charge utile privee d'OptiScaler : son Streamline (OptiScaler\streamline) ferait croire
+        // que le jeu embarque DLSS-G, alors que c'est justement ce qu'il n'a pas.
+        "OptiScaler"
     };
 
     /// <param name="raise">

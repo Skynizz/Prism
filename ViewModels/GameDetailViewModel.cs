@@ -155,7 +155,12 @@ public sealed class GameDetailViewModel : ObservableObject
             // plutot que purement declaratif.
             if (File.Exists(Path.Combine(TargetDir, "OptiScaler.ini")))
             {
-                OptiScalerConfig.Apply(TargetDir, OptiProfile.MfgOnly, value);
+                var nativeFg = Game.HasDlssG || Game.HasStreamline;
+                if (Profile.FgBackend == FgBackend.InjectedDlssG)
+                    OptiScalerConfig.Apply(TargetDir, OptiProfile.InjectedFg, value, nativeFg: false);
+                else
+                    OptiScalerConfig.Apply(TargetDir, OptiProfile.MfgOnly, value,
+                        nativeFg: Profile.FgBackend != FgBackend.OptiFg && nativeFg);
                 OnPropertyChanged(nameof(OptiProfileLabel));
             }
         }
@@ -817,8 +822,23 @@ public sealed class GameDetailViewModel : ObservableObject
 
         // Le multiplicateur choisi est ecrit dans la configuration quand la voie
         // passe par un paquet OptiScaler.
-        if (option.Backend is FgBackend.OptiScaler)
-            ApplyOptiProfile(OptiProfile.MfgOnly);
+        if (option.Backend is FgBackend.OptiScaler or FgBackend.OptiFg or FgBackend.InjectedDlssG)
+            ApplyFgConfig(option.Backend, Multiplier);
+    }
+
+    /// <summary>
+    /// Configuration OptiScaler de la voie de generation : entree DLSS-G du jeu, upscaler du jeu
+    /// (OptiFG), ou vrai DLSS-G injecte. Chaque voie a ses propres cles.
+    /// </summary>
+    private void ApplyFgConfig(FgBackend backend, int multiplier)
+    {
+        var nativeFg = Game.HasDlssG || Game.HasStreamline;
+        var result = backend == FgBackend.InjectedDlssG
+            ? OptiScalerConfig.Apply(TargetDir, OptiProfile.InjectedFg, multiplier, nativeFg: false)
+            : OptiScalerConfig.Apply(TargetDir, OptiProfile.MfgOnly, multiplier,
+                nativeFg: backend != FgBackend.OptiFg && nativeFg);
+        _notify(result.Message, !result.Success);
+        OnPropertyChanged(nameof(OptiProfileLabel));
     }
 
     private async Task PrepareDlss5Async()
@@ -1411,7 +1431,7 @@ public sealed class GameDetailViewModel : ObservableObject
         // Le registre d'abord : il connait chaque fichier pose, compagnons compris (fakenvapi.dll
         // livre avec OptiScaler), et rend les originaux remplaces. Le balayage par nom ne rattrape
         // ensuite que ce qu'une installation hors registre aurait laisse.
-        var tracked = new[] { "OptiScaler", "RTX40MFG-Unlock", "MFGAdaUnlock" }
+        var tracked = new[] { "OptiScaler", FrameGenService.InjectedFgOrigin, "RTX40MFG-Unlock", "MFGAdaUnlock" }
             .Sum(origin => _svc.Changes.RevertOrigin(Game.Id, origin));
         var result = FrameGenService.RemoveOverlays(Game);
         if (tracked > 0 && !result.Success)

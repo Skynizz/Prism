@@ -51,7 +51,10 @@ public static class FrameGenOptions
             DlssgSm86(gpu, game, isAmpere, noFg ?? notDx12),
             DlssgSm75(gpu, game, isTuring, noFg ?? notDx12),
             OptiScaler(gpu, noFg),
-            DlssEnabler(noFg)
+            DlssEnabler(noFg),
+            // Jeux sans generation d'images : on la fabrique depuis leur upscaler.
+            InjectedDlssG(gpu, game, fgCapable),
+            OptiFg(game, fgCapable)
         };
 
         return options
@@ -326,18 +329,130 @@ public static class FrameGenOptions
 
     // ---------------------------------------------------------- Ponts FSR 3.1
 
+    /// <summary>
+    /// OptiScaler officiel : FSR-FG en x2. Les notes de la 0.9.4 reservent le MFG de XeFG aux
+    /// cartes Arc, et FSR-FG ne genere qu'une image : afficher x3 ou x4 serait mentir.
+    /// </summary>
     private static FgOption OptiScaler(GpuInfo gpu, string? blocked) => new()
     {
         Title = "OptiScaler",
         Description = Loc.T("fg.opti.desc"),
         Backend = FgBackend.OptiScaler,
-        MaxMultiplier = 4,
-        Multipliers = new[] { 2, 3, 4 },
+        MaxMultiplier = 2,
+        Multipliers = new[] { 2 },
         Method = Loc.T("method.proxy"),
         Native = false,
         Experimental = true,
-        Apis = new[] { GameApi.DirectX12, GameApi.Vulkan },
+        Apis = new[] { GameApi.DirectX12 },
         BlockedReason = blocked
+    };
+
+    // ------------------------------------------------------- Jeux sans FG
+
+    /// <summary>
+    /// Ce qu'OptiScaler sait intercepter pour fabriquer des images : un upscaler temporel du jeu
+    /// (DLSS 2+, FSR 2+, XeSS). Sans lui, ni vecteurs de mouvement ni profondeur.
+    /// </summary>
+    public static bool HasUpscalerInputs(GameInfo game)
+    {
+        if (game.Dlls.Any(d => d.Kind is DllKind.Dlss or DllKind.FsrDx12 or DllKind.XeSS)) return true;
+        var dir = FrameGenService.TargetDir(game);
+        return new[] { "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_x64.dll", "amd_fidelityfx_upscaler_dx12.dll" }
+            .Any(n => File.Exists(Path.Combine(dir, n)));
+    }
+
+    /// <summary>Planification GPU materielle (HAGS), exigee par DLSS-G : HwSchMode vaut 2 quand elle est active.</summary>
+    public static bool? HagsEnabled()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers");
+            return key?.GetValue("HwSchMode") is int mode ? mode == 2 : null;
+        }
+        catch { return null; }
+    }
+
+    private static List<PrereqCheck> NoFgRequirements(GameInfo game, bool hags)
+    {
+        var upscaler = HasUpscalerInputs(game);
+        var proxyFree = FrameGenService.PickProxyName(FrameGenService.TargetDir(game)) is not null;
+        var list = new List<PrereqCheck>
+        {
+            new()
+            {
+                Label = "UPSCALER",
+                State = upscaler ? UiStatus.Ready : UiStatus.Error,
+                Detail = upscaler ? Loc.T("fg.nofg.upscaler_ok") : Loc.T("common.absent"),
+                Hint = upscaler ? Loc.T("fg.nofg.upscaler_on") : Loc.T("fg.nofg.upscaler_hint")
+            },
+            new()
+            {
+                Label = "API",
+                State = game.Api == GameApi.DirectX12 ? UiStatus.Ready : UiStatus.Error,
+                Detail = game.Api.Label(),
+                Hint = game.Api == GameApi.DirectX12 ? null : Loc.T("fg.port.api_hint")
+            },
+            new()
+            {
+                Label = "PROXY",
+                State = proxyFree ? UiStatus.Ready : UiStatus.Error,
+                Detail = proxyFree ? Loc.T("fg.proxy.free") : Loc.T("fg.proxy.taken"),
+                Hint = proxyFree ? null : Loc.T("fg.proxy.hint")
+            }
+        };
+        if (hags)
+        {
+            var on = HagsEnabled();
+            list.Add(new PrereqCheck
+            {
+                Label = "HAGS",
+                State = on == true ? UiStatus.Ready : UiStatus.Warning,
+                Detail = on switch { true => Loc.T("common.on"), false => Loc.T("common.off"), _ => Loc.T("common.unknown") },
+                Hint = on == true ? null : Loc.T("fg.inj.hags_hint")
+            });
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Le vrai DLSS-G de NVIDIA dans un jeu qui n'a qu'un upscaler (fork wilsjo2, FGOutput=dlssg).
+    /// Runtime NVIDIA non modifie : x2 sur RTX 40, MFG sur RTX 50 — la notice du fork le precise,
+    /// et ne promet pas le MFG sur RTX 40. Chemin qualifie d'experimental par son auteur.
+    /// </summary>
+    private static FgOption InjectedDlssG(GpuInfo gpu, GameInfo game, bool fgCapable) => new()
+    {
+        Title = Loc.T("fg.inj.title"),
+        Description = Loc.T("fg.inj.desc"),
+        Backend = FgBackend.InjectedDlssG,
+        MaxMultiplier = gpu.SupportsNativeMfg ? 4 : 2,
+        Multipliers = gpu.SupportsNativeMfg ? new[] { 2, 3, 4 } : new[] { 2 },
+        Method = Loc.T("method.proxy"),
+        Native = true,
+        Experimental = true,
+        Recommended = !fgCapable && gpu.SupportsNativeFg,
+        SourceUrl = "https://github.com/" + FrameGenService.InjectedFgRepo,
+        Apis = new[] { GameApi.DirectX12 },
+        Requirements = NoFgRequirements(game, hags: true),
+        BlockedReason = fgCapable ? Loc.T("fg.nofg.has_fg")
+            : !gpu.SupportsNativeFg ? Loc.T("fg.block.ada", gpu.GenerationLabel)
+            : null
+    };
+
+    /// <summary>FSR-FG x2 via OptiScaler officiel (FGInput=upscaler) : toute carte, jeu sans FG.</summary>
+    private static FgOption OptiFg(GameInfo game, bool fgCapable) => new()
+    {
+        Title = Loc.T("fg.optifg.title"),
+        Description = Loc.T("fg.optifg.desc"),
+        Backend = FgBackend.OptiFg,
+        MaxMultiplier = 2,
+        Multipliers = new[] { 2 },
+        Method = Loc.T("method.proxy"),
+        Native = false,
+        Experimental = true,
+        SourceUrl = "https://github.com/" + FrameGenService.OptiScalerRepo,
+        Apis = new[] { GameApi.DirectX12 },
+        Requirements = NoFgRequirements(game, hags: false),
+        BlockedReason = fgCapable ? Loc.T("fg.nofg.has_fg") : null
     };
 
     private static FgOption DlssEnabler(string? blocked) => new()
