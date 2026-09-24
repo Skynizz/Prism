@@ -13,8 +13,8 @@
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <!-- Branche dev : l'etiquette -dev envoie les donnees dans %LOCALAPPDATA%\Prism-dev. -->
-    <Version>1.1.0-dev.1</Version>
+    <!-- Sur la branche dev, une etiquette -dev (1.2.0-dev.1) envoie les donnees dans %LOCALAPPDATA%\Prism-dev. -->
+    <Version>1.1.0</Version>
     <Product>Prism</Product>
     <Company>Skynizz</Company>
     <Authors>Skynizz</Authors>

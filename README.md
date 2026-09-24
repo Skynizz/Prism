@@ -80,15 +80,17 @@ Each release publishes a `.sha256` checksum next to every file.
 <td width="50%" valign="top">
 
 #### DLSS 5 — Neural Rendering
-The complete **RenoDX DLSS 5** package: add-on, DLSS 310.8, Streamline 2.13 and the neural
-runtime matched to your GPU. NVIDIA signature required; pinned checksum for the RTX 20–40 build.
+The complete **RenoDX DLSS** package — ShortFuse's add-on or DLSS5 Tool — with DLSS 310.9.1,
+Streamline 2.14.1 and the neural runtime matched to your GPU. NVIDIA signature required; pinned
+checksum for the RTX 20–40 build.
 
 </td>
 <td width="50%" valign="top">
 
 #### Multi Frame Generation
 Paths filtered by GPU generation: native MFG on RTX 50, **RenoDX MFG Unlock** ×2–×6 on RTX 40,
-ported DLSS-G on RTX 30 and 20, FSR 3.1 fallback everywhere.
+ported DLSS-G on RTX 30 and 20. Games **without** frame generation get it through **OptiScaler**:
+NVIDIA's own DLSS FG on RTX 40/50, or FSR FG on any GPU.
 
 </td>
 </tr>
@@ -104,7 +106,8 @@ The RenoDX mod list is read **live**: the right mod per game, and the notes of i
 
 #### Tracked and reversible
 An **Added by Prism** strip on every game: one entry per install, one **Remove** button.
-Full vanilla restore with SHA-256 verification.
+**Reset injections** brings a game back to how its platform installed it — Prism's installs,
+and what RHI, OptiScaler or manual installs left behind.
 
 </td>
 </tr>
@@ -112,15 +115,16 @@ Full vanilla restore with SHA-256 verification.
 <td valign="top">
 
 #### Real diagnostics
-The render chain actually loaded, a Streamline / DLSS-G compatibility matrix, outdated shader
-compilers detected and replaced, mods installed outside Prism detected.
+The game's own `ReShade.log` read after each launch: **Working**, **Degraded** or **Failed**,
+with the log line as evidence and the fix one click away. Mod conflicts and outdated files flagged.
 
 </td>
 <td valign="top">
 
 #### Built for everyone
 18 languages with right-to-left Arabic, two themes, an interface that scales from a laptop
-window to a 4K display, and self-updates from GitHub Releases.
+window to a 4K display, and self-updates from GitHub Releases. Games from any store — or added
+by their `.exe` — get their official name and Steam AppID.
 
 </td>
 </tr>
@@ -183,24 +187,37 @@ placed it — ReShade, RenoDX add-ons, OptiScaler, DLSS Enabler, dlssg-to-fsr3, 
 DLSSTweaks, ASI loaders, `nvngx_dlssnr.dll`. Known mod files can be **set aside** (copied to
 Prism's backups, then removed); NVIDIA runtimes replaced by hand are flagged, never guessed.
 
+**Deep clean** (Changes page) goes further, following each tool's own rules rather than guesses:
+
+| Left behind | What Prism does |
+|---|---|
+| `X.original`, empty — RHI created `X` from scratch | `X` and the marker removed |
+| `X.original`, not empty — the game's original, renamed by RHI | original put back in place |
+| `rhi_install.txt` | every file and folder it lists removed |
+| OptiScaler under any DLL name (`OriginalFilename = OptiScaler.dll`) | removed with its companions |
+
+The full list is shown before anything happens, every file is copied aside first, and the whole
+pass can be undone. **Copy file list** exports everything that differs from the original game.
+
 ---
 
 ## DLSS 5 — Neural Rendering
 
 | API | Path | Why |
 |---|---|---|
-| **DirectX 12** | **RenoDX DLSS 5** *(recommended)* | full stack, verified file by file |
+| **DirectX 12 · 11** | **RenoDX DLSS · ShortFuse** *(recommended)* | full stack, verified file by file |
+| DirectX 12 | RenoDX DLSS 5 (DLSS5 Tool) | lighter add-on, same stack |
 | DirectX 12 | OptiScaler DLSSNR · PreSR Multipass | neural pass inside the pipeline, no ReShade needed |
 | DirectX 11 · Vulkan | DLSS 5 Bridge | mirrors the native DLSS call |
 | DirectX 11 or 12 | DLSS5 One-Click | single installer, RTX 20–50 |
 
-### The RenoDX DLSS 5 package
+### The RenoDX DLSS package
 
 | Component | Source | Check |
 |---|---|---|
-| `renodx-dlss5.addon64` | `RankFTW/rhi-repo`, selectable build (latest by default) | registered for early loading |
-| `nvngx_dlss` · `dlssg` · `dlssd` | `rhi-repo` — 310.8.0 · 310.8.0 · 310.7.129 | NVIDIA Authenticode |
-| `sl.*` | `rhi-repo` — Streamline 2.13 | NVIDIA Authenticode |
+| `renodx-dlss.addon64` (ShortFuse) or `renodx-dlss5.addon64` | `RankFTW/rhi-repo`, latest **stable** build — release candidates are never picked | registered for early loading |
+| `nvngx_dlss` · `dlssg` · `dlssd` | `rhi-repo` — 310.9.1 | NVIDIA Authenticode |
+| `sl.*` | `rhi-repo` — Streamline 2.14.1 | NVIDIA Authenticode |
 | `nvngx_dlssnr.dll` | `rhi-repo`, per GPU | NVIDIA-signed **or** pinned SHA-256 |
 
 - **RTX 50** — `dlssnr-310.8.0`, the original NVIDIA-signed runtime.
@@ -208,6 +225,11 @@ Prism's backups, then removed); NVIDIA runtimes replaced by hand are flagged, ne
   accepted **only** if its checksum is pinned in `NeuralRuntimePins`.
 
 The check is **all or nothing**: one rejected DLL and the game is not touched.
+
+**Diagnostic.** The overlay can say *active* while the neural pass was refused or discarded.
+After each launch Prism reads the game's `ReShade.log` against a signature catalog
+([`Diagnostics/signatures.json`](Diagnostics/signatures.json), also fetched from this repository)
+and shows what really happened, with the log line that proves it.
 
 **Placement.** NGX DLLs and `sl.*` go where the game loads Streamline (on Unreal,
 `Plugins\…\ThirdParty\Win64`). `nvngx_dlssnr.dll` also goes **next to the executable**, where
@@ -229,15 +251,25 @@ the add-on loads it.
 
 ## Frame Generation
 
-The game must already integrate Streamline DLSS-G: no overlay creates frame generation from
-nothing. The interface separates the **NVIDIA engine** from the **FSR 3.1 bridge**.
+The interface separates the **NVIDIA engine** from **FSR** frame generation, and says which
+multiplier each path really delivers.
 
 | GPU | Recommended path | Alternatives |
 |---|---|---|
-| RTX 50 · Blackwell | Native DLSS-G ×2–×4 | OptiScaler, DLSS Enabler |
+| RTX 50 · Blackwell | Native DLSS-G ×2–×4 | OptiScaler · FSR FG, DLSS Enabler |
 | RTX 40 · Ada | **RenoDX MFG Unlock** ×2–×6 | Native DLSS-G ×2, RTX40MFG-Unlock |
-| RTX 30 · Ampere | **dlssg for sm_86** ×2–×4 | OptiScaler, DLSS Enabler |
-| RTX 20 · Turing | **dlssg for sm_75** ×2–×4 | OptiScaler, DLSS Enabler |
+| RTX 30 · Ampere | **dlssg for sm_86** ×2–×4 | OptiScaler · FSR FG, DLSS Enabler |
+| RTX 20 · Turing | **dlssg for sm_75** ×2–×4 | OptiScaler · FSR FG, DLSS Enabler |
+
+**Games without frame generation** — DirectX 12, with DLSS, FSR 2+ or XeSS turned on in game:
+
+| Path | GPU | Multiplier | How |
+|---|---|---|---|
+| **OptiScaler · DLSS FG** | RTX 40 · RTX 50 | ×2 · up to ×4 | NVIDIA's DLSS-G driven from the game's upscaler ([wilsjo2 fork](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)); Streamline 2.14.1 files checked against pinned SHA-256 |
+| **OptiScaler · FSR FG** | any | ×2 | official OptiScaler, `FGInput=upscaler` |
+
+One OptiScaler per game: installing another path reuses the one already loaded instead of adding
+a second copy under another DLL name.
 
 Rules enforced by the compatibility matrix:
 
