@@ -598,6 +598,13 @@ public sealed class MainViewModel : ObservableObject
         set { Settings.AutoCheckUpdates = value; _svc.Settings.Save(); OnPropertyChanged(); }
     }
 
+    /// <summary>Nom officiel des jeux hors Steam cherche sur le magasin Steam : seul le nom part.</summary>
+    public bool IdentifyOnline
+    {
+        get => Settings.IdentifyOnline;
+        set { Settings.IdentifyOnline = value; _svc.Settings.Save(); OnPropertyChanged(); }
+    }
+
     /// <summary>Versions de test : les prereleases GitHub sont proposees elles aussi.</summary>
     public bool ShowDevBuilds
     {
@@ -710,6 +717,9 @@ public sealed class MainViewModel : ObservableObject
             _svc.Scanner.ExtraFolders = ExtraFolders.ToList();
             var found = await _svc.Scanner.ScanAsync(new Progress<string>(s => Status = s));
 
+            // Noms officiels deja retrouves : appliques avant affichage, sans reseau.
+            _svc.Identity.ApplyKnown(found);
+
             var previous = SelectedGame?.Id;
             Games.Clear();
             foreach (var g in found) Games.Add(g);
@@ -728,7 +738,22 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex) { Notify(Loc.T("err.scan_failed", ex.Message), true); }
         finally { Busy = false; }
 
-        _ = InspectAllAsync();
+        _ = AfterScanAsync();
+    }
+
+    /// <summary>Inspection du disque, puis identite des jeux hors Steam : l'exe sert a la trouver.</summary>
+    private async Task AfterScanAsync()
+    {
+        await InspectAllAsync();
+        try
+        {
+            var changed = await _svc.Identity.ResolvePendingAsync(Games.ToList());
+            if (changed.Count == 0) return;
+            GamesView.Refresh();
+            Detail?.Refresh();
+            Log.Info(Src, $"{changed.Count} title(s) identified.");
+        }
+        catch (Exception ex) { Log.Warn(Src, $"Identity lookup failed: {ex.Message}"); }
     }
 
     /// <summary>

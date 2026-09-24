@@ -363,8 +363,10 @@ public sealed partial class RenoDxWikiService
 
         var is32 = PeInfo.Is32Bit(game.Executable);
         var keys = CandidateKeys(game);
-        var appId = game.Id.StartsWith("steam:", StringComparison.Ordinal)
-                    && long.TryParse(game.Id.AsSpan(6), out var id) ? id : (long?)null;
+        // L'AppID vaut aussi pour un jeu hors Steam dont l'identite a ete retrouvee.
+        var appId = game.SteamAppId
+                    ?? (game.Id.StartsWith("steam:", StringComparison.Ordinal)
+                        && long.TryParse(game.Id.AsSpan(6), out var id) ? id : (long?)null);
 
         // 1. Mod dedie.
         var indexed = (appId is not null ? _index.FirstOrDefault(g => g.SteamAppId == appId) : null)

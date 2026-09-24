@@ -62,6 +62,10 @@ public sealed class GameDetailViewModel : ObservableObject
         CopyFileListCommand = new RelayCommand(_ => CopyFileList());
         SteamVerifyCommand = new RelayCommand(_ => SteamVerify());
         ChooseExeCommand = new RelayCommand(_ => ChooseExe(), _ => !Busy);
+        ToggleIdentifyCommand = new RelayCommand(_ => ToggleIdentify());
+        SearchIdentityCommand = new AsyncRelayCommand(SearchIdentityAsync, () => !string.IsNullOrWhiteSpace(IdentitySearch));
+        UseCandidateCommand = new RelayCommand(p => { if (p is IdentityCandidate c) UseIdentity(c.Name, c.AppId); });
+        UseCustomNameCommand = new RelayCommand(_ => UseIdentity(IdentitySearch, null));
         ApplyMfgSettingsCommand = new RelayCommand(_ => ApplyMfgSettings(), _ => Game.HasReShade);
         EarlyLoadCommand = new RelayCommand(p => EnableEarlyLoad(p as string), _ => Game.HasReShade);
         VerifyCommand = new RelayCommand(_ => VerifyIntegrity());
@@ -679,6 +683,63 @@ public sealed class GameDetailViewModel : ObservableObject
         Game.Executable = dlg.FileName;
         DllDetector.Inspect(Game);
         _notify(Loc.T("library.exe_set", Game.Name, Path.GetFileName(dlg.FileName)), false);
+        Refresh();
+        OnPropertyChanged(string.Empty);
+    }
+
+    // ------------------------------------------------------------- Identite
+
+    /// <summary>« AppID 3751260 · magasin Steam » : ce qui relie ce jeu aux catalogues.</summary>
+    public string IdentityLabel => Game.SteamAppId is { } id
+        ? Loc.T("ident.label", id, SourceLabel)
+        : Loc.T("ident.none", SourceLabel);
+
+    private string SourceLabel => new GameIdentity { Source = Game.IdentitySource }.SourceLabel;
+
+    public bool IsIdentified => Game.SteamAppId is not null;
+
+    private bool _identifying;
+    /// <summary>Panneau de recherche ouvert.</summary>
+    public bool Identifying { get => _identifying; set => Set(ref _identifying, value); }
+
+    private string _identitySearch = "";
+    public string IdentitySearch
+    {
+        get => _identitySearch;
+        set { if (Set(ref _identitySearch, value)) SearchIdentityCommand?.Raise(); }
+    }
+
+    /// <summary>Un jeu Steam a deja son identite certaine : rien a choisir.</summary>
+    public bool CanIdentify => Game.Platform != GamePlatform.Steam;
+
+    public ObservableCollection<IdentityCandidate> IdentityCandidates { get; } = new();
+
+    public RelayCommand ToggleIdentifyCommand { get; }
+    public AsyncRelayCommand SearchIdentityCommand { get; }
+    public RelayCommand UseCandidateCommand { get; }
+    public RelayCommand UseCustomNameCommand { get; }
+
+    private void ToggleIdentify()
+    {
+        Identifying = !Identifying;
+        if (!Identifying) return;
+        IdentitySearch = Game.Name;
+        _ = SearchIdentityAsync();
+    }
+
+    private async Task SearchIdentityAsync()
+    {
+        IdentityCandidates.Clear();
+        foreach (var c in await _svc.Identity.SearchAsync(IdentitySearch)) IdentityCandidates.Add(c);
+        if (IdentityCandidates.Count == 0) _notify(Loc.T("ident.no_result", IdentitySearch), false);
+    }
+
+    private void UseIdentity(string name, long? appId)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+        _svc.Identity.SetByUser(Game, name, appId);
+        Identifying = false;
+        _notify(Loc.T("ident.set", Game.Name), false);
         Refresh();
         OnPropertyChanged(string.Empty);
     }

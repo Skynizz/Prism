@@ -7,9 +7,23 @@ public sealed class GameInfo : ObservableObject
 {
     /// <summary>Identifiant stable : "steam:1091500". Sert de cle pour backups et profils.</summary>
     public required string Id { get; init; }
-    public required string Name { get; init; }
+
+    private string _name = "";
+
+    /// <summary>Nom affiche : celui de la plateforme, ou le nom officiel retrouve (<see cref="Services.GameIdentityService"/>).</summary>
+    public required string Name { get => _name; set => Set(ref _name, value); }
+
     public required string InstallDir { get; init; }
     public GamePlatform Platform { get; init; }
+
+    /// <summary>
+    /// AppID Steam, y compris pour un jeu Epic, GOG ou ajoute a la main : c'est la cle des
+    /// catalogues (mods RenoDX HDR), la meme que pour un jeu Steam.
+    /// </summary>
+    public long? SteamAppId { get; set; }
+
+    /// <summary>D'ou viennent le nom et l'AppID.</summary>
+    public IdentitySource IdentitySource { get; set; } = IdentitySource.Folder;
 
     /// <summary>Executable principal presume (le plus gros .exe hors launchers connus).</summary>
     public string? Executable { get; set; }

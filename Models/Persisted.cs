@@ -54,6 +54,12 @@ public sealed class AppSettings
     /// <summary>Executable choisi a la main, par identifiant de jeu.</summary>
     public Dictionary<string, string> ExeOverrides { get; set; } = new();
 
+    /// <summary>Nom officiel et AppID Steam trouves pour les jeux hors Steam, par identifiant de jeu.</summary>
+    public Dictionary<string, GameIdentity> Identities { get; set; } = new();
+
+    /// <summary>Recherche du nom sur le magasin Steam pour les jeux hors Steam.</summary>
+    public bool IdentifyOnline { get; set; } = true;
+
     /// <summary>Langue de l'interface ; null suit celle de Windows.</summary>
     public string? Language { get; set; }
     public bool DarkTheme { get; set; } = true;

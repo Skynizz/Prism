@@ -154,7 +154,9 @@ public sealed class GameScanner
                     Id = $"steam:{appid}",
                     Name = name,
                     InstallDir = full,
-                    Platform = GamePlatform.Steam
+                    Platform = GamePlatform.Steam,
+                    SteamAppId = long.TryParse(appid, out var id) ? id : null,
+                    IdentitySource = IdentitySource.Steam
                 };
             }
         }

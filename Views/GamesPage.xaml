@@ -189,6 +189,41 @@
                         </DockPanel>
                         <c:Field Label="{l:T label.target}"  Value="{Binding TargetDir}" Mono="True" LabelWidth="92" />
 
+                        <!-- Identite : nom officiel et AppID Steam, la cle des catalogues pour tout jeu. -->
+                        <DockPanel Visibility="{Binding CanIdentify, Converter={StaticResource BoolVis}}">
+                            <Button DockPanel.Dock="Right" Content="{l:T ident.identify}" Style="{StaticResource Btn.Quiet}"
+                                    Height="22" VerticalAlignment="Center" Command="{Binding ToggleIdentifyCommand}"
+                                    ToolTip="{l:T ident.identify_tip}" />
+                            <c:Field Label="{l:T ident.header}" Value="{Binding IdentityLabel}" LabelWidth="92" />
+                        </DockPanel>
+                        <Border Style="{StaticResource S.Sunken}" Padding="10,9" Margin="0,6,0,0"
+                                Visibility="{Binding Identifying, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="{l:T ident.search}" Style="{StaticResource Btn}"
+                                            Margin="6,0,0,0" Command="{Binding SearchIdentityCommand}" IsDefault="True" />
+                                    <TextBox Text="{Binding IdentitySearch, UpdateSourceTrigger=PropertyChanged}" />
+                                </DockPanel>
+                                <ItemsControl ItemsSource="{Binding IdentityCandidates}" Margin="0,6,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel MinHeight="26">
+                                                <Button DockPanel.Dock="Right" Content="{l:T ident.use}" Style="{StaticResource Btn.Quiet}"
+                                                        Height="22" VerticalAlignment="Center"
+                                                        Command="{Binding DataContext.UseCandidateCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource T.Body}"
+                                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Content="{l:T ident.custom}" Style="{StaticResource Btn.Quiet}" HorizontalAlignment="Left"
+                                        Margin="0,6,0,0" Command="{Binding UseCustomNameCommand}" ToolTip="{l:T ident.custom_tip}" />
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource S.HRule}" Margin="0,14,0,12" />
 
                         <TextBlock Text="{l:T games.runtimes}" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,8" />

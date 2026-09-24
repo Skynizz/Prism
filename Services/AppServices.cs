@@ -38,6 +38,7 @@ public sealed class AppServices
         Updates = new UpdateService(Downloads);
         Diagnostics = new DiagnosticService(Downloads, Rhi, Deployments);
         Cleaner = new LeftoverCleaner(Changes, Profiles);
+        Identity = new GameIdentityService(Downloads, Settings);
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -72,6 +73,7 @@ public sealed class AppServices
     public UpdateService Updates { get; }
     public DiagnosticService Diagnostics { get; }
     public LeftoverCleaner Cleaner { get; }
+    public GameIdentityService Identity { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }
