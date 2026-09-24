@@ -404,6 +404,7 @@
  "fg.inj.desc": "Yalnızca ölçekleyicisi olan bir oyunda NVIDIA'nın gerçek DLSS Frame Generation'ı: RTX 40'ta ×2, RTX 50'de ×4'e kadar. Değiştirilmemiş NVIDIA dosyaları, her biri doğrulandı. Deneysel: hile önleyicisiz tek oyunculu oyunlar.",
  "fg.inj.err.hash": "{0}: sağlama toplamı uyuşmuyor, hiçbir şey kurulmadı.",
  "fg.inj.err.pin": "{0} sabitlenmiş sağlama toplamıyla uyuşmuyor: hiçbir şey kurulmadı.",
+ "fg.inj.hags_check": "Windows, donanım hızlandırmalı GPU zamanlamasının açık olup olmadığını belirtmiyor: Windows Ayarları > Ekran > Grafik bölümünden kontrol et.",
  "fg.inj.hags_hint": "Donanım hızlandırmalı GPU zamanlamasını aç (Windows Ayarları › Ekran › Grafik), ardından Windows'u yeniden başlat.",
  "fg.inj.ok": "Enjekte DLSS FG {0}, {1} olarak kuruldu: {2} dosya. Oyunda DLSS, FSR veya XeSS'i aç, sonra oyunu yeniden başlat.",
  "fg.inj.title": "DLSS FG · enjekte",

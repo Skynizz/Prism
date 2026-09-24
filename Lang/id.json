@@ -404,6 +404,7 @@
  "fg.inj.desc": "DLSS Frame Generation asli NVIDIA di game yang hanya punya upscaler: ×2 di RTX 40, hingga ×4 di RTX 50. File NVIDIA tanpa modifikasi, masing-masing diperiksa. Eksperimental: game pemain tunggal tanpa anti-cheat.",
  "fg.inj.err.hash": "{0}: checksum tidak cocok, tidak ada yang dipasang.",
  "fg.inj.err.pin": "{0} tidak cocok dengan checksum yang dipatok: tidak ada yang dipasang.",
+ "fg.inj.hags_check": "Windows tidak menyebut apakah penjadwalan GPU dengan akselerasi perangkat keras aktif: periksa di Pengaturan Windows > Layar > Grafis.",
  "fg.inj.hags_hint": "Aktifkan penjadwalan GPU dengan akselerasi perangkat keras (Pengaturan Windows › Layar › Grafis), lalu mulai ulang Windows.",
  "fg.inj.ok": "DLSS FG tersuntik {0} terpasang sebagai {1}: {2} file. Aktifkan DLSS, FSR, atau XeSS di game, lalu jalankan ulang.",
  "fg.inj.title": "DLSS FG · tersuntik",

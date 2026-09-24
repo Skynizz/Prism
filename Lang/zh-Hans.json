@@ -404,6 +404,7 @@
  "fg.inj.desc": "在只有超分辨率的游戏中使用 NVIDIA 真正的 DLSS 帧生成：RTX 40 为 ×2，RTX 50 最高 ×4。NVIDIA 文件未经修改，逐一校验。实验性：无反作弊的单机游戏。",
  "fg.inj.err.hash": "{0}：校验和不符，未安装任何内容。",
  "fg.inj.err.pin": "{0} 与固定校验和不符：未安装任何内容。",
+ "fg.inj.hags_check": "Windows 未表明硬件加速 GPU 计划是否开启：请在 Windows 设置 > 屏幕 > 显示卡 中确认。",
  "fg.inj.hags_hint": "开启硬件加速 GPU 计划（Windows 设置 › 屏幕 › 显示卡），然后重启 Windows。",
  "fg.inj.ok": "注入式 DLSS FG {0} 已安装为 {1}：{2} 个文件。请在游戏中开启 DLSS、FSR 或 XeSS，然后重启游戏。",
  "fg.inj.title": "DLSS FG · 注入",

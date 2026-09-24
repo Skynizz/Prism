@@ -408,7 +408,8 @@ public static class FrameGenOptions
                 Label = "HAGS",
                 State = on == true ? UiStatus.Ready : UiStatus.Warning,
                 Detail = on switch { true => Loc.T("common.on"), false => Loc.T("common.off"), _ => Loc.T("common.unknown") },
-                Hint = on == true ? null : Loc.T("fg.inj.hags_hint")
+                // Valeur absente : Windows applique son defaut, qu'on ne peut pas lire ici. On le dit.
+                Hint = on switch { true => null, false => Loc.T("fg.inj.hags_hint"), _ => Loc.T("fg.inj.hags_check") }
             });
         }
         return list;

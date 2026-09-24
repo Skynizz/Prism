@@ -404,6 +404,7 @@
  "fg.inj.desc": "Prawdziwe DLSS Frame Generation od NVIDIA w grze, która ma tylko upscaler: ×2 na RTX 40, do ×4 na RTX 50. Niezmienione pliki NVIDIA, każdy sprawdzony. Eksperymentalne: gry dla jednego gracza bez anty-cheata.",
  "fg.inj.err.hash": "{0}: suma kontrolna się nie zgadza, nic nie zainstalowano.",
  "fg.inj.err.pin": "{0} nie pasuje do przypiętej sumy: nic nie zainstalowano.",
+ "fg.inj.hags_check": "Windows nie podaje, czy sprzętowo przyspieszone planowanie GPU jest włączone: sprawdź w Ustawienia Windows > Ekran > Grafika.",
  "fg.inj.hags_hint": "Włącz sprzętowo przyspieszone planowanie GPU (Ustawienia Windows › Ekran › Grafika) i uruchom ponownie Windows.",
  "fg.inj.ok": "Wstrzyknięty DLSS FG {0} zainstalowany jako {1}: plików: {2}. Włącz w grze DLSS, FSR lub XeSS i uruchom ją ponownie.",
  "fg.inj.title": "DLSS FG · wstrzyknięty",

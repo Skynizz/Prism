@@ -404,6 +404,7 @@
  "fg.inj.desc": "La auténtica DLSS Frame Generation de NVIDIA en un juego que solo tiene escalador: ×2 en RTX 40, hasta ×4 en RTX 50. Archivos de NVIDIA sin modificar, verificados uno a uno. Experimental: juegos de un jugador sin antitrampas.",
  "fg.inj.err.hash": "{0}: la suma de comprobación no coincide, no se instaló nada.",
  "fg.inj.err.pin": "{0} no coincide con su suma fijada: no se instaló nada.",
+ "fg.inj.hags_check": "Windows no indica si la programación de GPU acelerada por hardware está activa: compruébalo en Configuración de Windows > Pantalla > Gráficos.",
  "fg.inj.hags_hint": "Activa la programación de GPU acelerada por hardware (Configuración de Windows › Pantalla › Gráficos) y reinicia Windows.",
  "fg.inj.ok": "DLSS FG inyectado {0} instalado como {1}: {2} archivos. Activa DLSS, FSR o XeSS en el juego y reinícialo.",
  "fg.inj.title": "DLSS FG · inyectado",

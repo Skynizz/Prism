@@ -404,6 +404,7 @@
  "fg.inj.desc": "Le vrai DLSS Frame Generation de NVIDIA dans un jeu qui n'a qu'un upscaler : ×2 sur RTX 40, jusqu'à ×4 sur RTX 50. Fichiers NVIDIA non modifiés, vérifiés un à un. Expérimental : jeux solo sans anti-triche.",
  "fg.inj.err.hash": "{0} : empreinte différente, rien n'est installé.",
  "fg.inj.err.pin": "{0} ne correspond pas à son empreinte épinglée : rien n'est installé.",
+ "fg.inj.hags_check": "Windows n'indique pas si la planification GPU à accélération matérielle est active : vérifiez-la dans Paramètres Windows > Écran > Graphiques.",
  "fg.inj.hags_hint": "Activez la planification GPU à accélération matérielle (Paramètres Windows › Écran › Graphiques), puis redémarrez Windows.",
  "fg.inj.ok": "DLSS FG injecté {0} installé en {1} : {2} fichiers. Activez DLSS, FSR ou XeSS dans le jeu, puis relancez-le.",
  "fg.inj.title": "DLSS FG · injecté",

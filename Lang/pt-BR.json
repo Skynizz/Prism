@@ -404,6 +404,7 @@
  "fg.inj.desc": "O verdadeiro DLSS Frame Generation da NVIDIA num jogo que só tem upscaler: ×2 na RTX 40, até ×4 na RTX 50. Arquivos da NVIDIA sem modificação, verificados um a um. Experimental: jogos single-player sem anti-cheat.",
  "fg.inj.err.hash": "{0}: soma de verificação diferente, nada instalado.",
  "fg.inj.err.pin": "{0} não corresponde à soma fixada: nada instalado.",
+ "fg.inj.hags_check": "O Windows não informa se o agendamento de GPU acelerado por hardware está ativo: confira em Configurações do Windows > Tela > Gráficos.",
  "fg.inj.hags_hint": "Ative o agendamento de GPU acelerado por hardware (Configurações do Windows › Tela › Gráficos) e reinicie o Windows.",
  "fg.inj.ok": "DLSS FG injetado {0} instalado como {1}: {2} arquivos. Ative DLSS, FSR ou XeSS no jogo e reinicie-o.",
  "fg.inj.title": "DLSS FG · injetado",

@@ -404,6 +404,7 @@
  "fg.inj.desc": "업스케일러만 있는 게임에서 NVIDIA의 진짜 DLSS 프레임 생성: RTX 40은 ×2, RTX 50은 최대 ×4. 수정하지 않은 NVIDIA 파일을 하나씩 검증. 실험적: 안티치트 없는 싱글플레이 게임.",
  "fg.inj.err.hash": "{0}: 체크섬 불일치, 아무것도 설치하지 않았습니다.",
  "fg.inj.err.pin": "{0}이(가) 고정된 체크섬과 다릅니다: 아무것도 설치하지 않았습니다.",
+ "fg.inj.hags_check": "Windows가 하드웨어 가속 GPU 예약이 켜져 있는지 알려 주지 않습니다: Windows 설정 > 디스플레이 > 그래픽에서 확인하세요.",
  "fg.inj.hags_hint": "하드웨어 가속 GPU 예약을 켜고(Windows 설정 › 디스플레이 › 그래픽) Windows를 다시 시작하세요.",
  "fg.inj.ok": "주입형 DLSS FG {0}을(를) {1}(으)로 설치: 파일 {2}개. 게임에서 DLSS, FSR 또는 XeSS를 켜고 다시 시작하세요.",
  "fg.inj.title": "DLSS FG · 주입",

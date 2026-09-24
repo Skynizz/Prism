@@ -404,6 +404,7 @@
  "fg.inj.desc": "NVIDIA's real DLSS Frame Generation in a game that only has an upscaler: ×2 on RTX 40, up to ×4 on RTX 50. Unmodified NVIDIA files, each one checked. Experimental: single-player games without anti-cheat.",
  "fg.inj.err.hash": "{0}: checksum mismatch, nothing installed.",
  "fg.inj.err.pin": "{0} doesn't match its pinned checksum: nothing installed.",
+ "fg.inj.hags_check": "Windows doesn't say whether hardware-accelerated GPU scheduling is on: check it in Windows Settings > Display > Graphics.",
  "fg.inj.hags_hint": "Turn on hardware-accelerated GPU scheduling (Windows Settings › Display › Graphics), then restart Windows.",
  "fg.inj.ok": "Injected DLSS FG {0} installed as {1}: {2} files. Turn on DLSS, FSR or XeSS in the game, then restart it.",
  "fg.inj.title": "DLSS FG · injected",

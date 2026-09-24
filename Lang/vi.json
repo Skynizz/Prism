@@ -404,6 +404,7 @@
  "fg.inj.desc": "DLSS Frame Generation thật của NVIDIA trong game chỉ có upscaler: ×2 trên RTX 40, tới ×4 trên RTX 50. Tệp NVIDIA không sửa đổi, kiểm tra từng tệp. Thử nghiệm: game chơi đơn không có chống gian lận.",
  "fg.inj.err.hash": "{0}: checksum không khớp, không cài gì.",
  "fg.inj.err.pin": "{0} không khớp checksum đã ghim: không cài gì.",
+ "fg.inj.hags_check": "Windows không cho biết lập lịch GPU tăng tốc phần cứng có bật hay không: kiểm tra trong Cài đặt Windows > Màn hình > Đồ họa.",
  "fg.inj.hags_hint": "Bật lập lịch GPU tăng tốc phần cứng (Cài đặt Windows › Màn hình › Đồ họa), rồi khởi động lại Windows.",
  "fg.inj.ok": "Đã cài DLSS FG chèn {0} dưới tên {1}: {2} tệp. Bật DLSS, FSR hoặc XeSS trong game rồi khởi động lại game.",
  "fg.inj.title": "DLSS FG · chèn",

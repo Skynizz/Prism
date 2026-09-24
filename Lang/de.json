@@ -404,6 +404,7 @@
  "fg.inj.desc": "NVIDIAs echte DLSS Frame Generation in einem Spiel, das nur einen Upscaler hat: ×2 auf RTX 40, bis ×4 auf RTX 50. Unveränderte NVIDIA-Dateien, jede geprüft. Experimentell: Einzelspieler-Spiele ohne Anti-Cheat.",
  "fg.inj.err.hash": "{0}: Prüfsumme stimmt nicht, nichts installiert.",
  "fg.inj.err.pin": "{0} passt nicht zur festgelegten Prüfsumme: nichts installiert.",
+ "fg.inj.hags_check": "Windows gibt nicht an, ob die hardwarebeschleunigte GPU-Planung aktiv ist: prüfe sie unter Windows-Einstellungen > Anzeige > Grafik.",
  "fg.inj.hags_hint": "Aktiviere die hardwarebeschleunigte GPU-Planung (Windows-Einstellungen › Anzeige › Grafik) und starte Windows neu.",
  "fg.inj.ok": "Injiziertes DLSS FG {0} als {1} installiert: {2} Dateien. Aktiviere DLSS, FSR oder XeSS im Spiel und starte es neu.",
  "fg.inj.title": "DLSS FG · injiziert",
