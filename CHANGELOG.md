@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+
+- **RenoDX UE Extended is back.** The RenoDX wiki renamed its section to *Unreal Engine Extended*
+  and moved the download to marat569's repository; Prism no longer found the add-on, so generic
+  HDR for Unreal games could not be installed. It now uses the current build from the link the
+  wiki gives.
+- **UE Extended's own presets are respected.** The mod recognises dozens of games by their
+  executable and sets their upgrade path and resource upgrades itself; a value written in
+  `ReShade.ini` would override them. Prism no longer writes those keys for such games, and uses
+  UE Extended for them even when the wiki only lists them under the legacy Unreal mod.
+- A wiki note such as *"Native HDR is broken"* switched the game to its native HDR — the opposite
+  of what it says. Negative notes are now shown as notes only.
+- Unreal games that no list mentions get UE Extended with the wiki's recommended order: native HDR,
+  then `Engine.ini` HDR on UE5, then *Upgrade Path: On* with resource upgrades.
+
 ## 1.1.0
 
 ### New
