@@ -56,6 +56,12 @@ public sealed class GameDetailViewModel : ObservableObject
         RunDiagnosisCommand = new RelayCommand(_ => RunDiagnosis());
         ApplyDiagnosisFixCommand = new AsyncRelayCommand(p => ApplyDiagnosisFixAsync(p), _ => !Busy);
         OpenGameLogCommand = new RelayCommand(_ => OpenUrl(Diagnosis.LogPath));
+        AnalyzeCleanCommand = new RelayCommand(_ => AnalyzeClean());
+        RunCleanCommand = new RelayCommand(_ => RunClean(), _ => HasCleanPlan && !Busy);
+        UndoCleanCommand = new RelayCommand(_ => UndoClean(), _ => !Busy);
+        CopyFileListCommand = new RelayCommand(_ => CopyFileList());
+        SteamVerifyCommand = new RelayCommand(_ => SteamVerify());
+        ChooseExeCommand = new RelayCommand(_ => ChooseExe(), _ => !Busy);
         ApplyMfgSettingsCommand = new RelayCommand(_ => ApplyMfgSettings(), _ => Game.HasReShade);
         EarlyLoadCommand = new RelayCommand(p => EnableEarlyLoad(p as string), _ => Game.HasReShade);
         VerifyCommand = new RelayCommand(_ => VerifyIntegrity());
@@ -447,6 +453,11 @@ public sealed class GameDetailViewModel : ObservableObject
                 SelectDlss5(Dlss5Addon.ShortFuse);
                 _notify(Loc.T("diag.shortfuse_selected"), false);
                 break;
+            case DiagnosisFix.Clean:
+                // Le nettoyage montre d'abord sa liste, page Modifications : rien n'est retire d'ici.
+                AnalyzeClean();
+                _notify(Loc.T("diag.clean_ready", CleanPlan.Items.Count), false);
+                break;
         }
 
         RunDiagnosis();
@@ -563,6 +574,113 @@ public sealed class GameDetailViewModel : ObservableObject
         _notify(result.Message, !result.Success);
         VerifyIntegrity();
         Refresh();
+    }
+
+    // ------------------------------------------------------- Nettoyage profond
+
+    private CleanPlan _cleanPlan = CleanPlan.Empty;
+
+    /// <summary>Plan du dernier examen : chaque fichier, ce qui lui arrivera, et d'ou il vient.</summary>
+    public CleanPlan CleanPlan
+    {
+        get => _cleanPlan;
+        private set
+        {
+            Set(ref _cleanPlan, value);
+            OnPropertyChanged(nameof(HasCleanPlan));
+            RunCleanCommand.Raise();
+        }
+    }
+
+    public bool HasCleanPlan => !CleanPlan.IsEmpty;
+
+    private bool _cleanScanned;
+    public string CleanSummary => _cleanScanned ? CleanPlan.Summary : Loc.T("clean.hint");
+
+    public bool CanUndoClean => _svc.Cleaner.LastSession(Game, out _) is not null;
+
+    /// <summary>Jeu Steam : sa verification d'integrite remet ce qu'aucune sauvegarde ne couvre.</summary>
+    public bool IsSteam => Game.Id.StartsWith("steam:", StringComparison.OrdinalIgnoreCase);
+
+    public RelayCommand AnalyzeCleanCommand { get; }
+    public RelayCommand RunCleanCommand { get; }
+    public RelayCommand UndoCleanCommand { get; }
+    public RelayCommand CopyFileListCommand { get; }
+    public RelayCommand SteamVerifyCommand { get; }
+    public RelayCommand ChooseExeCommand { get; }
+
+    private void AnalyzeClean()
+    {
+        CleanPlan = _svc.Cleaner.Plan(Game);
+        _cleanScanned = true;
+        OnPropertyChanged(nameof(CleanSummary));
+    }
+
+    private void RunClean()
+    {
+        if (!Guard()) return;
+        // Le plan est recalcule : le disque a pu changer depuis l'examen affiche.
+        var plan = _svc.Cleaner.Plan(Game);
+        var result = _svc.Cleaner.Execute(Game, plan);
+        _notify(result.Message, !result.Success);
+        AnalyzeClean();
+        OnPropertyChanged(nameof(CanUndoClean));
+        Refresh();
+    }
+
+    private void UndoClean()
+    {
+        if (!Guard()) return;
+        var result = _svc.Cleaner.Undo(Game);
+        _notify(result.Message, !result.Success);
+        AnalyzeClean();
+        OnPropertyChanged(nameof(CanUndoClean));
+        Refresh();
+    }
+
+    /// <summary>Liste complete dans le presse-papiers : ce que Prism a pose, et tout le reste.</summary>
+    private void CopyFileList()
+    {
+        if (!_cleanScanned) AnalyzeClean();
+        try
+        {
+            System.Windows.Clipboard.SetText(_svc.Cleaner.FileList(Game, CleanPlan));
+            _notify(Loc.T("clean.copied"), false);
+        }
+        catch (Exception ex) { _notify(Loc.T("err.open_failed", ex.Message), true); }
+    }
+
+    /// <summary>Commande documentee du client Steam (steam://validate/&lt;appid&gt;).</summary>
+    private void SteamVerify()
+    {
+        if (!IsSteam) return;
+        OpenUrl("steam://validate/" + Game.Id["steam:".Length..]);
+    }
+
+    /// <summary>
+    /// Executable choisi a la main : il prime sur la detection, ici et aux prochains scans. Le
+    /// dossier cible — ou tout est pose — le suit.
+    /// </summary>
+    private void ChooseExe()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = Loc.T("dialog.game_exe"),
+            Filter = Loc.T("dialog.exe_filter"),
+            InitialDirectory = Directory.Exists(TargetDir) ? TargetDir : Game.InstallDir,
+            CheckFileExists = true
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        _svc.Settings.Current.ExeOverrides[Game.Id] = dlg.FileName;
+        _svc.Settings.Save();
+        _svc.Scanner.ExeOverrides[Game.Id] = dlg.FileName;
+
+        Game.Executable = dlg.FileName;
+        DllDetector.Inspect(Game);
+        _notify(Loc.T("library.exe_set", Game.Name, Path.GetFileName(dlg.FileName)), false);
+        Refresh();
+        OnPropertyChanged(string.Empty);
     }
 
     // ------------------------------------------------ Resolution automatique
@@ -705,8 +823,10 @@ public sealed class GameDetailViewModel : ObservableObject
 
         // Tout le reste de ce qui n'est pas d'origine : pose a la main ou par un autre outil.
         Detected.Clear();
-        var prismPaths = _svc.Changes.For(Game.Id).Select(c => c.Path);
-        foreach (var mod in ForeignModScanner.Scan(Game, prismPaths, Profile.ReShadeInstalled)) Detected.Add(mod);
+        var prismChanges = _svc.Changes.For(Game.Id).ToList();
+        foreach (var mod in ForeignModScanner.Scan(Game, prismChanges.Select(c => c.Path), Profile.ReShadeInstalled,
+                     prismChanges.Select(c => c.Origin)))
+            Detected.Add(mod);
 
         OnPropertyChanged(nameof(HasInstalled));
         OnPropertyChanged(nameof(HasDetected));
@@ -1074,6 +1194,9 @@ public sealed class GameDetailViewModel : ObservableObject
             RemoveInstalledCommand.Raise();
             QuarantineDetectedCommand.Raise();
             ApplyDiagnosisFixCommand?.Raise();
+            RunCleanCommand?.Raise();
+            UndoCleanCommand?.Raise();
+            ChooseExeCommand?.Raise();
         }
     }
 
@@ -1223,7 +1346,15 @@ public sealed class GameDetailViewModel : ObservableObject
     private void RemoveFg()
     {
         if (!Guard()) return;
+
+        // Le registre d'abord : il connait chaque fichier pose, compagnons compris (fakenvapi.dll
+        // livre avec OptiScaler), et rend les originaux remplaces. Le balayage par nom ne rattrape
+        // ensuite que ce qu'une installation hors registre aurait laisse.
+        var tracked = new[] { "OptiScaler", "RTX40MFG-Unlock", "MFGAdaUnlock" }
+            .Sum(origin => _svc.Changes.RevertOrigin(Game.Id, origin));
         var result = FrameGenService.RemoveOverlays(Game);
+        if (tracked > 0 && !result.Success)
+            result = new InstallResult(true, Loc.T("restore.done.removed", tracked), tracked);
         _notify(result.Message, !result.Success);
         Profile.FgBackend = FgBackend.None;
         _svc.Profiles.Update(Profile);

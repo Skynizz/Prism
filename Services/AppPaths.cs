@@ -41,6 +41,8 @@ public static class AppPaths
     public static string ComponentCache => Ensure(Path.Combine(Cache, "components"));
     public static string Backups => Ensure(Path.Combine(Root, "backups"));
     public static string Tools => Ensure(Path.Combine(Root, "tools"));
+    /// <summary>Fichiers retires par le nettoyage profond, un dossier par passage : tout reste annulable.</summary>
+    public static string Cleanups => Ensure(Path.Combine(Root, "cleanups"));
     public static string Logs => Ensure(Path.Combine(Root, "logs"));
 
     public static string ManifestFile => Path.Combine(Cache, "dll-manifest.json");

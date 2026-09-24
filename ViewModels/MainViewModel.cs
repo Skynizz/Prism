@@ -68,6 +68,7 @@ public sealed class MainViewModel : ObservableObject
         ScanCommand = new AsyncRelayCommand(ScanAsync, () => !Busy);
         RefreshCatalogsCommand = new AsyncRelayCommand(RefreshCatalogsAsync, () => !Busy);
         AddFolderCommand = new RelayCommand(_ => AddFolder());
+        AddGameCommand = new AsyncRelayCommand(AddGameAsync, () => !Busy);
         RemoveFolderCommand = new RelayCommand(p => RemoveFolder(p as string));
         OpenUrlCommand = new RelayCommand(p => OpenUrl(p as string));
         OpenPathCommand = new RelayCommand(p => OpenUrl(p as string));
@@ -528,6 +529,7 @@ public sealed class MainViewModel : ObservableObject
             Set(ref _busy, value);
             ScanCommand.Raise();
             RefreshCatalogsCommand.Raise();
+            AddGameCommand?.Raise();
         }
     }
 
@@ -645,6 +647,7 @@ public sealed class MainViewModel : ObservableObject
     public AsyncRelayCommand ScanCommand { get; }
     public AsyncRelayCommand RefreshCatalogsCommand { get; }
     public RelayCommand AddFolderCommand { get; }
+    public AsyncRelayCommand AddGameCommand { get; }
     public RelayCommand RemoveFolderCommand { get; }
     public RelayCommand OpenUrlCommand { get; }
     public RelayCommand OpenPathCommand { get; }
@@ -795,6 +798,37 @@ public sealed class MainViewModel : ObservableObject
         _svc.Settings.Current.ExtraLibraryFolders = ExtraFolders.ToList();
         _svc.Settings.Save();
         Notify(Loc.T("library.folder_added", dlg.FolderName), false);
+    }
+
+    /// <summary>
+    /// Ajoute un jeu par son executable : pour ce qu'aucun scanner ne trouve (jeu hors plateforme,
+    /// copie portable, dossier atypique). Le jeu est ensuite selectionne.
+    /// </summary>
+    private async Task AddGameAsync()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = Loc.T("dialog.game_exe"),
+            Filter = Loc.T("dialog.exe_filter"),
+            CheckFileExists = true
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var exe = dlg.FileName;
+        var list = _svc.Settings.Current.ManualGames;
+        if (!list.Any(m => string.Equals(m.Executable, exe, StringComparison.OrdinalIgnoreCase)))
+        {
+            list.Add(new ManualGame { Name = GameScanner.NameFor(exe), Executable = exe });
+            _svc.Settings.Save();
+        }
+
+        await ScanAsync();
+        var id = GameScanner.ManualId(exe);
+        // Un scanner de plateforme a pu voir le meme dossier : on selectionne ce qui porte cet exe.
+        SelectedGame = Games.FirstOrDefault(g => g.Id == id)
+                       ?? Games.FirstOrDefault(g => string.Equals(g.Executable, exe, StringComparison.OrdinalIgnoreCase))
+                       ?? SelectedGame;
+        Notify(Loc.T("library.game_added", SelectedGame?.Name ?? Path.GetFileName(exe)), false);
     }
 
     private void RemoveFolder(string? folder)

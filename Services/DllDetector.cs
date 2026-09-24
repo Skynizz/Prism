@@ -162,8 +162,12 @@ public static class DllDetector
             : game.HasDlss ? GameApi.DirectX11
             : GameApi.Unknown;
 
-        // Heuristique : l'executable du jeu est de loin le plus gros binaire.
-        game.Executable ??= exeCandidates.OrderByDescending(e => e.Size).FirstOrDefault().Path;
+        // Un build Unreal se reconnait a son « -Shipping.exe » : c'est lui qui charge les DLL, pas
+        // le lanceur pose a la racine. Sinon, l'executable du jeu est de loin le plus gros binaire.
+        game.Executable ??= exeCandidates
+            .Where(e => Path.GetFileName(e.Path).Contains("-Shipping.exe", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Size).FirstOrDefault().Path
+            ?? exeCandidates.OrderByDescending(e => e.Size).FirstOrDefault().Path;
 
         // ReShade compte seulement s'il est charge par le jeu : a cote de l'executable, sous
         // un nom de proxy, ou par OptiScaler. Un ReShade64.dll oublie dans un sous-dossier non.

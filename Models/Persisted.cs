@@ -48,6 +48,12 @@ public sealed class AppSettings
 {
     public List<string> ExtraLibraryFolders { get; set; } = new();
 
+    /// <summary>Jeux ajoutes par leur executable.</summary>
+    public List<ManualGame> ManualGames { get; set; } = new();
+
+    /// <summary>Executable choisi a la main, par identifiant de jeu.</summary>
+    public Dictionary<string, string> ExeOverrides { get; set; } = new();
+
     /// <summary>Langue de l'interface ; null suit celle de Windows.</summary>
     public string? Language { get; set; }
     public bool DarkTheme { get; set; } = true;

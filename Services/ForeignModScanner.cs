@@ -20,6 +20,7 @@ public static class ForeignModScanner
     private const string Known = "detected.reason.known";
     private const string Proxy = "detected.reason.proxy";
     private const string Later = "detected.reason.later";
+    private const string Rhi = "detected.reason.rhi";
 
     /// <summary>Noms sous lesquels une surcouche se fait charger par le jeu.</summary>
     private static readonly HashSet<string> ProxyNames = new(StringComparer.OrdinalIgnoreCase)
@@ -36,9 +37,17 @@ public static class ForeignModScanner
 
     /// <param name="prismPaths">Tout ce que Prism a ecrit ou sauvegarde pour ce jeu.</param>
     /// <param name="reShadeByPrism">ReShade installe par Prism : il n'a pas de trace fichier.</param>
-    public static List<DetectedMod> Scan(GameInfo game, IEnumerable<string> prismPaths, bool reShadeByPrism)
+    /// <param name="prismOrigins">
+    /// Installations Prism en place : les fichiers qu'un mod ecrit lui-meme en tournant (reglages,
+    /// etats) portent son nom sans etre dans le registre. Ils lui appartiennent, pas a un tiers.
+    /// </param>
+    public static List<DetectedMod> Scan(GameInfo game, IEnumerable<string> prismPaths, bool reShadeByPrism,
+        IEnumerable<string>? prismOrigins = null)
     {
         var known = prismPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var origins = (prismOrigins ?? Array.Empty<string>()).ToList();
+        // « OptiScaler DLSSNR » possede les fichiers « OptiScaler », « RTX40MFG-Unlock » les siens.
+        bool Owned(string label) => origins.Any(o => o.StartsWith(label, StringComparison.OrdinalIgnoreCase));
 
         var dirs = new List<string> { DllInstaller.TargetDirectory(game) };
         dirs.AddRange(game.StreamlineDirectories);
@@ -58,7 +67,7 @@ public static class ForeignModScanner
                 if (known.Contains(file)) continue;
 
                 var hit = Classify(file, exeCreated);
-                if (hit is null || (hit.Label == "ReShade" && reShadeByPrism)) continue;
+                if (hit is null || (hit.Label == "ReShade" && reShadeByPrism) || Owned(hit.Label)) continue;
 
                 if (!groups.TryGetValue(hit.Label, out var group))
                     groups[hit.Label] = group = (hit, new List<string>());
@@ -108,13 +117,18 @@ public static class ForeignModScanner
             return new Hit("ASI Loader", true, true, Known);
         if (name == "nvngx_dlssnr.dll")
             return new Hit("Neural Rendering", true, true, Known);
+        // Temoins et manifeste de RHI : un simple retrait laisserait l'original renomme.
+        // C'est le nettoyage profond qui les traite, en rendant l'original au jeu.
+        if (name.EndsWith(".original") || name == LeftoverCleaner.RhiManifest)
+            return new Hit("RHI", true, false, Rhi);
 
         // Proxy : seul le binaire qui se reclame d'une surcouche est un mod.
         if (ProxyNames.Contains(name))
         {
             var tag = Describe(file);
             if (tag.Contains("reshade")) return new Hit("ReShade", true, true, Proxy);
-            if (tag.Contains("optiscaler")) return new Hit("OptiScaler", true, true, Proxy);
+            // Son nom d'origine suit OptiScaler sous tout nom de proxy (setup_windows.bat s'y fie).
+            if (tag.Contains("optiscaler") || LeftoverCleaner.IsOptiScaler(file)) return new Hit("OptiScaler", true, true, Proxy);
             if (tag.Contains("dlss enabler")) return new Hit("DLSS Enabler", true, true, Proxy);
             if (tag.Contains("rtxmfg") || tag.Contains("mfg unlock")) return new Hit("RTX40MFG-Unlock", true, true, Proxy);
             if (tag.Contains("special k")) return new Hit("Special K", true, true, Proxy);

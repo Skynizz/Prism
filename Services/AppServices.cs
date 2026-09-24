@@ -37,7 +37,13 @@ public sealed class AppServices
         Catalog = new ComponentCatalog(GitHub, ReShade, RenoDx, Manifest);
         Updates = new UpdateService(Downloads);
         Diagnostics = new DiagnosticService(Downloads, Rhi, Deployments);
-        Scanner = new GameScanner { ExtraFolders = Settings.Current.ExtraLibraryFolders };
+        Cleaner = new LeftoverCleaner(Changes, Profiles);
+        Scanner = new GameScanner
+        {
+            ExtraFolders = Settings.Current.ExtraLibraryFolders,
+            ManualGames = Settings.Current.ManualGames,
+            ExeOverrides = new Dictionary<string, string>(Settings.Current.ExeOverrides, StringComparer.OrdinalIgnoreCase)
+        };
 
 
         Log.Info("system", $"GPU {Gpu.Name} · {Gpu.GenerationLabel} · driver {Gpu.DriverBranch ?? Gpu.DriverVersion}");
@@ -65,6 +71,7 @@ public sealed class AppServices
     public ComponentCatalog Catalog { get; }
     public UpdateService Updates { get; }
     public DiagnosticService Diagnostics { get; }
+    public LeftoverCleaner Cleaner { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }

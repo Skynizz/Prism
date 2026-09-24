@@ -11,6 +11,12 @@ public sealed class GameScanner
     /// <summary>Dossiers ajoutes manuellement par l'utilisateur, scannes a un niveau.</summary>
     public List<string> ExtraFolders { get; set; } = new();
 
+    /// <summary>Jeux ajoutes par leur executable : ceux qu'aucun scanner ne trouve.</summary>
+    public List<ManualGame> ManualGames { get; set; } = new();
+
+    /// <summary>Executable choisi a la main, par identifiant de jeu : il prime sur la detection.</summary>
+    public Dictionary<string, string> ExeOverrides { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
     public async Task<List<GameInfo>> ScanAsync(IProgress<string>? progress = null, CancellationToken ct = default)
     {
         var found = new List<GameInfo>();
@@ -28,12 +34,69 @@ public sealed class GameScanner
         }, ct);
 
         // Un meme jeu peut etre vu par deux scanners (Xbox + dossier manuel par exemple).
-        return found
+        var games = found
             .Where(g => Directory.Exists(g.InstallDir))
             .GroupBy(g => g.InstallDir.TrimEnd('\\', '/').ToLowerInvariant())
             .Select(grp => grp.First())
-            .OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+
+        // Un jeu ajoute par son exe mais aussi vu par une plateforme garde l'identifiant de la
+        // plateforme — son historique y est attache — et prend l'executable choisi.
+        foreach (var m in ManualGames.Select(FromExecutable).OfType<GameInfo>())
+        {
+            var same = games.FirstOrDefault(g => SameDir(g.InstallDir, m.InstallDir));
+            if (same is null) games.Add(m);
+            else if (!ExeOverrides.ContainsKey(same.Id)) same.Executable = m.Executable;
+        }
+        games = games.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+        foreach (var g in games)
+            if (ExeOverrides.TryGetValue(g.Id, out var exe) && File.Exists(exe))
+                g.Executable = exe;
+
+        return games;
+    }
+
+    /// <summary>
+    /// Un jeu decrit par son executable. Pour un build Unreal (<c>&lt;Jeu&gt;\&lt;Projet&gt;\Binaries\Win64</c>),
+    /// le dossier du jeu est la racine, pour que toute l'arborescence soit inspectee.
+    /// </summary>
+    public static GameInfo? FromExecutable(ManualGame manual)
+    {
+        var exe = manual.Executable;
+        if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe)) return null;
+
+        var dir = Path.GetDirectoryName(exe)!;
+        const string marker = @"\Binaries\Win64";
+        var at = dir.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        var root = at > 0 ? Path.GetDirectoryName(dir[..at]) ?? dir : dir;
+
+        return new GameInfo
+        {
+            Id = ManualId(exe),
+            Name = string.IsNullOrWhiteSpace(manual.Name) ? Path.GetFileName(root) : manual.Name,
+            InstallDir = root,
+            Platform = GamePlatform.Manual,
+            Executable = exe
+        };
+    }
+
+    public static string ManualId(string exe) => "exe:" + exe.Trim().ToLowerInvariant();
+
+    private static bool SameDir(string a, string b)
+        => string.Equals(a.TrimEnd('\\', '/'), b.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Nom lisible d'un executable : le produit declare, sinon le dossier du jeu.</summary>
+    public static string NameFor(string exe)
+    {
+        try
+        {
+            var product = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe).ProductName?.Trim();
+            if (!string.IsNullOrWhiteSpace(product) && !product.Contains("Unreal", StringComparison.OrdinalIgnoreCase))
+                return product;
+        }
+        catch { /* pas de ressource de version */ }
+        return FromExecutable(new ManualGame { Executable = exe })?.Name ?? Path.GetFileNameWithoutExtension(exe);
     }
 
     private static void Run(IProgress<string>? progress, string label, Action action, CancellationToken ct)
@@ -275,6 +338,20 @@ public sealed class GameScanner
     {
         foreach (var root in ExtraFolders.Where(Directory.Exists))
         {
+            // Le dossier choisi peut etre le jeu lui-meme, pas une bibliotheque : sans ce test,
+            // ses sous-dossiers (« Engine », « Binaries »...) passaient pour autant de jeux.
+            if (IsGameFolder(root))
+            {
+                yield return new GameInfo
+                {
+                    Id = $"manual:{Path.GetFileName(root.TrimEnd('\\', '/'))}",
+                    Name = Path.GetFileName(root.TrimEnd('\\', '/')),
+                    InstallDir = root,
+                    Platform = GamePlatform.Manual
+                };
+                continue;
+            }
+
             foreach (var folder in SafeDirs(root))
             {
                 var name = Path.GetFileName(folder.TrimEnd('\\', '/'));
@@ -287,6 +364,25 @@ public sealed class GameScanner
                 };
             }
         }
+    }
+
+    /// <summary>
+    /// Un dossier de jeu, pas une bibliotheque : un executable a sa racine, « Binaries\Win64 »
+    /// directement dessous, ou la racine d'un build Unreal — un dossier « Engine » a cote du projet
+    /// (The Blood of Dawnwalker : Engine\ et Dawnwalker\Binaries\Win64\, aucun exe a la racine).
+    /// Une bibliotheque n'a jamais de dossier « Engine » a elle.
+    /// </summary>
+    public static bool IsGameFolder(string dir)
+    {
+        try
+        {
+            if (Directory.EnumerateFiles(dir, "*.exe").Any()) return true;
+            if (Directory.Exists(Path.Combine(dir, "Binaries", "Win64"))) return true;
+            return Directory.Exists(Path.Combine(dir, "Engine"))
+                   && SafeDirs(dir).Any(d => Directory.Exists(Path.Combine(d, "Binaries", "Win64"))
+                                             || Directory.Exists(Path.Combine(d, "x64")));
+        }
+        catch { return false; }
     }
 
     // ----------------------------------------------------------- Utilitaires

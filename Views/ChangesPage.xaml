@@ -203,26 +203,6 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- Orphelins : poses par un autre outil, ou restes d'une installation
-                             que Prism n'a pas tracee. Jamais retires sans accord explicite. -->
-                        <StackPanel Visibility="{Binding Orphans.Count, Converter={StaticResource HasVis}}"
-                                    Margin="0,10,0,0">
-                            <TextBlock Text="{l:T changes.orphans}" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,6" />
-                            <ItemsControl ItemsSource="{Binding Orphans}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Height="26">
-                                            <TextBlock Text="{Binding FileName}" Style="{StaticResource T.Mono}"
-                                                       Foreground="{DynamicResource BrFg2}" VerticalAlignment="Center"
-                                                       Margin="0,0,160,0" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Kind}" Style="{StaticResource T.Ter}"
-                                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                             <Button Content="{l:T changes.verify}" Style="{StaticResource Btn}"
                                     Command="{Binding VerifyCommand}"
@@ -230,12 +210,65 @@
                             <Button Content="{l:T changes.restore_vanilla}" Style="{StaticResource Btn.Danger}" Margin="6,0,0,0"
                                     Command="{Binding RestoreVanillaCommand}"
                                     ToolTip="{l:T changes.restore_vanilla_tip}" />
-                            <Button Content="{l:T changes.restore_orphans}" Style="{StaticResource Btn.Quiet}"
-                                    Margin="6,0,0,0"
-                                    Command="{Binding RestoreVanillaCommand}" CommandParameter="True"
-                                    Visibility="{Binding Orphans.Count, Converter={StaticResource HasVis}}"
-                                    ToolTip="{l:T changes.restore_orphans_tip}" />
                         </StackPanel>
+
+                        <!-- ============================================ NETTOYAGE PROFOND
+                             Tout ce qu'un autre outil a laisse, meme avant Prism : temoins
+                             .original de RHI, rhi_install.txt, OptiScaler sous tout nom de proxy.
+                             La liste complete s'affiche avant ; chaque fichier est mis a l'abri. -->
+                        <Border Style="{StaticResource S.HRule}" Margin="0,18,0,14" />
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="{l:T clean.copy}" Style="{StaticResource Btn.Quiet}"
+                                        Command="{Binding CopyFileListCommand}" ToolTip="{l:T clean.copy_tip}" />
+                                <Button Content="{l:T clean.analyze}" Style="{StaticResource Btn}" Margin="6,0,0,0"
+                                        Command="{Binding AnalyzeCleanCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="{l:T clean.header}" Style="{StaticResource T.SectionLabel}"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource T.Prose}" Text="{l:T clean.help}" Margin="0,6,0,0" />
+
+                        <Border Style="{StaticResource S.Sunken}" Padding="11,9" Margin="0,10,0,0">
+                            <TextBlock Text="{Binding CleanSummary}" Style="{StaticResource T.Sec}" TextWrapping="Wrap" />
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding CleanPlan.Items}" Margin="0,8,0,0"
+                                      Visibility="{Binding HasCleanPlan, Converter={StaticResource BoolVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid MinHeight="26">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Ellipse Width="5" Height="5" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                     Fill="{Binding State, Converter={StaticResource StatusBrush}}" />
+                                            <TextBlock Text="{Binding Display}" Style="{StaticResource T.Mono}"
+                                                       Foreground="{DynamicResource BrFg2}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Source}" Style="{StaticResource T.Ter}"
+                                                   VerticalAlignment="Center" Margin="12,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding ActionLabel}" Style="{StaticResource T.Sec}"
+                                                   VerticalAlignment="Center" MinWidth="110" TextAlignment="Right" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button Content="{l:T clean.run}" Style="{StaticResource Btn.Danger}"
+                                    Command="{Binding RunCleanCommand}" ToolTip="{l:T clean.run_tip}" />
+                            <Button Content="{l:T clean.undo}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                    Command="{Binding UndoCleanCommand}"
+                                    Visibility="{Binding CanUndoClean, Converter={StaticResource BoolVis}}" />
+                            <Button Content="{l:T clean.steam}" Style="{StaticResource Btn.Quiet}" Margin="6,0,0,0"
+                                    Command="{Binding SteamVerifyCommand}" ToolTip="{l:T clean.steam_tip}"
+                                    Visibility="{Binding IsSteam, Converter={StaticResource BoolVis}}" />
+                        </WrapPanel>
                     </StackPanel>
                 </HeaderedContentControl>
 

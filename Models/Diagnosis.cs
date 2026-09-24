@@ -18,7 +18,7 @@ public enum DiagnosisVerdict
 }
 
 /// <summary>Correctif propose par une constatation. Liste fermee : un catalogue distant ne peut rien declencher d'autre.</summary>
-public enum DiagnosisFix { None, Reinstall, ReShade, ShortFuse }
+public enum DiagnosisFix { None, Reinstall, ReShade, ShortFuse, Clean }
 
 /// <summary>Une constatation : ce qui ne va pas, la ligne de journal qui le prouve, et quoi faire.</summary>
 public sealed class DiagnosisFinding
@@ -40,6 +40,7 @@ public sealed class DiagnosisFinding
         DiagnosisFix.Reinstall => Loc.T("diag.fix.reinstall"),
         DiagnosisFix.ReShade => Loc.T("diag.fix.reshade"),
         DiagnosisFix.ShortFuse => Loc.T("diag.fix.shortfuse"),
+        DiagnosisFix.Clean => Loc.T("diag.fix.clean"),
         _ => ""
     };
 }

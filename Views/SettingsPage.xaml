@@ -184,6 +184,8 @@
 
                             <Button Content="{l:T btn.add_folder}" Style="{StaticResource Btn}" HorizontalAlignment="Left"
                                     Margin="0,6,0,0" Command="{Binding AddFolderCommand}" />
+                            <Button Content="{l:T library.add_game}" Style="{StaticResource Btn.Quiet}" HorizontalAlignment="Left"
+                                    Margin="0,6,0,0" Command="{Binding AddGameCommand}" ToolTip="{l:T library.add_game_tip}" />
                         </StackPanel>
                     </HeaderedContentControl>
                 </StackPanel>

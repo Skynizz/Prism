@@ -126,14 +126,28 @@ public sealed class DiagnosticService
     public Diagnosis Diagnose(GameInfo game)
     {
         var dir = DllInstaller.TargetDirectory(game);
-        var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(dir, a.FileName)));
-        if (kind is null) return new Diagnosis { Verdict = DiagnosisVerdict.NotApplicable, Summary = Loc.T("diag.no_addon") };
 
-        var versions = VersionFindings(game, dir, kind);
+        // Les conflits valent pour tout jeu, addon DLSS 5 ou pas : ils passent en tete.
+        var conflicts = ConflictService.Evaluate(game)
+            .Select(c => new DiagnosisFinding { Id = c.Id, State = c.State, Title = c.Title, Evidence = c.Evidence, Fix = c.Fix })
+            .ToList();
+        var conflictVerdict = conflicts.Any(c => c.State == UiStatus.Error) ? DiagnosisVerdict.Failed : DiagnosisVerdict.Degraded;
+
+        var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(dir, a.FileName)));
+        if (kind is null)
+            return conflicts.Count == 0
+                ? new Diagnosis { Verdict = DiagnosisVerdict.NotApplicable, Summary = Loc.T("diag.no_addon") }
+                : new Diagnosis { Verdict = conflictVerdict, Summary = Loc.T("diag.conflicts", conflicts.Count), Findings = conflicts };
+
+        var versions = conflicts.Concat(VersionFindings(game, dir, kind)).ToList();
         var logPath = Path.Combine(dir, "ReShade.log");
 
         if (!File.Exists(logPath))
-            return new Diagnosis { Verdict = DiagnosisVerdict.Unknown, Summary = Loc.T("diag.no_log"), Findings = versions };
+            return new Diagnosis
+            {
+                Verdict = conflicts.Count > 0 ? conflictVerdict : DiagnosisVerdict.Unknown,
+                Summary = Loc.T("diag.no_log"), Findings = versions
+            };
 
         var logTime = File.GetLastWriteTime(logPath);
 
@@ -141,11 +155,12 @@ public sealed class DiagnosticService
         if (logTime < File.GetLastWriteTime(Path.Combine(dir, kind.FileName)))
             return new Diagnosis
             {
-                Verdict = DiagnosisVerdict.Unknown, Summary = Loc.T("diag.stale"),
+                Verdict = conflicts.Count > 0 ? conflictVerdict : DiagnosisVerdict.Unknown,
+                Summary = Loc.T("diag.stale"),
                 LogPath = logPath, LogTime = logTime, Findings = versions
             };
 
-        var findings = new List<DiagnosisFinding>();
+        var findings = new List<DiagnosisFinding>(conflicts);
         var evaluated = 0;
 
         foreach (var line in ReadLines(logPath))
@@ -197,7 +212,7 @@ public sealed class DiagnosticService
             Summary = summary,
             LogPath = logPath,
             LogTime = logTime,
-            Findings = findings.Concat(versions).ToList()
+            Findings = findings.Concat(versions.Skip(conflicts.Count)).ToList()
         };
     }
 
