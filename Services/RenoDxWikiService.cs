@@ -70,8 +70,56 @@ public sealed partial class RenoDxWikiService
         var json = await FetchAsync(GamesIndexUrl, "games-index.json", text => ParseIndex(text) > 0, ct);
         if (json is null) Log.Warn(Src, "games-index.json unavailable, and no cache.");
 
-        Log.Info(Src, $"RenoDX wiki: {Entries.Count} rows, {_index.Count} indexed games"
-                      + (FromCache ? " (cache)" : ""));
+        var ue = await FetchAsync(UeExtendedSourceUrl, "ue-extended-addon.cpp", text => ParseUePresets(text) > 10, ct);
+        if (ue is null) Log.Warn(Src, "UE Extended source unavailable, and no cache: built-in presets unknown.");
+
+        Log.Info(Src, $"RenoDX wiki: {Entries.Count} rows, {_index.Count} indexed games, "
+                      + $"{UePresets.Count} UE Extended built-in presets" + (FromCache ? " (cache)" : ""));
+    }
+
+    // ------------------------------------------------- Prereglages de UE Extended
+
+    /// <summary>
+    /// Code source de UE Extended. Le mod embarque une table GAME_SETTINGS : pour chaque jeu, reconnu
+    /// par le nom de son executable ou son ProductName, ses propres valeurs par defaut (Set_Path,
+    /// surclassements Upgrade_*). Une valeur presente dans ReShade.ini les remplace
+    /// (renodx::utils::settings::LoadSetting apres les defauts) : Prism ne doit donc pas y ecrire.
+    /// </summary>
+    public const string UeExtendedSourceUrl =
+        "https://raw.githubusercontent.com/marat569/renodx/main/src/games/ue-extended/addon.cpp";
+
+    /// <summary>Executables et noms de produit que UE Extended configure lui-meme.</summary>
+    public IReadOnlySet<string> UePresets { get; private set; } = new HashSet<string>();
+
+    /// <summary>Entrees de GAME_SETTINGS : une chaine seule sur sa ligne, suivie de « GameSettings{ ».</summary>
+    internal int ParseUePresets(string source)
+    {
+        var start = source.IndexOf("GAME_SETTINGS = {", StringComparison.Ordinal);
+        if (start < 0) return 0;
+        var lines = source[start..].Replace("\r", "").Split('\n');
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i + 1 < lines.Length; i++)
+        {
+            if (lines[i] == "};") break;
+            var m = UePresetKey().Match(lines[i]);
+            if (m.Success && lines[i + 1].Contains("GameSettings{", StringComparison.Ordinal))
+                keys.Add(m.Groups[1].Value);
+        }
+        if (keys.Count > 10) UePresets = keys;
+        return keys.Count;
+    }
+
+    /// <summary>Vrai si UE Extended a son propre prereglage pour ce jeu (exe, ou ProductName de l'exe).</summary>
+    public bool HasUePreset(GameInfo game)
+    {
+        if (game.Executable is not { } exe) return false;
+        if (UePresets.Contains(Path.GetFileName(exe))) return true;
+        try
+        {
+            var product = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe).ProductName?.Trim();
+            return !string.IsNullOrEmpty(product) && UePresets.Contains(product);
+        }
+        catch { return false; }
     }
 
     /// <summary>
@@ -128,7 +176,11 @@ public sealed partial class RenoDxWikiService
 
             if (line.StartsWith("# List", StringComparison.Ordinal)) { section = Section.Main; continue; }
             if (line.StartsWith("## Multi-Game Mods", StringComparison.Ordinal)) { section = Section.None; continue; }
-            if (line.StartsWith("### UE Extended", StringComparison.Ordinal))
+            // Titre renomme en septembre 2026 : « ### UE Extended » est devenu
+            // « ### Unreal Engine Extended », lien vers marat569.github.io. Les deux sont acceptes.
+            if (line.StartsWith("### ", StringComparison.Ordinal)
+                && (line.Contains("UE Extended", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("Unreal Engine Extended", StringComparison.OrdinalIgnoreCase)))
             {
                 section = Section.UeExtended;
                 ueUrl = AddonUrl(line, ".addon64");
@@ -469,16 +521,23 @@ public sealed partial class RenoDxWikiService
 
         // UE Extended est le mod recommande. L'ancien mod n'est retenu que pour un jeu
         // valide avec lui et absent de la table UE Extended.
-        var useLegacy = ueRow is null && legacyRow is not null && UnrealLegacyUrl is not null;
+        // Un prereglage integre a UE Extended prouve que ses auteurs le prennent en charge : il
+        // l'emporte sur une ancienne ligne du tableau Legacy (Psychonauts 2).
+        var useLegacy = ueRow is null && legacyRow is not null && UnrealLegacyUrl is not null && !HasUePreset(game);
         var kind = useLegacy ? HdrModKind.UnrealLegacy : HdrModKind.UeExtended;
         var row = useLegacy ? legacyRow : ueRow;
         var url = useLegacy ? UnrealLegacyUrl : UeExtendedUrl;
+
+        // UE Extended reconnait lui-meme ce jeu : ses valeurs par defaut, tenues a jour par ses
+        // auteurs, s'appliquent seules. Une cle ecrite dans ReShade.ini les remplacerait.
+        var preset = kind == HdrModKind.UeExtended && HasUePreset(game);
 
         var plan = new HdrPlan
         {
             Kind = kind,
             Entry = row,
             MatchReason = Loc.T(useLegacy ? "hdr.reason.ue_legacy"
+                              : preset ? "hdr.reason.ue_preset"
                               : row is not null ? "hdr.reason.ue_listed" : "hdr.reason.ue_generic"),
             AddonUrl = url,
             AddonFileName = FileOf(url),
@@ -489,7 +548,11 @@ public sealed partial class RenoDxWikiService
         else if (url is null) plan.BlockedReason = Loc.T("hdr.block.external");
 
         AddCommonSteps(plan, game);
-        AddNoteSteps(plan, row?.Note, kind);
+        if (preset) plan.Steps.Add(Manual(Loc.T("hdr.step.ue_preset")));
+        AddNoteSteps(plan, row?.Note, kind, skipReShadeKeys: preset);
+        // Jeu absent du wiki et du mod : l'ordre que le wiki donne pour les jeux non listes.
+        if (kind == HdrModKind.UeExtended && row is null && !preset)
+            plan.Steps.Add(Manual(Loc.T("hdr.step.ue_order")));
         if (kind == HdrModKind.UeExtended) plan.Steps.Add(Manual(Loc.T("hdr.step.ue5_sliders")));
         AddClosingSteps(plan);
         return plan;
@@ -532,10 +595,11 @@ public sealed partial class RenoDxWikiService
             plan.Steps.Add(Manual(Loc.T("hdr.step.wip")));
     }
 
-    private void AddNoteSteps(HdrPlan plan, string? note, HdrModKind kind)
+    private void AddNoteSteps(HdrPlan plan, string? note, HdrModKind kind, bool skipReShadeKeys = false)
     {
         foreach (var step in HdrNotes.Parse(note, kind, EngineIniKeys))
         {
+            if (skipReShadeKeys && step.Kind == HdrStepKind.ReShadeKey) continue;
             // Une meme cle ne s'ecrit qu'une fois : la derniere mention l'emporte.
             if (step.Key is not null) plan.Steps.RemoveAll(s => s.Key == step.Key);
             plan.Steps.Add(step);
@@ -596,6 +660,9 @@ public sealed partial class RenoDxWikiService
 
     [GeneratedRegex(@"\]\((https?://[^)\s]+)\)")]
     private static partial Regex LinkTarget();
+
+    [GeneratedRegex(@"^\s*""([^""]+)"",\s*$")]
+    private static partial Regex UePresetKey();
 
     [GeneratedRegex(@"\[([^\]]+)\]\(([^)]*)\)")]
     private static partial Regex NameLink();
@@ -695,7 +762,10 @@ public static partial class HdrNotes
                 continue;
             }
 
-            if (kind == HdrModKind.UeExtended && lower.StartsWith("native hdr", StringComparison.Ordinal))
+            // « Native HDR » = utiliser le HDR du jeu. Mais « Native HDR is broken » dit l'inverse :
+            // une phrase negative ne doit jamais basculer le chemin (Deep Rock Galactic: Rogue Core).
+            if (kind == HdrModKind.UeExtended && lower.StartsWith("native hdr", StringComparison.Ordinal)
+                && !NegativeNote().IsMatch(lower))
             {
                 yield return Key("Set_Path", "0", Loc.T("hdr.step.path_off"));
                 yield return new HdrStep { Kind = HdrStepKind.Manual, Text = Loc.T("hdr.step.enable_ingame_hdr") };
@@ -794,6 +864,9 @@ public static partial class HdrNotes
 
     [GeneratedRegex(@"upgrade\s+path\s*:\s*(on|off)", RegexOptions.IgnoreCase)]
     private static partial Regex UpgradePath();
+
+    [GeneratedRegex(@"\b(broken|not|doesn't|does not|don't|no longer|issues?|buggy|crash\w*|avoid)\b")]
+    private static partial Regex NegativeNote();
 
     [GeneratedRegex(@"^(32-bit|64-bit|dx11|dx12|works out of the box)$")]
     private static partial Regex Informational();
