@@ -893,7 +893,17 @@ public sealed class GameDetailViewModel : ObservableObject
     private void BuildInstalled()
     {
         Installed.Clear();
-        foreach (var g in _svc.Changes.InstalledFor(Game.Id)) Installed.Add(g);
+        foreach (var g in _svc.Changes.InstalledFor(Game.Id))
+        {
+            // « … · external » : un mod etranger mis de cote, pas une installation. Son « Retirer »
+            // remettrait le mod dans le jeu ; il vit dans l'historique des modifications, pas ici.
+            if (g.Origin.EndsWith("· external", StringComparison.OrdinalIgnoreCase)) continue;
+
+            // Version inscrite « 5 » par d'anciennes builds pour « RenoDX DLSS 5 » : le nom repete.
+            Installed.Add(g.Version is { } v && g.Origin.EndsWith(" " + v, StringComparison.Ordinal)
+                ? new InstalledGroup { Origin = g.Origin, At = g.At, Summary = g.Summary, Files = g.Files }
+                : g);
+        }
 
         // ReShade passe par son propre installateur : pas de trace fichier, seulement le profil.
         if (Profile.ReShadeInstalled && Game.HasReShade

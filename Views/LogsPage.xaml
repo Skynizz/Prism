@@ -13,7 +13,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Grid Width="280">
                         <TextBox Text="{Binding LogSearch, UpdateSourceTrigger=PropertyChanged, Delay=120}"
-                                 Tag="Filtrer le journal" Padding="28,0,8,0" />
+                                 Tag="{l:T log.filter_hint}" Padding="28,0,8,0" />
                         <Path Data="{DynamicResource IcoSearch}" Style="{StaticResource S.IconSm}"
                               Stroke="{DynamicResource BrFg3}" Width="12" Height="12"
                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="9,0,0,0"
