@@ -378,6 +378,9 @@ public sealed class MainViewModel : ObservableObject
 
     private void RefreshRunningGame()
     {
+        // Diagnostic en direct : le journal du jeu en cours est relu s'il a change.
+        Detail?.LiveTick();
+
         var found = ProcessWatcher.FindRunning(Games);
         if (found?.Id == RunningGame?.Id) return;
 

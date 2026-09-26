@@ -120,6 +120,11 @@
                                         Visibility="{Binding Diagnosis.Applies, Converter={StaticResource BoolVis}}">
                     <HeaderedContentControl.Tag>
                         <StackPanel Orientation="Horizontal">
+                            <Border Style="{StaticResource S.Tag}" BorderBrush="{DynamicResource BrAccentDim}"
+                                    VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="{l:T diag.live_tip}"
+                                    Visibility="{Binding IsLive, Converter={StaticResource BoolVis}}">
+                                <TextBlock Text="{l:T diag.live}" Foreground="{DynamicResource BrAccent}" />
+                            </Border>
                             <TextBlock Text="{Binding Diagnosis.LogLabel}" Style="{StaticResource T.Sec}"
                                        VerticalAlignment="Center" Margin="0,0,12,0" />
                             <c:StatusDot Status="{Binding Diagnosis.State}" Text="{Binding Diagnosis.VerdictLabel}" />
@@ -140,6 +145,9 @@
                                         Visibility="{Binding Diagnosis.HasLog, Converter={StaticResource BoolVis}}" />
                                 <Button Content="{l:T diag.run}" Style="{StaticResource Btn}" Margin="6,0,0,0"
                                         Command="{Binding RunDiagnosisCommand}" />
+                                <Button Content="{l:T diag.heal}" Style="{StaticResource Btn.Primary}" Margin="6,0,0,0"
+                                        Command="{Binding HealCommand}" ToolTip="{l:T diag.heal_tip}"
+                                        Visibility="{Binding CanHeal, Converter={StaticResource BoolVis}}" />
                             </StackPanel>
                         </Grid>
 

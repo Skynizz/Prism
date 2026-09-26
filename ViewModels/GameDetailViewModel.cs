@@ -62,6 +62,7 @@ public sealed class GameDetailViewModel : ObservableObject
         CopyFileListCommand = new RelayCommand(_ => CopyFileList());
         SteamVerifyCommand = new RelayCommand(_ => SteamVerify());
         ChooseExeCommand = new RelayCommand(_ => ChooseExe(), _ => !Busy);
+        HealCommand = new AsyncRelayCommand(HealAsync, () => CanHeal);
         ArmResetCommand = new RelayCommand(_ => ArmReset(), _ => !Busy);
         ConfirmResetCommand = new RelayCommand(_ => ConfirmReset(), _ => !Busy);
         CancelResetCommand = new RelayCommand(_ => ResetArmed = false);
@@ -442,7 +443,245 @@ public sealed class GameDetailViewModel : ObservableObject
     public AsyncRelayCommand ApplyDiagnosisFixCommand { get; }
     public RelayCommand OpenGameLogCommand { get; }
 
-    private void RunDiagnosis() => Diagnosis = _svc.Diagnostics.Diagnose(Game);
+    /// <summary>
+    /// Le journal dit ce qui s'est passe ; le disque dit ce qui manque. Les deux sont reunis : les
+    /// controles du DLSS 5 (runtime neural, Streamline, compilateur, addon) en echec deviennent des
+    /// constatations reparables, comme un Streamline aux versions melangees ou une installation posee
+    /// par un autre outil.
+    /// </summary>
+    private void RunDiagnosis()
+    {
+        var log = _svc.Diagnostics.Diagnose(Game);
+        var extra = new List<DiagnosisFinding>();
+
+        var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(TargetDir, a.FileName)));
+        if (kind is not null)
+        {
+            var option = Dlss5Options.FirstOrDefault(o => Dlss5Addon.For(o.Backend) == kind);
+            var broken = _svc.Dlss5.Preflight(Game, _svc.Gpu, option)
+                .Where(c => c.Label is "NEURAL RT" or "STREAMLINE" or "SIGNATURE" or "D3DCOMPILER" or "ADDON"
+                            && c.State is UiStatus.Error or UiStatus.Warning)
+                .ToList();
+            foreach (var c in broken)
+                extra.Add(new DiagnosisFinding
+                {
+                    Id = "pre-" + c.Label,
+                    State = c.State == UiStatus.Error ? UiStatus.Error : UiStatus.Warning,
+                    Title = $"{c.Label} · {c.Detail}",
+                    Evidence = c.Hint,
+                    Fix = DiagnosisFix.Reinstall
+                });
+
+            // Addon present sans trace dans le registre : pose par un autre outil.
+            var addonPath = Path.Combine(TargetDir, kind.FileName);
+            var ours = _svc.Changes.For(Game.Id).Any(e => e.StillApplies
+                && string.Equals(e.Path, addonPath, StringComparison.OrdinalIgnoreCase));
+            if (!ours)
+                extra.Add(new DiagnosisFinding
+                {
+                    Id = "foreign-install",
+                    State = broken.Count > 0 ? UiStatus.Warning : UiStatus.Detected,
+                    Title = Loc.T("diag.f.foreign", kind.Label),
+                    Evidence = broken.Count > 0
+                        ? Loc.T("diag.f.foreign_incomplete", string.Join(", ", broken.Select(b => b.Label)))
+                        : Loc.T("diag.f.foreign_ok"),
+                    Fix = DiagnosisFix.Migrate
+                });
+        }
+
+        if (MixedStreamline() is { } mixed)
+            extra.Add(new DiagnosisFinding
+            {
+                Id = "sl-mixed", State = UiStatus.Error, Title = Loc.T("diag.f.sl_mixed"),
+                Evidence = mixed, Fix = kind is not null ? DiagnosisFix.Reinstall : DiagnosisFix.Streamline
+            });
+
+        Diagnosis = Merge(log, extra);
+        _liveLogStamp = LogStamp();
+        OnPropertyChanged(nameof(CanHeal));
+        OnPropertyChanged(nameof(IsLive));
+        HealCommand?.Raise();
+    }
+
+    /// <summary>Composants sl.* de versions differentes dans un meme dossier : null s'ils sont apparies.</summary>
+    private string? MixedStreamline()
+    {
+        foreach (var dir in Game.StreamlineDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            string[] files;
+            try { files = Directory.GetFiles(dir, "sl.*.dll"); } catch { continue; }
+            var versions = files
+                .Select(f => (Name: Path.GetFileName(f), Version: DllDetector.ReadProductVersion(f)))
+                .Where(v => !string.IsNullOrWhiteSpace(v.Version))
+                .ToList();
+            if (versions.Select(v => v.Version).Distinct().Count() > 1)
+                return string.Join(" · ", versions.GroupBy(v => v.Version)
+                    .Select(g => $"{g.Key}: {string.Join(", ", g.Select(v => v.Name).Take(3))}"));
+        }
+        return null;
+    }
+
+    private static Diagnosis Merge(Diagnosis log, List<DiagnosisFinding> extra)
+    {
+        if (extra.Count == 0) return log;
+        var findings = extra.Where(f => f.State == UiStatus.Error)
+            .Concat(log.Findings)
+            .Concat(extra.Where(f => f.State != UiStatus.Error))
+            .ToList();
+        var verdict = findings.Any(f => f.State == UiStatus.Error) ? DiagnosisVerdict.Failed
+            : findings.Any(f => f.State == UiStatus.Warning) ? DiagnosisVerdict.Degraded
+            : log.Verdict == DiagnosisVerdict.NotApplicable ? DiagnosisVerdict.Unknown
+            : log.Verdict;
+        return new Diagnosis
+        {
+            Verdict = verdict,
+            Summary = verdict is DiagnosisVerdict.Failed or DiagnosisVerdict.Degraded && log.Verdict != verdict
+                ? Loc.T("diag.issues", findings.Count(f => f.State is UiStatus.Error or UiStatus.Warning))
+                : log.Summary,
+            LogPath = log.LogPath,
+            LogTime = log.LogTime,
+            Findings = findings
+        };
+    }
+
+    // ------------------------------------------------------ Suivi en direct
+
+    private (DateTime, long) _liveLogStamp;
+
+    /// <summary>Le jeu tourne : le journal est relu a chaque ecriture, sans attendre la fermeture.</summary>
+    public bool IsLive => IsRunning && Diagnosis.Applies;
+
+    /// <summary>Appele par la minuterie du processus (toutes les 4 s) : ne relit que si le journal a change.</summary>
+    public void LiveTick()
+    {
+        OnPropertyChanged(nameof(IsLive));
+        if (!IsRunning) return;
+        var stamp = LogStamp();
+        if (stamp == _liveLogStamp) return;
+        RunDiagnosis();
+        Log.Trace(Src, $"Live diagnosis: {Diagnosis.Verdict}");
+    }
+
+    private (DateTime, long) LogStamp()
+    {
+        try
+        {
+            var info = new FileInfo(Path.Combine(TargetDir, "ReShade.log"));
+            return info.Exists ? (info.LastWriteTimeUtc, info.Length) : default;
+        }
+        catch { return default; }
+    }
+
+    // ----------------------------------------------------------- Reparer
+
+    /// <summary>Corrections que « Reparer » sait enchainer seul, dans l'ordre ou elles s'appliquent.</summary>
+    private static readonly DiagnosisFix[] HealOrder = { DiagnosisFix.ReShade, DiagnosisFix.Streamline, DiagnosisFix.Reinstall };
+
+    public bool CanHeal => Diagnosis.Findings.Any(f => HealOrder.Contains(f.Fix)) && !Busy;
+
+    public AsyncRelayCommand HealCommand { get; }
+
+    /// <summary>
+    /// Applique toutes les corrections du diagnostic d'un coup. Chaque etape est une transaction ; la
+    /// photographie prise avant les rend atomiques ensemble : si l'une echoue, tout revient en l'etat.
+    /// Le jeu doit etre ferme — un fichier charge ne se remplace pas.
+    /// </summary>
+    private async Task HealAsync()
+    {
+        if (!Guard()) return;
+        var fixes = HealOrder.Where(f => Diagnosis.Findings.Any(x => x.Fix == f)).ToList();
+        if (fixes.Count == 0) { _notify(Loc.T("heal.none"), false); return; }
+
+        using var snapshot = FileSnapshot.Take(HealDirectories());
+        var failed = (DiagnosisFix?)null;
+        foreach (var fix in fixes)
+        {
+            if (!await ApplyHealStepAsync(fix)) { failed = fix; break; }
+        }
+
+        if (failed is { } step)
+        {
+            var left = snapshot.Restore();
+            DllDetector.Inspect(Game);
+            _notify(Loc.T("heal.rolled_back", Game.Name, new DiagnosisFinding { Id = "", State = UiStatus.Idle, Title = "", Fix = step }.FixLabel) + (left.Count > 0 ? " " + Loc.T("restore.refused", string.Join(", ", left)) : ""), true);
+        }
+        else _notify(Loc.T("heal.done", Game.Name, fixes.Count), false);
+
+        Refresh();
+    }
+
+    private async Task<bool> ApplyHealStepAsync(DiagnosisFix fix)
+    {
+        switch (fix)
+        {
+            case DiagnosisFix.ReShade:
+                return await InstallReShadeAsync();
+            case DiagnosisFix.Streamline:
+                return await DeployStreamlineAsync();
+            case DiagnosisFix.Reinstall:
+                var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(TargetDir, a.FileName))) ?? Dlss5Addon.ShortFuse;
+                // L'addon ne se charge qu'avec ReShade en version add-on.
+                if (!HdrInstaller.ReShadeReady(Game) && !await InstallReShadeAsync()) return false;
+                return await RunAsync(p => _svc.Dlss5.InstallRenoDxAddonAsync(Game, kind, null, p));
+            default:
+                return true;
+        }
+    }
+
+    /// <summary>Ou les reparations ecrivent : a cote de l'exe, de Streamline et des runtimes NGX.</summary>
+    private IEnumerable<string> HealDirectories()
+        => new[] { TargetDir }
+            .Concat(Game.StreamlineDirectories)
+            .Concat(Dlss5PackageInstaller.RuntimeDirectories(Game))
+            .Concat(Dlss5PackageInstaller.NeuralRuntimeDirectories(Game));
+
+    // ----------------------------------------------------- Migrer vers Prism
+
+    /// <summary>
+    /// Reprend une installation posee par un autre outil : ses fichiers et restes sont mis a l'abri
+    /// (nettoyage profond, annulable), puis Prism reinstalle les memes familles — ReShade, addon
+    /// RenoDX DLSS de la meme variante, MFG Unlock, HDR RenoDX — dans leur version verifiee et suivie.
+    /// Si une installation echoue, tout est remis tel qu'avant la migration.
+    /// </summary>
+    private async Task MigrateAsync()
+    {
+        if (!Guard()) return;
+
+        var prism = _svc.Changes.For(Game.Id).Where(e => e.StillApplies).Select(e => e.Origin).ToList();
+        var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(TargetDir, a.FileName)));
+        var reShade = Game.HasReShade && !Profile.ReShadeInstalled;
+        var mfg = Game.HasMfgUnlock && File.Exists(Path.Combine(TargetDir, "renodx-mfgunlock.addon64"))
+                  && !prism.Any(o => o.Contains("MFG", StringComparison.OrdinalIgnoreCase));
+        var hdr = Game.HasRenoDx && !prism.Any(o => o.StartsWith("RenoDX HDR", StringComparison.OrdinalIgnoreCase));
+        var hdrPlan = HdrPlan;
+
+        var plan = _svc.Cleaner.Plan(Game);
+        var cleaned = !plan.IsEmpty && _svc.Cleaner.Execute(Game, plan).Success;
+        DllDetector.Inspect(Game);
+
+        // Photographie apres le nettoyage : en cas d'echec, on defait d'abord les installations
+        // (retour a l'etat nettoye), puis le nettoyage lui-meme — dans cet ordre, les originaux
+        // rendus par le nettoyage retrouvent exactement leur place.
+        using var snapshot = FileSnapshot.Take(HealDirectories());
+        var ok = true;
+        // L'addon RenoDX DLSS exige ReShade en version add-on : pose s'il manque apres le nettoyage.
+        DllDetector.Inspect(Game);
+        if (reShade || (kind is not null && !HdrInstaller.ReShadeReady(Game))) ok = await InstallReShadeAsync();
+        if (ok && kind is not null) ok = await RunAsync(p => _svc.Dlss5.InstallRenoDxAddonAsync(Game, kind, null, p));
+        if (ok && mfg) ok = await RunAsync(p => _svc.FrameGen.InstallMfgAdaAsync(Game, p));
+        if (ok && hdr && hdrPlan?.CanInstall == true) ok = await RunAsync(p => _svc.Hdr.ApplyAsync(Game, hdrPlan, p));
+
+        if (!ok)
+        {
+            snapshot.Restore();
+            if (cleaned) _svc.Cleaner.Undo(Game);
+            DllDetector.Inspect(Game);
+            _notify(Loc.T("migrate.rolled_back", Game.Name), true);
+        }
+        else _notify(Loc.T("migrate.done", Game.Name, plan.Items.Count), false);
+
+        Refresh();
+    }
 
     /// <summary>Applique le correctif d'une constatation, puis relit le journal.</summary>
     private async Task ApplyDiagnosisFixAsync(object? p)
@@ -470,6 +709,12 @@ public sealed class GameDetailViewModel : ObservableObject
                 AnalyzeClean();
                 _notify(Loc.T("diag.clean_ready", CleanPlan.Items.Count), false);
                 break;
+            case DiagnosisFix.Streamline:
+                await DeployStreamlineAsync();
+                break;
+            case DiagnosisFix.Migrate:
+                await MigrateAsync();
+                return;
         }
 
         RunDiagnosis();
@@ -1370,6 +1615,7 @@ public sealed class GameDetailViewModel : ObservableObject
             RunCleanCommand?.Raise();
             UndoCleanCommand?.Raise();
             ChooseExeCommand?.Raise();
+            HealCommand?.Raise();
         }
     }
 
