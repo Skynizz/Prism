@@ -24,15 +24,15 @@
 - **Reset injections.** One button brings a game back to how its platform installed it: every
   Prism install and its `ReShade.ini` / `Engine.ini` settings, then everything other tools left.
   It shows the exact count first and acts only on the second click.
-- **Deep clean.** Removes what RHI, OptiScaler and manual installs left, even before Prism, by
-  following each tool's own rules: RHI's `.original` markers and `rhi_install.txt`, OptiScaler
+- **Deep clean.** Removes what other installers, OptiScaler and manual installs left, even before
+  Prism, by following each tool's own rules: `.original` markers, install manifests, OptiScaler
   under any DLL name. Full list shown first, every file copied aside, whole pass undoable.
 - **Copy file list.** Everything Prism added, and everything else that isn't from the game, as text.
 - **Diagnostic.** Reads the game's `ReShade.log` after each launch and tells whether the neural
   pass is **Working**, **Degraded** or **Failed** — with the log line as evidence and a fix button.
   Catches the case where the overlay says *active* but the image doesn't change.
 - **Conflicts.** Two RenoDX DLSS add-ons, two neural-rendering paths, ReShade or OptiScaler loaded
-  twice, RHI leftovers.
+  twice, leftovers from another installer.
 - **Frame generation in games that don't have it** (DirectX 12, with DLSS, FSR 2+ or XeSS on):
   - **OptiScaler · DLSS FG** — NVIDIA's DLSS Frame Generation driven from the game's upscaler.
     ×2 on RTX 40, up to ×4 on RTX 50. NVIDIA's Streamline 2.14.1 files are checked against pinned
