@@ -107,7 +107,7 @@ The RenoDX mod list is read **live**: the right mod per game, and the notes of i
 #### Tracked and reversible
 An **Added by Prism** strip on every game: one entry per install, one **Remove** button.
 **Reset injections** brings a game back to how its platform installed it — Prism's installs,
-and what RHI, OptiScaler or manual installs left behind.
+and what other installers, OptiScaler or manual installs left behind.
 
 </td>
 </tr>
@@ -191,9 +191,9 @@ Prism's backups, then removed); NVIDIA runtimes replaced by hand are flagged, ne
 
 | Left behind | What Prism does |
 |---|---|
-| `X.original`, empty — RHI created `X` from scratch | `X` and the marker removed |
-| `X.original`, not empty — the game's original, renamed by RHI | original put back in place |
-| `rhi_install.txt` | every file and folder it lists removed |
+| `X.original`, empty — an installer created `X` from scratch | `X` and the marker removed |
+| `X.original`, not empty — the game's original, renamed by an installer | original put back in place |
+| An installer's file manifest in the game folder | every file and folder it lists removed |
 | OptiScaler under any DLL name (`OriginalFilename = OptiScaler.dll`) | removed with its companions |
 
 The full list is shown before anything happens, every file is copied aside first, and the whole
@@ -396,7 +396,6 @@ Prism builds on the work of these projects. All credit for the mods goes to thei
 | dlssg for sm_75 | [`Coldwood1026/dlssg_for_sm75`](https://github.com/Coldwood1026/dlssg_for_sm75) | DLSS-G on RTX 20 |
 | DLSS Enabler | [`artur-graniszewski/DLSS-Enabler`](https://github.com/artur-graniszewski/DLSS-Enabler) | FSR 3.1 fallback |
 
-Approach inspired by [RHI](https://github.com/RankFTW/RHI).
 
 ---
 
