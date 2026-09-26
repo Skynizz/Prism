@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.2.0 (in development)
+
+### New
+
+- **Live doctor.** While a game runs, its `ReShade.log` is read again every time it changes
+  (LIVE badge). The diagnostic now also checks the disk: neural runtime missing, misplaced or
+  untrusted, incomplete Streamline, outdated shader compiler, add-on not preloaded, and Streamline
+  files from different versions.
+- **Repair.** Applies every fix of the diagnostic in one go. All mod files are captured first: if
+  one step fails, the game goes back exactly as it was.
+- **Migrate to Prism.** An install made by another tool is set aside (restorable) and reinstalled
+  by Prism in its verified version, so it can be checked and removed in one click.
+- **Installed buttons.** Once DLSS 5, HDR or frame generation is in place and valid, its button
+  reads *Installed*. Remove a file or break a signature and it goes back to *Install*, without a
+  rescan. *Reinstall* stays available.
+
+### Fixed
+
+- Mods set aside by Prism showed up under *Added by Prism*, where *Remove* would have put them
+  back into the game.
+- A version recorded as `5` by older builds was shown next to *RenoDX DLSS 5*.
+- The search boxes of the Games and Logs pages were always in French.
+
 ## 1.1.1
 
 ### Fixed

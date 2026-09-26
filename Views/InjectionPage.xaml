@@ -145,10 +145,14 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                                    <Button Content="{l:T hdr.apply}" Style="{StaticResource Btn.Primary}"
+                                    <Button Content="{Binding HdrButtonLabel}" Style="{StaticResource Btn.Primary}"
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding InstallRenoDxCommand}"
                                             ToolTip="{l:T hdr.apply_tip}" />
+                                    <Button Content="{l:T diag.fix.reinstall}" Style="{StaticResource Btn.Quiet}"
+                                            HorizontalAlignment="Center" Margin="0,4,0,0"
+                                            Command="{Binding ReinstallHdrCommand}" ToolTip="{l:T btn.reinstall_tip}"
+                                            Visibility="{Binding HdrInstalled, Converter={StaticResource BoolVis}}" />
                                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                         <Button Content="{l:T hdr.open_page}" Style="{StaticResource Btn}"
                                                 Command="{Binding OpenHdrPageCommand}" />

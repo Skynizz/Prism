@@ -441,6 +441,21 @@ public sealed class FrameGenService
             .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault(n => !File.Exists(Path.Combine(dir, n)));
 
+    /// <summary>Les six binaires Streamline du DLSS-G injecte sont en place et identiques aux empreintes epinglees.</summary>
+    public static bool InjectedStreamlineIntact(string dir)
+    {
+        var sl = Path.Combine(dir, "OptiScaler", "streamline");
+        try
+        {
+            return InjectedFgPins.All(p =>
+            {
+                var f = Path.Combine(sl, p.Key);
+                return File.Exists(f) && DownloadService.Sha256Cached(f).Equals(p.Value, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+        catch { return false; }
+    }
+
     /// <summary>Nom sous lequel un OptiScaler est deja charge dans ce dossier, s'il y en a un.</summary>
     public static string? LoadedOptiScaler(string dir)
         => DllDetector.ProxyNames

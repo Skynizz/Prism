@@ -291,11 +291,15 @@
                             </Border>
 
                             <!-- Action principale sur toute la largeur ; les secondaires dessous. -->
-                            <Button Content="{l:T btn.install}" Style="{StaticResource Btn.Primary}"
+                            <Button Content="{Binding Dlss5ButtonLabel}" Style="{StaticResource Btn.Primary}"
                                     Margin="0,16,0,0" Height="40" HorizontalAlignment="Stretch"
                                     FontSize="{DynamicResource SzStrong}"
                                     Command="{Binding InstallDlss5Command}"
                                     ToolTip="{l:T dlss5.prepare_tip}" />
+                            <Button Content="{l:T diag.fix.reinstall}" Style="{StaticResource Btn.Quiet}"
+                                    HorizontalAlignment="Center" Margin="0,4,0,0"
+                                    Command="{Binding ReinstallDlss5Command}" ToolTip="{l:T btn.reinstall_tip}"
+                                    Visibility="{Binding Dlss5Installed, Converter={StaticResource BoolVis}}" />
                             <UniformGrid Rows="1" Margin="0,8,0,0">
                                 <Button Content="{l:T dlss5.adopt}" Style="{StaticResource Btn}" Margin="0,0,4,0"
                                         Command="{Binding AdoptNeuralCommand}"

@@ -249,9 +249,13 @@
 
                     <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T fg.actions}" Margin="0,12,0,0">
                         <StackPanel Margin="14,14,14,14">
-                            <Button Content="{l:T btn.install}" Style="{StaticResource Btn.Primary}"
+                            <Button Content="{Binding FgButtonLabel}" Style="{StaticResource Btn.Primary}"
                                     HorizontalAlignment="Stretch" Command="{Binding InstallFgCommand}"
                                     ToolTip="{l:T fg.prepare_tip}" />
+                            <Button Content="{l:T diag.fix.reinstall}" Style="{StaticResource Btn.Quiet}"
+                                    HorizontalAlignment="Center" Margin="0,4,0,0"
+                                    Command="{Binding ReinstallFgCommand}" ToolTip="{l:T btn.reinstall_tip}"
+                                    Visibility="{Binding FgInstalled, Converter={StaticResource BoolVis}}" />
                             <Button Content="{l:T fg.open_source}" Style="{StaticResource Btn}"
                                     HorizontalAlignment="Stretch" Margin="0,6,0,0"
                                     Command="{Binding OpenSourceCommand}"

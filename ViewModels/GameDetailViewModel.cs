@@ -29,11 +29,13 @@ public sealed class GameDetailViewModel : ObservableObject
         RestoreEverythingCommand = new RelayCommand(_ => RestoreEverything());
 
         // Un seul bouton Installer : prerequis resolus et telecharges, puis la voie.
-        InstallFgCommand = new AsyncRelayCommand(PrepareFgAsync, () => SelectedFg?.Available == true && !Busy);
+        InstallFgCommand = new AsyncRelayCommand(PrepareFgAsync, () => SelectedFg?.Available == true && !Busy && !FgInstalled);
+        ReinstallFgCommand = new AsyncRelayCommand(PrepareFgAsync, () => SelectedFg?.Available == true && !Busy && FgInstalled);
         RemoveFgCommand = new RelayCommand(_ => RemoveFg());
         PickMultiplierCommand = new RelayCommand(p => SetMultiplier(p));
 
-        InstallRenoDxCommand = new AsyncRelayCommand(PrepareHdrAsync, () => HdrPlan?.CanInstall == true && !Busy);
+        InstallRenoDxCommand = new AsyncRelayCommand(PrepareHdrAsync, () => HdrPlan?.CanInstall == true && !Busy && !HdrInstalled);
+        ReinstallHdrCommand = new AsyncRelayCommand(PrepareHdrAsync, () => HdrPlan?.CanInstall == true && !Busy && HdrInstalled);
         RemoveRenoDxCommand = new RelayCommand(_ => RemoveHdr(), _ => Game.HasRenoDx);
         OpenHdrPageCommand = new RelayCommand(_ => OpenUrl(HdrPageUrl));
 
@@ -43,7 +45,9 @@ public sealed class GameDetailViewModel : ObservableObject
         ResetProfileCommand = new RelayCommand(_ => ResetProfile());
 
         InstallDlss5Command = new AsyncRelayCommand(PrepareDlss5Async,
-            () => SelectedDlss5?.Available == true && !Busy);
+            () => SelectedDlss5?.Available == true && !Busy && !Dlss5Installed);
+        ReinstallDlss5Command = new AsyncRelayCommand(PrepareDlss5Async,
+            () => SelectedDlss5?.Available == true && !Busy && Dlss5Installed);
         RemoveBridgeCommand = new RelayCommand(_ => RemoveBridge(), _ => Game.HasDlss5Bridge);
         AdoptNeuralCommand = new RelayCommand(_ => AdoptNeural(), _ => !Game.HasNeuralRuntime);
         DeployStreamlineCommand = new AsyncRelayCommand(DeployStreamlineAsync, () => !Busy);
@@ -134,6 +138,7 @@ public sealed class GameDetailViewModel : ObservableObject
             if (!Set(ref _selectedFg, value)) return;
             Log.Trace("fg", $"path -> {value?.Title ?? "(null)"}");
             InstallFgCommand.Raise();
+            RefreshInstallStates();
             OnPropertyChanged(nameof(FgRequirements));
             OnPropertyChanged(nameof(FgHasRequirements));
             OnPropertyChanged(nameof(FgRequirementsLabel));
@@ -299,6 +304,7 @@ public sealed class GameDetailViewModel : ObservableObject
             if (!Set(ref _selectedDlss5, value)) return;
             InstallDlss5Command.Raise();
             RefreshDlss5Checks();
+            RefreshInstallStates();
             // Les builds proposees suivent l'addon de la voie : ShortFuse ou DLSS5 Tool.
             _selectedDlss5Build = null;
             OnPropertyChanged(nameof(Dlss5Builds));
@@ -544,6 +550,104 @@ public sealed class GameDetailViewModel : ObservableObject
         };
     }
 
+    // ---------------------------------------------------------- Deja installe
+
+    private bool _dlss5Installed, _hdrInstalled, _fgInstalled;
+
+    /// <summary>
+    /// La voie choisie est deja en place et valide : fichiers presents, runtime neural de confiance,
+    /// Streamline complet. Le bouton affiche alors « Installe » ; un fichier retire ou une signature
+    /// invalide le fait revenir a « Installer ».
+    /// </summary>
+    public bool Dlss5Installed { get => _dlss5Installed; private set => Set(ref _dlss5Installed, value); }
+    public bool HdrInstalled { get => _hdrInstalled; private set => Set(ref _hdrInstalled, value); }
+    public bool FgInstalled { get => _fgInstalled; private set => Set(ref _fgInstalled, value); }
+
+    public string Dlss5ButtonLabel => Loc.T(Dlss5Installed ? "btn.installed" : "btn.install");
+    public string HdrButtonLabel => Loc.T(HdrInstalled ? "btn.installed" : "hdr.apply");
+    public string FgButtonLabel => Loc.T(FgInstalled ? "btn.installed" : "btn.install");
+
+    public AsyncRelayCommand ReinstallDlss5Command { get; }
+    public AsyncRelayCommand ReinstallHdrCommand { get; }
+    public AsyncRelayCommand ReinstallFgCommand { get; }
+
+    private (DateTime, int) _installStamp;
+
+    /// <summary>Recalcule les trois etats et met a jour les boutons.</summary>
+    private void RefreshInstallStates()
+    {
+        Dlss5Installed = IsDlss5InPlace(SelectedDlss5);
+        HdrInstalled = HdrPlan?.AddonFileName is { } addon
+                       && File.Exists(Path.Combine(TargetDir, addon))
+                       && HdrInstaller.ReShadeReady(Game);
+        FgInstalled = IsFgInPlace(SelectedFg);
+        _installStamp = InstallStamp();
+
+        OnPropertyChanged(nameof(Dlss5ButtonLabel));
+        OnPropertyChanged(nameof(HdrButtonLabel));
+        OnPropertyChanged(nameof(FgButtonLabel));
+        InstallDlss5Command?.Raise(); ReinstallDlss5Command?.Raise();
+        InstallRenoDxCommand?.Raise(); ReinstallHdrCommand?.Raise();
+        InstallFgCommand?.Raise(); ReinstallFgCommand?.Raise();
+    }
+
+    private bool IsDlss5InPlace(Dlss5Option? option)
+    {
+        if (option is null) return false;
+        var dir = TargetDir;
+        switch (option.Backend)
+        {
+            case Dlss5Backend.ShortFuse or Dlss5Backend.RenoDxDlss5:
+                var kind = Dlss5Addon.For(option.Backend)!;
+                // Les controles du DLSS 5 font foi : addon precharge, runtime neural en place et de
+                // confiance, Streamline complet. Le moindre manque ramene le bouton « Installer ».
+                return File.Exists(Path.Combine(dir, kind.FileName))
+                       && Dlss5Checks.Where(c => c.Label is "NEURAL RT" or "STREAMLINE" or "SIGNATURE" or "ADDON")
+                                     .All(c => c.State == UiStatus.Ready);
+            case Dlss5Backend.OptiScalerNr or Dlss5Backend.OptiScalerMultipass:
+                var nr = Path.Combine(dir, "nvngx_dlssnr.dll");
+                return FrameGenService.LoadedOptiScaler(dir) is not null && OptiScalerConfig.IsFork(dir)
+                       && File.Exists(nr) && Dlss5PackageInstaller.IsTrustedRuntime(nr);
+            case Dlss5Backend.Bridge:
+                return Game.HasDlss5Bridge && Game.HasNeuralRuntime;
+            default:
+                return false;   // installeur externe : Prism ne peut pas le constater
+        }
+    }
+
+    private bool IsFgInPlace(FgOption? option)
+    {
+        if (option is null) return false;
+        var dir = TargetDir;
+        return option.Backend switch
+        {
+            FgBackend.MfgAdaUnlock => File.Exists(Path.Combine(dir, "renodx-mfgunlock.addon64")) && HdrInstaller.ReShadeReady(Game),
+            FgBackend.Rtx40MfgUnlock => Game.HasMfgUnlock && !File.Exists(Path.Combine(dir, "renodx-mfgunlock.addon64")),
+            FgBackend.OptiScaler => FrameGenService.LoadedOptiScaler(dir) is not null
+                                    && string.Equals(OptiScalerConfig.Read(dir, "FrameGen", "FGOutput"), "fsrfg", StringComparison.OrdinalIgnoreCase),
+            FgBackend.InjectedDlssG => FrameGenService.LoadedOptiScaler(dir) is not null && OptiScalerConfig.IsFork(dir)
+                                       && string.Equals(OptiScalerConfig.Read(dir, "FrameGen", "FGOutput"), "dlssg", StringComparison.OrdinalIgnoreCase)
+                                       && FrameGenService.InjectedStreamlineIntact(dir),
+            _ => false
+        };
+    }
+
+    /// <summary>Empreinte bon marche des dossiers concernes : change des qu'un fichier y apparait ou disparait.</summary>
+    private (DateTime, int) InstallStamp()
+    {
+        var dirs = new[] { TargetDir, Path.Combine(TargetDir, "OptiScaler", "streamline") }
+            .Concat(Dlss5PackageInstaller.RuntimeDirectories(Game))
+            .Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        try
+        {
+            // Date la plus recente des fichiers eux-memes : un fichier ecrase sur place (DLL remplacee
+            // par une copie non signee) ne change pas la date du dossier, mais la sienne, si.
+            var files = dirs.SelectMany(d => new DirectoryInfo(d).EnumerateFiles()).ToList();
+            return (files.Select(f => f.LastWriteTimeUtc).DefaultIfEmpty().Max(), files.Count);
+        }
+        catch { return default; }
+    }
+
     // ------------------------------------------------------ Suivi en direct
 
     private (DateTime, long) _liveLogStamp;
@@ -555,6 +659,8 @@ public sealed class GameDetailViewModel : ObservableObject
     public void LiveTick()
     {
         OnPropertyChanged(nameof(IsLive));
+        // Un fichier ajoute ou retire hors de Prism : les boutons Installer / Installe suivent.
+        if (!IsRunning && InstallStamp() != _installStamp) { Refresh(); return; }
         if (!IsRunning) return;
         var stamp = LogStamp();
         if (stamp == _liveLogStamp) return;
@@ -1616,6 +1722,9 @@ public sealed class GameDetailViewModel : ObservableObject
             UndoCleanCommand?.Raise();
             ChooseExeCommand?.Raise();
             HealCommand?.Raise();
+            ReinstallDlss5Command?.Raise();
+            ReinstallHdrCommand?.Raise();
+            ReinstallFgCommand?.Raise();
         }
     }
 
@@ -1699,6 +1808,7 @@ public sealed class GameDetailViewModel : ObservableObject
         RemoveReShadeCommand.Raise();
         BuildPipeline();
         RunDiagnosis();
+        RefreshInstallStates();
     }
 
     public void Refresh()
