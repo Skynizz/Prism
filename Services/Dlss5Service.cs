@@ -88,7 +88,7 @@ public sealed class Dlss5Service
 
         var (dlssVersion, slVersion) = Dlss5PackageInstaller.StackVersions();
 
-        // ShortFuse, l'auteur de RenoDX : la methode que RHI recommande « pour la plupart des jeux
+        // ShortFuse, l'auteur de RenoDX : la methode recommandee « pour la plupart des jeux
         // ayant DLSS natif ». Paquet complet depuis rhi-repo, signatures NVIDIA verifiees. Vulkan
         // est ecarte : ReShade y passe par sa couche globale, que Prism ne pose pas.
         var sfApi = dx12 || api is GameApi.DirectX11;

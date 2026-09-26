@@ -1062,7 +1062,7 @@ public sealed class GameDetailViewModel : ObservableObject
     ///  1. chaque installation Prism, par son propre retrait (ReShade, HDR et Engine.ini, addons
     ///     et leurs inscriptions dans ReShade.ini) ;
     ///  2. ce que le registre connait encore, y compris les fichiers modifies depuis ;
-    ///  3. tout le reste — RHI, OptiScaler, mods poses a la main — par le nettoyage profond,
+    ///  3. tout le reste — autres installeurs, OptiScaler, mods poses a la main — par le nettoyage profond,
     ///     qui met chaque fichier a l'abri et reste annulable.
     /// Le profil repart de zero. L'executable choisi et l'identite du jeu sont gardes : ce ne
     /// sont pas des injections.

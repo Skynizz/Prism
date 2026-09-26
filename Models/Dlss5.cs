@@ -15,7 +15,7 @@ public enum Dlss5Backend
     RenoDxDlss5,
     /// <summary>
     /// Addon « DLSS Tool » de ShortFuse, l'auteur de RenoDX, avec la pile complete. C'est la
-    /// methode que RHI recommande pour la plupart des jeux ayant DLSS.
+    /// methode recommandee pour la plupart des jeux ayant DLSS.
     /// </summary>
     ShortFuse
 }

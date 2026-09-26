@@ -117,10 +117,10 @@ public static class ForeignModScanner
             return new Hit("ASI Loader", true, true, Known);
         if (name == "nvngx_dlssnr.dll")
             return new Hit("Neural Rendering", true, true, Known);
-        // Temoins et manifeste de RHI : un simple retrait laisserait l'original renomme.
+        // Temoins « .original » et manifeste d'un autre installeur : un simple retrait laisserait l'original renomme.
         // C'est le nettoyage profond qui les traite, en rendant l'original au jeu.
         if (name.EndsWith(".original") || name == LeftoverCleaner.RhiManifest)
-            return new Hit("RHI", true, false, Rhi);
+            return new Hit(Loc.T("clean.src.installer"), true, false, Rhi);
 
         // Proxy : seul le binaire qui se reclame d'une surcouche est un mod.
         if (ProxyNames.Contains(name))

@@ -10,7 +10,7 @@ namespace Prism.Services;
 /// Recupere et pose ReShade, version add-on — la seule qui charge les .addon64 dont
 /// RenoDX depend.
 ///
-/// Inspire de RHI plutot que de l'installeur interactif :
+/// Sans passer par l'installeur interactif :
 ///  - un ReShade add-on 6.8+ deja charge par le jeu, sous n'importe quel nom, est garde tel
 ///    quel : rien n'est telecharge ni reecrit ;
 ///  - une version trop ancienne ou standard est remplacee sur place, sous le meme nom,
@@ -212,7 +212,7 @@ public sealed class ReShadeService
             if (!File.Exists(path)) return (new Target(name, false, false), null);
 
             var tag = Describe(path);
-            // OptiScaler sait charger ReShade lui-meme : c'est la cohabitation que recommande RHI.
+            // OptiScaler sait charger ReShade lui-meme : c'est la cohabitation recommandee.
             if (!bits32 && tag.Contains("OptiScaler", StringComparison.OrdinalIgnoreCase)
                 && File.Exists(Path.Combine(dir, "OptiScaler.ini")))
                 return (new Target("ReShade64.dll", true, false), null);

@@ -24,7 +24,7 @@ public sealed partial class RhiRepoService
 
     /// <summary>
     /// Pile runtime posee avec l'addon : DLSS SR, RR et FG 310.9.1 + Streamline 2.14.1. Ce sont
-    /// les versions les plus recentes du manifeste de RHI (dlss_manifest.json), celles qu'il pose
+    /// les versions les plus recentes du manifeste de rhi-repo (dlss_manifest.json), celles qu'il pose
     /// avec l'addon de ShortFuse. Plus ancienne, cette pile retrograderait les jeux qui livrent
     /// deja 310.9.1 — et c'est aussi celle qu'exige le MFG dynamique.
     /// </summary>
@@ -137,7 +137,7 @@ public sealed partial class RhiRepoService
     /// Releases dont le tag commence par le prefixe suivi d'un chiffre, la plus recente d'abord.
     /// Les versions candidates (« 7.0.0-rc1 », « -beta ») sont ecartees : sans cela, le tri par
     /// chiffres les classerait au-dessus de la derniere stable et Prism les installerait par
-    /// defaut. RHI les ecarte de la meme facon.
+    /// defaut.
     /// </summary>
     public IReadOnlyList<Release> Family(string prefix)
         => _releases

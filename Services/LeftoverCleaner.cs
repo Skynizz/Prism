@@ -11,7 +11,7 @@ namespace Prism.Services;
 /// avant Prism, et remet les originaux qu'ils avaient renommes.
 ///
 /// Rien n'est devine. Trois sources, chacune tiree du code de l'outil concerne :
-///  - RHI (RankFTW/RHI) : avant d'ecrire X, il renomme l'original en « X.original » ; si X
+///  - les installeurs a temoins : avant d'ecrire X, ils renomment l'original en « X.original » ; si X
 ///    n'existait pas, il cree un « X.original » vide (AuxInstallService.SentinelBackup). Il
 ///    tient aussi la liste de ce qu'il a pose dans « rhi_install.txt » (RhiInstallManifest) ;
 ///  - OptiScaler : le binaire garde « OptiScaler.dll » comme nom d'origine quel que soit son
@@ -28,6 +28,9 @@ public sealed class LeftoverCleaner
     private const string OriginalSuffix = ".original";
     private const string SessionFile = "session.json";
 
+    /// <summary>Source affichee pour les temoins et manifestes d'un autre installeur.</summary>
+    private static string Installer => Loc.T("clean.src.installer");
+
     /// <summary>Fichiers qu'OptiScaler et son script ecrivent a cote du jeu (setup_windows.bat).</summary>
     private static readonly string[] OptiScalerFiles =
     {
@@ -38,7 +41,7 @@ public sealed class LeftoverCleaner
     /// <summary>Sous-dossiers d'OptiScaler, retires seulement si OptiScaler est bien la.</summary>
     private static readonly string[] OptiScalerFolders = { "OptiScaler", "D3D12_Optiscaler" };
 
-    /// <summary>Noms sous lesquels OptiScaler se fait charger (RHI : SupportedDllNames, plus nvngx.dll).</summary>
+    /// <summary>Noms sous lesquels OptiScaler se fait charger (liste d'OptiScaler, plus nvngx.dll).</summary>
     private static readonly string[] OptiScalerProxyNames =
     {
         "dxgi.dll", "winmm.dll", "d3d11.dll", "d3d12.dll", "dbghelp.dll", "version.dll",
@@ -74,7 +77,7 @@ public sealed class LeftoverCleaner
 
         var dirs = Directories(game);
 
-        // 1. Temoins « .original » de RHI : ils disent exactement quoi rendre au jeu.
+        // 1. Temoins « .original » : ils disent exactement quoi rendre au jeu.
         foreach (var dir in dirs.ToList())
         {
             foreach (var sentinel in SafeFiles(dir, "*" + OriginalSuffix))
@@ -84,12 +87,12 @@ public sealed class LeftoverCleaner
 
                 var empty = SafeLength(sentinel) == 0;
                 // Temoin vide et fichier deja parti : il ne reste que le temoin.
-                if (empty && !File.Exists(target)) Add(sentinel, CleanAction.Remove, "RHI");
-                else Add(target, empty ? CleanAction.DropSentinel : CleanAction.RestoreOriginal, "RHI");
+                if (empty && !File.Exists(target)) Add(sentinel, CleanAction.Remove, Installer);
+                else Add(target, empty ? CleanAction.DropSentinel : CleanAction.RestoreOriginal, Installer);
             }
         }
 
-        // 2. Manifeste RHI : tout ce qu'il dit avoir pose, dossiers compris.
+        // 2. Manifeste d'installation : tout ce qu'il dit avoir pose, dossiers compris.
         foreach (var dir in dirs.ToList())
         {
             var manifest = Path.Combine(dir, RhiManifest);
@@ -100,12 +103,12 @@ public sealed class LeftoverCleaner
             {
                 var path = Combine(dir, rel);
                 if (path is not null && File.Exists(path) && !File.Exists(path + OriginalSuffix))
-                    Add(path, CleanAction.Remove, "RHI");
+                    Add(path, CleanAction.Remove, Installer);
             }
             foreach (var rel in folders)
                 if (Combine(dir, rel) is { } folder && Directory.Exists(folder))
-                    foreach (var f in SafeFilesDeep(folder)) Add(f, CleanAction.Remove, "RHI");
-            Add(manifest, CleanAction.Remove, "RHI");
+                    foreach (var f in SafeFilesDeep(folder)) Add(f, CleanAction.Remove, Installer);
+            Add(manifest, CleanAction.Remove, Installer);
         }
 
         // 3. OptiScaler, sous n'importe quel nom de proxy, et ce qui l'accompagne.
@@ -157,7 +160,7 @@ public sealed class LeftoverCleaner
         };
     }
 
-    /// <summary>Restes d'un autre outil : temoins RHI ou manifeste. Sert aux conflits.</summary>
+    /// <summary>Restes d'un autre installeur : temoins « .original » ou manifeste. Sert aux conflits.</summary>
     public static bool HasRhiTraces(GameInfo game)
         => Directories(game).Any(d => File.Exists(Path.Combine(d, RhiManifest)) || SafeFiles(d, "*" + OriginalSuffix).Any());
 

@@ -5,11 +5,11 @@ namespace Prism.Services;
 
 /// <summary>
 /// Mods qui ne doivent pas cohabiter dans un meme jeu. Seules des regles etablies :
-///  - deux addons RenoDX DLSS : ShortFuse et DLSS5 Tool s'excluent (RHI ne pose jamais les deux) ;
-///  - deux voies neurales a la fois (addon RenoDX DLSS + pont DLSS 5) : RHI n'en garde qu'une (nrMethod) ;
+///  - deux addons RenoDX DLSS : ShortFuse et DLSS5 Tool s'excluent ;
+///  - deux voies neurales a la fois (addon RenoDX DLSS + pont DLSS 5) : une seule a la fois ;
 ///  - deux ReShade charges : le jeu plante ou double ses effets ;
 ///  - deux OptiScaler charges : son propre script d'installation les traite en restes a supprimer ;
-///  - des restes RHI (« .original », rhi_install.txt) : a nettoyer avant d'empiler autre chose.
+///  - des restes d'un autre installeur (« .original », manifeste) : a nettoyer avant d'empiler autre chose.
 /// </summary>
 public static class ConflictService
 {

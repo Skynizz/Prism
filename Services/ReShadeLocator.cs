@@ -48,7 +48,7 @@ public sealed class ReShadeState
 /// <summary>
 /// Trouve ReShade dans un jeu, quel que soit le nom sous lequel il se fait charger.
 ///
-/// Les noms viennent de la documentation de ReShade et de RHI : d3d9, d3d10, d3d11, d3d12,
+/// Les noms viennent de la documentation de ReShade : d3d9, d3d10, d3d11, d3d12,
 /// dxgi et opengl32, plus les proxys generiques qu'utilisent les chargeurs ASI, et
 /// ReShade64.dll quand OptiScaler le charge lui-meme (<c>[Plugins] LoadReshade</c>).
 ///

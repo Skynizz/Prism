@@ -34,7 +34,7 @@ public static class PeInfo
 
     /// <summary>
     /// Bibliotheques importees par l'executable, imports differes compris, en minuscules.
-    /// C'est ce que RHI regarde pour deviner l'API : d3d9.dll, opengl32.dll, dxgi.dll...
+    /// C'est ce qui revele l'API : d3d9.dll, opengl32.dll, dxgi.dll...
     /// Vide si l'en-tete est illisible.
     /// </summary>
     public static HashSet<string> Imports(string? path)

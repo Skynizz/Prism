@@ -19,7 +19,7 @@ public sealed class CleanItem
     public required string Path { get; init; }
     public required CleanAction Action { get; init; }
 
-    /// <summary>Outil ou mod d'origine : « RHI », « OptiScaler », « ReShade »...</summary>
+    /// <summary>Outil ou mod d'origine : « OptiScaler », « ReShade », autre installeur...</summary>
     public required string Source { get; init; }
 
     /// <summary>Chemin affiche, relatif au dossier du jeu.</summary>

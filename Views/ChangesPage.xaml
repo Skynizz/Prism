@@ -214,7 +214,7 @@
 
                         <!-- ============================================ NETTOYAGE PROFOND
                              Tout ce qu'un autre outil a laisse, meme avant Prism : temoins
-                             .original de RHI, rhi_install.txt, OptiScaler sous tout nom de proxy.
+                             .original, manifeste d'installation, OptiScaler sous tout nom de proxy.
                              La liste complete s'affiche avant ; chaque fichier est mis a l'abri. -->
                         <Border Style="{StaticResource S.HRule}" Margin="0,18,0,14" />
                         <DockPanel>
