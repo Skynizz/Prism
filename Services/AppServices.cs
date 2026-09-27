@@ -41,6 +41,7 @@ public sealed class AppServices
         Identity = new GameIdentityService(Downloads, Settings);
         Nexus = new NexusService();
         NexusMods = new NexusModInstaller(Backups, Deployments);
+        Requirements = new NexusRequirements();
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -78,6 +79,7 @@ public sealed class AppServices
     public GameIdentityService Identity { get; }
     public NexusService Nexus { get; }
     public NexusModInstaller NexusMods { get; }
+    public NexusRequirements Requirements { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }
@@ -100,6 +102,7 @@ public sealed class AppServices
         progress?.Report(Loc.T("init.dlss5"));
         await Dlss5.LoadAsync(ct);
         await Diagnostics.LoadAsync(ct);
+        await ModRules.RefreshAsync(Downloads, ct);
 
         progress?.Report(Loc.T("init.streamline"));
         await Streamline.LoadAsync(ct);

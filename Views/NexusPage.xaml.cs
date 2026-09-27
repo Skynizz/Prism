@@ -93,7 +93,11 @@ public partial class NexusPage : UserControl
             _web = web;
 
             var core = web.CoreWebView2;
-            core.SourceChanged += (_, _) => Vm.Url = core.Source;
+            core.SourceChanged += async (_, _) =>
+            {
+                Vm.Url = core.Source;
+                await Vm.OnPageChangedAsync(core.Source);
+            };
             core.NavigationStarting += OnNavigationStarting;
             core.LaunchingExternalUriScheme += OnExternalScheme;
             core.NewWindowRequested += OnNewWindow;

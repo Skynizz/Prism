@@ -43,6 +43,8 @@
     <EmbeddedResource Include="Lang\*.json" LogicalName="Lang.%(Filename)%(Extension)" />
     <!-- Signatures du diagnostic, aussi relues depuis GitHub au demarrage. -->
     <EmbeddedResource Include="Diagnostics\signatures.json" LogicalName="Diagnostics.signatures.json" />
+    <!-- Regles de placement des mods Nexus, aussi relues depuis GitHub. -->
+    <EmbeddedResource Include="ModRules\rules.json" LogicalName="ModRules.rules.json" />
   </ItemGroup>
 
 </Project>

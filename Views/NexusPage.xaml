@@ -69,6 +69,41 @@
         <TextBlock DockPanel.Dock="Top" Style="{StaticResource T.Prose}" Margin="16,8,16,0"
                    Text="{l:T nexus.help}" />
 
+        <!-- ============================================== PREREQUIS -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"
+                BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"
+                Visibility="{Binding OnModPage, Converter={StaticResource BoolVis}}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="{l:T nexus.req.header}" Style="{StaticResource T.Label}"
+                           VerticalAlignment="Center" MinWidth="124" Margin="0,0,12,0" />
+                <Grid VerticalAlignment="Center">
+                    <TextBlock Text="{l:T nexus.req.none}" Style="{StaticResource T.Ter}" VerticalAlignment="Center"
+                               Visibility="{Binding NoRequirements, Converter={StaticResource BoolVis}}" />
+                    <ItemsControl ItemsSource="{Binding Requirements}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource S.Sunken}" Padding="9,2,3,2" Margin="0,3,6,3"
+                                        ToolTip="{Binding Notes}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <c:StatusDot Status="{Binding Status}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" Margin="7,0,0,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding StateLabel}" Style="{StaticResource T.Ter}" Margin="7,0,4,0"
+                                                   VerticalAlignment="Center" />
+                                        <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.req.open}"
+                                                Command="{Binding OpenCommand}"
+                                                Visibility="{Binding CanOpen, Converter={StaticResource BoolVis}}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </DockPanel>
+        </Border>
+
         <!-- ============================== EMPLACEMENT A CHOISIR -->
         <Border DockPanel.Dock="Top" Style="{StaticResource S.Notice}" Margin="16,10,16,0" DataContext="{Binding Nexus}"
                 Visibility="{Binding HasPending, Converter={StaticResource BoolVis}}">

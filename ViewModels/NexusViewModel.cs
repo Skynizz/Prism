@@ -5,6 +5,54 @@ using Prism.Services;
 
 namespace Prism.ViewModels;
 
+/// <summary>Un prerequis affiche sous la barre : etat dans le jeu cible, page a ouvrir.</summary>
+public sealed class RequirementRow : ObservableObject
+{
+    public RequirementRow(ModRequirement req, Action<string> open)
+    {
+        Req = req;
+        OpenCommand = new RelayCommand(_ => open(req.Page));
+    }
+
+    public ModRequirement Req { get; }
+    public string Name => Req.Depth > 1 ? "↳ " + Req.Name : Req.Name;
+    public string? Notes => string.IsNullOrWhiteSpace(Req.Notes) ? null : Req.Notes;
+
+    private RequirementState _state = RequirementState.Checking;
+    public RequirementState State
+    {
+        get => _state;
+        set
+        {
+            if (!Set(ref _state, value)) return;
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(StateLabel));
+            OnPropertyChanged(nameof(CanOpen));
+        }
+    }
+
+    public UiStatus Status => State switch
+    {
+        RequirementState.Installed => UiStatus.Ready,
+        RequirementState.Missing => UiStatus.Error,
+        RequirementState.External => UiStatus.Warning,
+        _ => UiStatus.Idle
+    };
+
+    public string StateLabel => State switch
+    {
+        RequirementState.Installed => Loc.T("nexus.req.installed"),
+        RequirementState.Missing => Loc.T("nexus.req.missing"),
+        RequirementState.External => Loc.T("nexus.req.external"),
+        _ => Loc.T("nexus.req.checking")
+    };
+
+    public bool CanOpen => State != RequirementState.Installed;
+    public RelayCommand OpenCommand { get; }
+
+    public void Relocalize() => OnPropertyChanged(nameof(StateLabel));
+}
+
 /// <summary>
 /// Page Nexus Mods : le site dans Prism, sur la page du jeu cible. Un telechargement lance
 /// sur le site arrive ici, est lu, puis pose au bon endroit et suivi comme le reste.
@@ -69,7 +117,7 @@ public sealed class NexusViewModel : ObservableObject
             Set(ref _pending, value);
             PendingFiles.Clear();
             if (value is not null)
-                foreach (var f in value.Files.Take(200)) PendingFiles.Add(f);
+                foreach (var f in value.Unmapped.Take(200)) PendingFiles.Add(f);
             OnPropertyChanged(nameof(HasPending));
             OnPropertyChanged(nameof(PendingTitle));
             OnPropertyChanged(nameof(PendingNote));
@@ -78,8 +126,83 @@ public sealed class NexusViewModel : ObservableObject
 
     public bool HasPending => Pending is not null;
     public ObservableCollection<string> PendingFiles { get; } = new();
-    public string PendingTitle => Pending is null ? "" : Loc.T("nexus.pending", Pending.Name, Pending.Files.Count);
+    public string PendingTitle => Pending is null ? "" : Loc.T("nexus.pending", Pending.Name, Pending.Unmapped.Count);
     public string? PendingNote => Pending?.Note;
+
+    // ------------------------------------------------------------ Prerequis
+
+    /// <summary>Prerequis du mod dont la page est ouverte, avec leur etat dans le jeu cible.</summary>
+    public ObservableCollection<RequirementRow> Requirements { get; } = new();
+
+    private (string Domain, long ModId)? _reqFor;
+    private CancellationTokenSource? _reqCts;
+
+    private bool _onModPage;
+    public bool OnModPage { get => _onModPage; private set { if (Set(ref _onModPage, value)) OnPropertyChanged(nameof(NoRequirements)); } }
+
+    private bool _reqLoaded;
+    public bool NoRequirements => OnModPage && _reqLoaded && Requirements.Count == 0;
+    public bool HasRequirements => Requirements.Count > 0;
+
+    /// <summary>Page ouverte dans le navigateur : si c'est un mod, ses prerequis.</summary>
+    public async Task OnPageChangedAsync(string url)
+    {
+        var domain = NexusService.DomainOf(url);
+        var modId = NexusService.ModIdOf(url);
+        OnModPage = domain is not null && modId is not null;
+        if (!OnModPage) { ClearRequirements(); _reqFor = null; return; }
+        if (_reqFor == (domain!, modId!.Value)) return;
+        await LoadRequirementsAsync(domain!, modId!.Value);
+    }
+
+    private void ClearRequirements()
+    {
+        _reqCts?.Cancel();
+        Requirements.Clear();
+        _reqLoaded = false;
+        OnPropertyChanged(nameof(HasRequirements));
+        OnPropertyChanged(nameof(NoRequirements));
+    }
+
+    private async Task LoadRequirementsAsync(string domain, long modId)
+    {
+        ClearRequirements();
+        _reqFor = (domain, modId);
+        var cts = _reqCts = new CancellationTokenSource();
+        try
+        {
+            var list = await _svc.Requirements.AllAsync(domain, modId, cts.Token);
+            if (cts.IsCancellationRequested) return;
+            foreach (var r in list) Requirements.Add(new RequirementRow(r, url => NavigateRequested?.Invoke(url)));
+            _reqLoaded = true;
+            OnPropertyChanged(nameof(HasRequirements));
+            OnPropertyChanged(nameof(NoRequirements));
+            await CheckRequirementsAsync(domain, cts.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Log.Warn(Src, $"Requirements of {domain}/{modId}: {ex.Message}"); }
+    }
+
+    /// <summary>Etat de chaque prerequis dans le jeu de la bibliotheque qui correspond a ce domaine.</summary>
+    private async Task CheckRequirementsAsync(string domain, CancellationToken ct)
+    {
+        var game = GameFor(domain);
+        foreach (var row in Requirements.ToList())
+        {
+            if (ct.IsCancellationRequested) return;
+            if (game is null && !row.Req.External) continue;
+            try { row.State = game is null ? RequirementState.External : await _svc.Requirements.StateAsync(game, row.Req, ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { Log.Warn(Src, $"{row.Req.Name}: {ex.Message}"); }
+        }
+    }
+
+    /// <summary>Le jeu cible s'il correspond, sinon celui de la bibliotheque dont le domaine est connu.</summary>
+    private GameInfo? GameFor(string domain)
+    {
+        var target = _detail()?.Game;
+        if (target is not null && _svc.Nexus.CachedDomain(target) == domain) return target;
+        return _games().FirstOrDefault(g => _svc.Nexus.CachedDomain(g) == domain);
+    }
 
     public AsyncRelayCommand InstallToRootCommand { get; }
     public AsyncRelayCommand InstallToExeCommand { get; }
@@ -191,8 +314,7 @@ public sealed class NexusViewModel : ObservableObject
     private async Task ChooseAsync(ModLayout layout)
     {
         if (Pending is not { } plan || _pendingGame is not { } game) return;
-        plan.Layout = layout;
-        plan.Target = layout == ModLayout.GameRoot ? game.InstallDir : DllInstaller.TargetDirectory(game);
+        NexusModInstaller.Assign(plan, layout == ModLayout.GameRoot ? game.InstallDir : DllInstaller.TargetDirectory(game), layout);
         Pending = null;
         Busy = true;
         try { await InstallAsync(game, plan); }
@@ -224,6 +346,20 @@ public sealed class NexusViewModel : ObservableObject
         var conflicts = ConflictService.Evaluate(game);
         if (conflicts.Count > 0)
             SetStatus(result.Message + " · " + Loc.T("nexus.conflicts", string.Join(" · ", conflicts.Select(c => c.Title))), true);
+
+        // Prerequis : ceux qui manquent encore sont signales, et la liste de la page est mise a jour.
+        if (plan.Domain is { } domain && plan.ModId is { } modId)
+        {
+            try
+            {
+                var missing = new List<string>();
+                foreach (var req in await _svc.Requirements.AllAsync(domain, modId))
+                    if (await _svc.Requirements.StateAsync(game, req) == RequirementState.Missing) missing.Add(req.Name);
+                if (missing.Count > 0) SetStatus(result.Message + " · " + Loc.T("nexus.req.still_missing", string.Join(", ", missing)), true);
+            }
+            catch (Exception ex) { Log.Warn(Src, $"Requirements check after install: {ex.Message}"); }
+        }
+        if (_reqFor is { } shown) await CheckRequirementsAsync(shown.Domain, CancellationToken.None);
     }
 
     private void SetStatus(string message, bool error)
@@ -234,6 +370,7 @@ public sealed class NexusViewModel : ObservableObject
 
     public void Relocalize()
     {
+        foreach (var r in Requirements) r.Relocalize();
         OnPropertyChanged(nameof(PendingTitle));
     }
 }

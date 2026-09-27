@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "_about": "Ou poser les mods Nexus, jeu par jeu. Cle = domaine Nexus (verifie via l'API GraphQL v2). Sources : extensions Vortex de Nexus Mods (github.com/Nexus-Mods/vortex-games, GPL-3.0) et, pour Cyberpunk 2077, cyberpunk2077_ext_redux (installers.layouts.ts). modRoot = dossier des mods relatif au jeu ; stopFolders = dossiers de premier niveau qui ancrent une archive sur la racine du jeu ; markers = un fichier ou dossier qui designe un dossier de mod complet ; extensions = fichiers isoles. {dir} = nom du dossier du mod, {mod} = nom du mod.",
+  "games": {
+    "cyberpunk2077": {
+      "stopFolders": ["archive", "bin", "engine", "r6", "red4ext", "mods"],
+      "markers": [
+        { "file": "init.lua", "dest": "bin/x64/plugins/cyber_engine_tweaks/mods/{dir}" },
+        { "file": "info.json", "withSibling": ["archives", "scripts", "tweaks", "customSounds"], "dest": "mods/{dir}", "note": "nexus.note.redmod" }
+      ],
+      "extensions": [
+        { "ext": [".archive", ".xl"], "dest": "archive/pc/mod" },
+        { "ext": [".reds"], "dest": "r6/scripts/{mod}" },
+        { "ext": [".yaml", ".yml"], "dest": "r6/tweaks" },
+        { "ext": [".asi"], "dest": "bin/x64/plugins" }
+      ]
+    },
+    "witcher3": {
+      "modRoot": "Mods",
+      "stopFolders": ["bin", "dlc", "Mods", "content"],
+      "markers": [ { "dir": "content", "dest": "Mods/{dir}" } ]
+    },
+    "rimworld": { "modRoot": "Mods", "markers": [ { "file": "About.xml", "parentName": "About", "up": 1, "dest": "Mods/{dir}" } ] },
+    "kenshi": { "modRoot": "mods", "markers": [ { "ext": ".mod", "dest": "mods/{dir}" } ] },
+    "stardewvalley": { "modRoot": "Mods", "markers": [ { "file": "manifest.json", "dest": "Mods/{dir}" } ] },
+    "sekiro": { "modRoot": "mods" },
+    "darkestdungeon": { "modRoot": "mods" },
+    "x4foundations": { "modRoot": "extensions", "markers": [ { "file": "content.xml", "dest": "extensions/{dir}" } ] },
+    "kerbalspaceprogram": { "modRoot": "GameData", "stopFolders": ["GameData"] },
+    "teamfortress2": { "modRoot": "tf/custom" },
+    "grimdawn": { "modRoot": "mods" },
+    "dawnofman": { "modRoot": "Mods" },
+    "conanexiles": { "modRoot": "ConanSandbox/Mods", "extensions": [ { "ext": [".pak"], "dest": "ConanSandbox/Mods" } ] },
+    "monsterhunterworld": { "modRoot": "nativePC", "stopFolders": ["nativePC"] },
+    "baldursgate3": { "unsupported": "nexus.note.bg3" }
+  },
+  "bethesda": {
+    "_about": "Jeux Creation Engine / Gamebryo : un dossier Data avec des .esm. Vortex : queryModPath 'Data' (Skyrim, Fallout 3/4/NV, Oblivion, Enderal) et 'Data Files' (Morrowind).",
+    "dataFolders": ["Data", "Data Files"],
+    "pluginExtensions": [".esp", ".esm", ".esl", ".bsa", ".ba2"],
+    "dataStopFolders": ["meshes", "textures", "scripts", "interface", "sound", "music", "strings", "seq", "shadersfx", "lodsettings", "grass", "video", "materials", "skse", "f4se", "nvse", "obse", "fose", "sfse", "mcm", "calientetools", "netscriptframework", "facegen", "distantlod", "lod", "terrain", "trees", "shaders", "platform", "source", "vis", "geometries", "dialogueviews", "misc", "programs"]
+  }
+}

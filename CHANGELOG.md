@@ -31,6 +31,17 @@
   the mod shows under *Added by Prism* with a one-click *Remove*. When the right folder can't be
   told (FOMOD installers, unusual layouts), Prism lists the files and asks. Your Nexus login is
   kept between sessions. `.zip` and `.7z` work out of the box; `.rar` needs 7-Zip.
+- **Mod requirements.** Open a mod page and Prism lists what it needs, and what those need in
+  turn (a mod built on ArchiveXL also needs RED4ext). Each one shows *installed* or *missing* for
+  your game, even if you installed it by hand: Prism checks the requirement's own files on disk.
+  *Open* takes you to the missing one; download it and it's placed like any other.
+- **Smarter placement.** Every file of an archive gets its own destination. Cyberpunk 2077 follows
+  the layout of its official Vortex extension (`archive\pc\mod`, `r6\scripts`, `r6\tweaks`, CET
+  and REDmod folders). Bethesda games send plugins and assets to `Data`, script extenders to the
+  game folder. Unreal paks go to `~mods`, UE4SS mods to `ue4ss\Mods`, BepInEx and MelonLoader
+  plugins to their folders, and games with a mods folder (RimWorld, Stardew Valley, Witcher 3,
+  Kenshi, X4...) get one folder per mod, created when missing. Wrapper folders are ignored at any
+  depth. The rules live in `ModRules/rules.json` and update from GitHub without a new release.
 
 ### Fixed
 
