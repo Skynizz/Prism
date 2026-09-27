@@ -294,6 +294,7 @@
                     <TabItem><v:ComponentsPage /></TabItem>
                     <TabItem><v:LogsPage /></TabItem>
                     <TabItem><v:SettingsPage /></TabItem>
+                    <TabItem><v:NexusPage /></TabItem>
                 </TabControl>
             </Grid>
 

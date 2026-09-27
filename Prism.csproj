@@ -22,12 +22,20 @@
     <Description>Prism — DLSS 5, Multi Frame Generation, HDR RenoDX and ReShade, installed and tracked file by file.</Description>
     <!-- Icone de l'executable : explorateur, barre des taches, raccourcis. -->
     <ApplicationIcon>Assets\Prism.ico</ApplicationIcon>
+    <!-- Les notices .xml des paquets (WebView2) n'ont rien a faire a cote de Prism.exe. -->
+    <AllowedReferenceRelatedFileExtensions>.pdb</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Icone de la fenetre, et ecran natif affiche des le lancement, avant WPF. -->
     <Resource Include="Assets\Prism.ico" />
     <SplashScreen Include="Assets\splash.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Seule dependance : le controle WPF de WebView2 (Microsoft), pour la page Nexus Mods.
+         Le moteur, lui, est le runtime Edge deja present sur Windows 10 et 11. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
 
   <ItemGroup>

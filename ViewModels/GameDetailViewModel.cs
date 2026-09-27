@@ -2003,6 +2003,10 @@ public sealed class GameDetailViewModel : ObservableObject
         Refresh();
     }
 
+    /// <summary>ReShade pret a charger addons et presets ; installe s'il manque.</summary>
+    public Task<bool> EnsureReShadeAsync()
+        => HdrInstaller.ReShadeReady(Game) ? Task.FromResult(true) : InstallReShadeAsync();
+
     private async Task<bool> InstallReShadeAsync()
     {
         if (!Guard()) return false;

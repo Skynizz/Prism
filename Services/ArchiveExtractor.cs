@@ -28,6 +28,12 @@ public static class ArchiveExtractor
                 await ExtractSevenZipAsync(archive, targetDir, ct);
                 return targetDir;
 
+            // 7zr.exe ne lit que le .7z : une archive .rar exige 7-Zip complet.
+            case ".rar":
+                if (FullSevenZip() is null) throw new NotSupportedException(Loc.T("err.rar_needs_7zip"));
+                await ExtractSevenZipAsync(archive, targetDir, ct);
+                return targetDir;
+
             default:
                 throw new NotSupportedException(Loc.T("err.archive_format", ext));
         }
@@ -77,21 +83,23 @@ public static class ArchiveExtractor
             throw new InvalidOperationException(Loc.T("err.7zr_failed", proc.ExitCode, stderr + stdout));
     }
 
+    /// <summary>7z.exe d'une installation 7-Zip, qui lit aussi le .rar.</summary>
+    public static string? FullSevenZip()
+        => new[]
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "7-Zip", "7z.exe")
+            }
+            .FirstOrDefault(File.Exists);
+
     /// <summary>Recupere 7zr.exe (environ 600 Ko) la premiere fois qu'une archive .7z se presente.</summary>
     public static async Task<string> EnsureSevenZrAsync(CancellationToken ct = default)
     {
+        // Une installation 7-Zip deja presente evite le telechargement.
+        if (FullSevenZip() is { } full) return full;
+
         var exe = Path.Combine(AppPaths.Tools, "7zr.exe");
         if (File.Exists(exe) && new FileInfo(exe).Length > 100_000) return exe;
-
-        // Une installation 7-Zip deja presente evite le telechargement.
-        foreach (var candidate in new[]
-                 {
-                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe"),
-                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "7-Zip", "7z.exe")
-                 })
-        {
-            if (File.Exists(candidate)) return candidate;
-        }
 
         Log.Write("Downloading 7zr.exe to extract .7z archives");
         await new DownloadService().DownloadAsync(SevenZrUrl, exe, null, null, ct);

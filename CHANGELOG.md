@@ -23,6 +23,14 @@
   (DLSS, frame generation). The Unreal version is read from the binary (*Unreal 4.26*). Unreal 3
   games are recognised, even 32-bit ones, and no longer get a generic HDR mod that can't work on
   them. On Unreal 4, the HDR steps drop the UE5-only advice.
+- **Nexus Mods inside Prism.** A new page opens the Nexus site on the selected game's mods. Hit
+  *Manual download* or *Mod Manager Download* and the archive comes to Prism instead of your
+  Downloads folder. Prism reads it and puts it where it belongs: the game folder when the archive
+  mirrors it, `~mods` for Unreal paks, next to the executable for ReShade add-ons, presets and
+  proxy DLLs. ReShade is installed first when a mod needs it. Replaced files are backed up, and
+  the mod shows under *Added by Prism* with a one-click *Remove*. When the right folder can't be
+  told (FOMOD installers, unusual layouts), Prism lists the files and asks. Your Nexus login is
+  kept between sessions. `.zip` and `.7z` work out of the box; `.rar` needs 7-Zip.
 
 ### Fixed
 

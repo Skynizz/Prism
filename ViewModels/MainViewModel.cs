@@ -48,12 +48,15 @@ public sealed class MainViewModel : ObservableObject
             new() { Key = "nav.dlss",         Icon = "IcoDlss",       Index = 2, Group = "PIPELINE" },
             new() { Key = "nav.framegen",    Icon = "IcoFrameGen",   Index = 3, Group = "PIPELINE" },
             new() { Key = "nav.injection",    Icon = "IcoInjection",  Index = 4, Group = "PIPELINE" },
+            // Ajoutee apres coup : son index suit les pages existantes, dont les numeros servent ailleurs.
+            new() { Key = "nav.nexus",        Icon = "IcoNexus",      Index = 9, Group = "PIPELINE" },
             new() { Key = "nav.changes",      Icon = "IcoChanges",    Index = 5, Group = "TOOLING" },
             new() { Key = "nav.components",   Icon = "IcoComponents", Index = 6, Group = "TOOLING" },
             new() { Key = "nav.logs",         Icon = "IcoLogs",       Index = 7, Group = "TOOLING" },
             new() { Key = "nav.settings",     Icon = "IcoSettings",   Index = 8, Group = "TOOLING" }
         };
         SelectedNav = Nav[0];
+        Nexus = new NexusViewModel(_svc, () => Detail, () => Games, Notify);
 
         // Le rail est groupe par famille : SYSTEM, PIPELINE, TOOLING.
         NavView = CollectionViewSource.GetDefaultView(Nav);
@@ -152,6 +155,7 @@ public sealed class MainViewModel : ObservableObject
         foreach (var item in Nav) item.Relocalize();
         foreach (var component in Components) component.Relocalize();
         Detail?.Relocalize();
+        Nexus.Relocalize();
         ReloadChanges();
         ReloadBackups();
         RaiseCatalogProps();
@@ -311,6 +315,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public bool HasSelection => Detail is not null;
+
+    public NexusViewModel Nexus { get; }
 
     // ------------------------------------------------------------ Adaptatif
 

@@ -188,6 +188,8 @@
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoFrameGen}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoInjection">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoInjection}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoNexus">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoNexus}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">

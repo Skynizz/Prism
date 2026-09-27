@@ -1,0 +1,116 @@
+<UserControl x:Class="Prism.Views.NexusPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             xmlns:l="clr-namespace:Prism.Core"
+             FontFamily="{DynamicResource FontUi}">
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <!-- ============================================== NAVIGATION -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource S.Toolbar}" DataContext="{Binding Nexus}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource Btn.Quiet}" Click="OnBack" ToolTip="{l:T nexus.back}">
+                        <Path Data="{DynamicResource IcoChevron}" Style="{StaticResource S.IconSm}"
+                              Stroke="{DynamicResource BrFg2}" RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform><RotateTransform Angle="90" /></Path.RenderTransform>
+                        </Path>
+                    </Button>
+                    <Button Style="{StaticResource Btn.Quiet}" Click="OnForward" ToolTip="{l:T nexus.forward}">
+                        <Path Data="{DynamicResource IcoChevron}" Style="{StaticResource S.IconSm}"
+                              Stroke="{DynamicResource BrFg2}" RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform><RotateTransform Angle="-90" /></Path.RenderTransform>
+                        </Path>
+                    </Button>
+                    <Button Style="{StaticResource Btn.Quiet}" Click="OnReload" ToolTip="{l:T nexus.reload}">
+                        <Path Data="{DynamicResource IcoRefresh}" Style="{StaticResource S.IconSm}"
+                              Stroke="{DynamicResource BrFg2}" />
+                    </Button>
+                    <Button Style="{StaticResource Btn.Quiet}" Click="OnHome" Margin="4,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{DynamicResource IcoGames}" Style="{StaticResource S.IconSm}"
+                                  Stroke="{DynamicResource BrFg2}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T nexus.home}" Margin="7,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" Text="{Binding Url}" Style="{StaticResource T.MonoDim}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="14,0" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ProgressBar Width="110" Height="4" Value="{Binding Progress, Mode=OneWay}" Maximum="100"
+                                 VerticalAlignment="Center" Margin="0,0,10,0"
+                                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolVis}}" />
+                    <TextBlock Text="{Binding Status}" MaxWidth="560" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" ToolTip="{Binding Status}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource T.Sec}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource BrErr}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource T.Prose}" Margin="16,8,16,0"
+                   Text="{l:T nexus.help}" />
+
+        <!-- ============================== EMPLACEMENT A CHOISIR -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource S.Notice}" Margin="16,10,16,0" DataContext="{Binding Nexus}"
+                Visibility="{Binding HasPending, Converter={StaticResource BoolVis}}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Style="{StaticResource Btn.Primary}" Content="{l:T nexus.to_root}"
+                            Command="{Binding InstallToRootCommand}" />
+                    <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.to_exe}" Margin="8,0,0,0"
+                            Command="{Binding InstallToExeCommand}" />
+                    <Button Style="{StaticResource Btn.Quiet}" Content="{l:T reset.cancel}" Margin="8,0,0,0"
+                            Command="{Binding DismissCommand}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="{Binding PendingTitle}" Style="{StaticResource T.Strong}" />
+                    <TextBlock Text="{Binding PendingNote}" Style="{StaticResource T.Sec}" Margin="0,3,0,0"
+                               TextWrapping="Wrap" />
+                    <ScrollViewer MaxHeight="130" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding PendingFiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource T.MonoDim}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ================================================= SITE -->
+        <Grid Margin="0,10,0,0">
+            <ContentControl x:Name="Host" />
+            <StackPanel Style="{StaticResource S.Empty}" DataContext="{Binding Nexus}"
+                        Visibility="{Binding RuntimeMissing, Converter={StaticResource BoolVis}}">
+                <Path Data="{DynamicResource IcoNexus}" Style="{StaticResource S.Icon}"
+                      Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                      HorizontalAlignment="Center" />
+                <TextBlock Text="{l:T nexus.runtime_missing}" Style="{StaticResource T.Sec}"
+                           HorizontalAlignment="Center" Margin="0,12,0,0" />
+                <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.runtime_get}" Click="OnGetRuntime"
+                        HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

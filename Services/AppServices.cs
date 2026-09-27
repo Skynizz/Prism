@@ -39,6 +39,8 @@ public sealed class AppServices
         Diagnostics = new DiagnosticService(Downloads, Rhi, Deployments);
         Cleaner = new LeftoverCleaner(Changes, Profiles);
         Identity = new GameIdentityService(Downloads, Settings);
+        Nexus = new NexusService();
+        NexusMods = new NexusModInstaller(Backups, Deployments);
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -74,6 +76,8 @@ public sealed class AppServices
     public DiagnosticService Diagnostics { get; }
     public LeftoverCleaner Cleaner { get; }
     public GameIdentityService Identity { get; }
+    public NexusService Nexus { get; }
+    public NexusModInstaller NexusMods { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }

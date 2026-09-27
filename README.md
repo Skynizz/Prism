@@ -438,15 +438,16 @@ Prism/
 ├─ Models/        games, DLLs, GPU, paths, change registry, HDR plans
 ├─ Services/      scan, detection, downloads, signatures, installers, transactions,
 │                 change registry, vanilla restore, RenoDX wiki, self-update
-├─ ViewModels/    MainViewModel (shell), GameDetailViewModel
-├─ Views/         window + 9 pages, Controls/
+├─ ViewModels/    MainViewModel (shell), GameDetailViewModel, NexusViewModel
+├─ Views/         window + 10 pages, Controls/
 ├─ Themes/        Classic and Studio design tokens and styles
 ├─ Assets/        icon, splash screen, installer artwork
 ├─ installer/     Inno Setup script
 └─ scripts/       release.ps1
 ```
 
-Zero NuGet dependencies.
+One NuGet package: Microsoft.Web.WebView2, for the Nexus Mods page. The browser engine is the
+WebView2 runtime that ships with Windows 10 and 11.
 </details>
 
 ---
