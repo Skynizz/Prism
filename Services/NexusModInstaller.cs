@@ -21,6 +21,8 @@ public sealed class ModPlan
 {
     public required string Archive { get; init; }
     public required string Name { get; init; }
+    /// <summary>Nom du fichier sur Nexus (« LUTSwitcher Addon Misc ») : un mod peut en avoir plusieurs.</summary>
+    public string? FileLabel { get; init; }
     public string? Version { get; init; }
     public string? Domain { get; init; }
     public long? ModId { get; init; }
@@ -50,7 +52,21 @@ public sealed class ModPlan
     /// <summary>Remarques a montrer apres l'installation (REDmod a deployer...).</summary>
     public List<string> AfterNotes { get; } = new();
 
-    public string Origin => $"Nexus · {Name}";
+    /// <summary>
+    /// Identite de l'installation : le mod et, s'il differe du nom du mod, le fichier. Deux fichiers
+    /// d'un meme mod (principal + option) coexistent ; une nouvelle version du meme fichier remplace l'ancienne.
+    /// </summary>
+    public string Origin => FileLabel is null || Same(FileLabel, Name) ? $"Nexus · {Name}" : $"Nexus · {Name} · {FileLabel}";
+
+    private static bool Same(string a, string b)
+    {
+        var na = RenoDxWikiService.Normalize(a);
+        var nb = RenoDxWikiService.Normalize(b);
+        return na == nb || na.StartsWith(nb, StringComparison.Ordinal) && na.Length - nb.Length <= 8 && IsNumber(na[nb.Length..]);
+    }
+
+    /// <summary>Reste purement numerique (« CET Window Manager 2.1.1 » face a « CET Window Manager »).</summary>
+    private static bool IsNumber(string rest) => rest.All(char.IsDigit);
 }
 
 /// <summary>Trace d'un mod Nexus installe, pour retrouver sa page, ses prerequis et ses mises a jour.</summary>
@@ -97,6 +113,13 @@ public sealed class NexusModInstaller
 
     public static List<NexusInstall> Installed() => JsonStore.Load(StoreFile, () => new List<NexusInstall>());
 
+    /// <summary>Oublie un mod retire : il ne compte plus comme prerequis installe.</summary>
+    public static void Forget(string gameId, string origin)
+    {
+        var list = Installed();
+        if (list.RemoveAll(i => i.GameId == gameId && i.Origin == origin) > 0) JsonStore.Save(StoreFile, list);
+    }
+
     private static readonly string[] ProxyDlls =
     { "dxgi.dll", "d3d9.dll", "d3d11.dll", "d3d12.dll", "dinput8.dll", "version.dll", "winmm.dll", "dwmapi.dll", "winhttp.dll", "opengl32.dll" };
 
@@ -112,16 +135,19 @@ public sealed class NexusModInstaller
 
     // ------------------------------------------------------------------ Analyse
 
-    public async Task<ModPlan> AnalyzeAsync(GameInfo game, string archive, string? domain, string? pageTitle, CancellationToken ct = default)
+    public async Task<ModPlan> AnalyzeAsync(GameInfo game, string archive, string? domain, string? pageTitle,
+        CancellationToken ct = default, long? pageModId = null)
     {
-        var (fileName, modId, version) = NexusService.ParseArchiveName(archive);
+        var (fileName, archiveModId, version) = NexusService.ParseArchiveName(archive);
         var name = NexusService.ModNameFromTitle(pageTitle) ?? fileName;
+        // Le numero de la page ouverte fait foi ; celui du nom d'archive sert a defaut.
+        var modId = pageModId ?? archiveModId;
 
         var work = Path.Combine(NexusService.Downloads, "extract", AppPaths.Sanitize(Path.GetFileNameWithoutExtension(archive)));
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         await ArchiveExtractor.ExtractAsync(archive, work, ct);
 
-        var plan = new ModPlan { Archive = archive, Name = name, Version = version, Domain = domain, ModId = modId, Source = work };
+        var plan = new ModPlan { Archive = archive, Name = name, FileLabel = fileName, Version = version, Domain = domain, ModId = modId, Source = work };
 
         foreach (var f in Directory.EnumerateFiles(work, "*", SearchOption.AllDirectories))
         {
@@ -199,7 +225,7 @@ public sealed class NexusModInstaller
                                                              || File.Exists(Path.Combine(_exeDir, "UE4SS.dll"))));
             _bepInEx = Directory.Exists(Path.Combine(_root, "BepInEx"));
             _melon = Directory.Exists(Path.Combine(_root, "MelonLoader"));
-            _modName = AppPaths.Sanitize(plan.Name);
+            _modName = AppPaths.Sanitize(plan.FileLabel ?? plan.Name);
             _rootDirs = SubDirs(_root);
             _exeDirs = SameDir(_exeDir, _root) ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : SubDirs(_exeDir);
         }
@@ -510,8 +536,34 @@ public sealed class NexusModInstaller
         }
         foreach (var old in previous.Where(p => !targets.Contains(p))) tx.Delete(old);
 
+        // Un fichier du mod prend le nom d'un OptiScaler (RED4ext et winmm.dll) : OptiScaler change
+        // de nom dans la meme transaction. Retirer le mod remet tout comme avant.
+        var moved = new List<(string From, string To, DeployedFile? Owner)>();
+        foreach (var dest in targets.ToList())
+        {
+            if (!File.Exists(dest) || !LeftoverCleaner.IsOptiScaler(dest)) continue;
+            var dir = Path.GetDirectoryName(dest)!;
+            var taken = targets.Where(t => string.Equals(Path.GetDirectoryName(t), dir, StringComparison.OrdinalIgnoreCase)).Select(Path.GetFileName)!;
+            if (FrameGenService.PickProxyName(dir, taken!) is not { } free)
+                return new InstallResult(false, Loc.T("nexus.err.proxy_full", Path.GetFileName(dest)));
+            var to = Path.Combine(dir, free);
+            var owner = _deployments.For(game.Id).FirstOrDefault(e => string.Equals(e.Path, dest, StringComparison.OrdinalIgnoreCase));
+            // A Prism : l'OptiScaler garde son proprietaire. Pose par un autre outil : il suit le mod.
+            // Copie prise avant la transaction : celle-ci ecrit d'abord le fichier du mod a la place.
+            var keep = Path.Combine(NexusService.Downloads, $"optiscaler-{Guid.NewGuid():N}.dll");
+            File.Copy(dest, keep, overwrite: true);
+            tx.Copy(keep, to, "OptiScaler", owner?.Version ?? "", track: owner is null);
+            moved.Add((dest, to, owner));
+        }
+
         var result = tx.Commit();
         if (!result.Success) return result;
+
+        foreach (var (from, to, owner) in moved)
+        {
+            if (owner is not null) _deployments.Record(game, to, owner.Component, owner.Version, owner.Kind, owner.Md5, owner.Sha256, owner.Origin);
+            Log.Info(Src, $"OptiScaler moved {Path.GetFileName(from)} → {Path.GetFileName(to)} for {plan.Origin}");
+        }
 
         var list = Installed();
         list.RemoveAll(i => i.GameId == game.Id && i.Origin == plan.Origin);
@@ -524,6 +576,7 @@ public sealed class NexusModInstaller
 
         Log.Info(Src, $"{plan.Origin}: {targets.Count} file(s) → {plan.Target}");
         var msg = Loc.T("nexus.ok", plan.Name, targets.Count, plan.Target ?? game.InstallDir);
+        foreach (var (from, to, _) in moved) msg += " " + Loc.T("nexus.opti_moved", Path.GetFileName(from), Path.GetFileName(to));
         if (plan.AfterNotes.Count > 0) msg += " " + string.Join(" ", plan.AfterNotes);
         return new InstallResult(true, msg, targets.Count);
     }

@@ -47,6 +47,18 @@ public static class ConflictService
             list.Add(new ModConflict("conflict-optiscaler", UiStatus.Error, Loc.T("conflict.optiscaler_double"),
                 string.Join(" + ", opti), DiagnosisFix.Clean));
 
+        // Nom reserve a un chargeur de mods du jeu (Cyberpunk : winmm.dll pour RED4ext, version.dll pour CET).
+        foreach (var name in ModRules.ReservedProxies(dir))
+        {
+            var path = Path.Combine(dir, name);
+            if (!File.Exists(path)) continue;
+            var who = LeftoverCleaner.IsOptiScaler(path) ? "OptiScaler"
+                : ReShadeLocator.Scan(dir).Active.Any(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) ? "ReShade" : null;
+            if (who is not null)
+                list.Add(new ModConflict("conflict-reserved-" + name, UiStatus.Warning, Loc.T("conflict.reserved", who, name),
+                    Loc.T("conflict.reserved_ev", name), DiagnosisFix.None));
+        }
+
         if (LeftoverCleaner.HasRhiTraces(game))
             list.Add(new ModConflict("leftovers-rhi", UiStatus.Warning, Loc.T("conflict.rhi_leftovers"),
                 Loc.T("conflict.rhi_leftovers_ev"), DiagnosisFix.Clean));

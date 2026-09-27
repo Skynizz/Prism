@@ -122,13 +122,17 @@ public sealed partial class NexusService
     }
 
     /// <summary>
-    /// Nom et version d'apres le nom d'archive que donne Nexus :
-    /// « Cyber Engine Tweaks-107-1-32-3-1712345678.zip » → (« Cyber Engine Tweaks », 107, « 1.32.3 »).
+    /// Nom du fichier, numero du mod et version d'apres le nom d'archive que donne Nexus. Deux formes :
+    ///  - ancienne : « Cyber Engine Tweaks-107-1-32-3-1712345678.zip » ;
+    ///  - actuelle : « ArchiveXL 4198 1.27.3 2026-09-07T10-15Z aI50IA5YP.zip ».
+    /// Le nom est celui du fichier sur Nexus : un mod peut en avoir plusieurs (principal, options).
     /// </summary>
     public static (string Name, long? ModId, string? Version) ParseArchiveName(string file)
     {
         var stem = Path.GetFileNameWithoutExtension(file);
-        var m = ArchiveRegex().Match(stem);
+        var m = CurrentArchiveRegex().Match(stem);
+        if (m.Success) return (m.Groups[1].Value.Trim(), long.Parse(m.Groups[2].Value), m.Groups[3].Value);
+        m = ArchiveRegex().Match(stem);
         if (!m.Success) return (stem, null, null);
         var version = m.Groups[3].Success ? m.Groups[3].Value.Replace('-', '.') : "";
         return (m.Groups[1].Value.Trim(), long.Parse(m.Groups[2].Value), version.Length == 0 ? null : version);
@@ -153,6 +157,9 @@ public sealed partial class NexusService
 
     [GeneratedRegex(@"^(.+?)-(\d+)-(?:(.*)-)?(\d{10})$")]
     private static partial Regex ArchiveRegex();
+
+    [GeneratedRegex(@"^(.+) (\d+) (\S+) \d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z \w+$")]
+    private static partial Regex CurrentArchiveRegex();
 
     [GeneratedRegex(@"[^\p{L}\p{Nd}]+")]
     private static partial Regex NonWord();

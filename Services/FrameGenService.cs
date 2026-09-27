@@ -436,10 +436,15 @@ public sealed class FrameGenService
     /// Choisit un nom de DLL proxy encore libre. ReShade occupe souvent dxgi.dll ;
     /// ecraser ce fichier casserait les deux mods a la fois.
     /// </summary>
-    public static string? PickProxyName(string dir)
-        => DllDetector.ProxyNames
+    public static string? PickProxyName(string dir, IEnumerable<string>? alsoTaken = null)
+    {
+        // Un nom qu'un chargeur de mods du jeu utilise (RED4ext, CET...) ne sert jamais a OptiScaler.
+        var reserved = ModRules.ReservedProxies(dir);
+        var taken = new HashSet<string>(alsoTaken ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+        return DllDetector.ProxyNames
             .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault(n => !File.Exists(Path.Combine(dir, n)));
+            .FirstOrDefault(n => !reserved.Contains(n) && !taken.Contains(n) && !File.Exists(Path.Combine(dir, n)));
+    }
 
     /// <summary>Les six binaires Streamline du DLSS-G injecte sont en place et identiques aux empreintes epinglees.</summary>
     public static bool InjectedStreamlineIntact(string dir)

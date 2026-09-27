@@ -40,6 +40,14 @@ public sealed class GameModRule
     public string? Unsupported { get; set; }
 }
 
+/// <summary>Noms de DLL proxy qu'un chargeur de mods du jeu occupe : OptiScaler et ReShade doivent les laisser libres.</summary>
+public sealed class ProxyReservation
+{
+    public string Exe { get; set; } = "";
+    public List<string> Names { get; set; } = new();
+    public string? Why { get; set; }
+}
+
 public sealed class BethesdaRule
 {
     public List<string> DataFolders { get; set; } = new();
@@ -62,6 +70,20 @@ public static class ModRules
     private static int _version;
     public static Dictionary<string, GameModRule> Games { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
     public static BethesdaRule Bethesda { get; private set; } = new();
+    public static List<ProxyReservation> Reservations { get; private set; } = new();
+
+    /// <summary>
+    /// Noms de proxy reserves dans ce dossier : ceux des chargeurs de mods du jeu dont
+    /// l'executable s'y trouve (Cyberpunk : winmm.dll pour RED4ext, version.dll pour CET).
+    /// </summary>
+    public static HashSet<string> ReservedProxies(string dir)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var r in Reservations)
+            if (File.Exists(Path.Combine(dir, r.Exe)))
+                foreach (var n in r.Names) set.Add(n);
+        return set;
+    }
 
     static ModRules()
     {
@@ -102,6 +124,9 @@ public static class ModRules
                 games[p.Name] = p.Value.Deserialize<GameModRule>(Options) ?? new GameModRule();
 
         Games = games;
+        Reservations = root.TryGetProperty("proxyReservations", out var pr)
+            ? pr.Deserialize<List<ProxyReservation>>(Options) ?? new List<ProxyReservation>()
+            : new List<ProxyReservation>();
         if (root.TryGetProperty("bethesda", out var b))
             Bethesda = b.Deserialize<BethesdaRule>(Options) ?? new BethesdaRule();
         _version = root.TryGetProperty("version", out var v) ? v.GetInt32() : 0;

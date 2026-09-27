@@ -395,7 +395,7 @@ public sealed class NexusViewModel : ObservableObject
             }
 
             SetStatus(Loc.T("nexus.analyzing", Path.GetFileName(file)), false);
-            var plan = await _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle);
+            var plan = await _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle, pageModId: NexusService.ModIdOf(pageUrl));
 
             if (plan.Blocked) { SetStatus(plan.Note!, true); return; }
             if (plan.Layout == ModLayout.Unknown) { _pendingGame = game; Pending = plan; SetStatus(plan.Note!, false); return; }

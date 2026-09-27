@@ -34,6 +34,10 @@ public sealed class NexusRequirements
     private static readonly string[] KeyExtensions =
     { ".dll", ".asi", ".exe", ".esp", ".esm", ".esl", ".archive", ".pak", ".lua", ".reds", ".xl", ".ba2", ".bsa", ".pex", ".addon64" };
 
+    private readonly DeploymentStore _deployments;
+
+    public NexusRequirements(DeploymentStore deployments) => _deployments = deployments;
+
     private readonly Dictionary<string, long> _gameIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(long, long), List<ModRequirement>> _direct = new();
     private readonly Dictionary<(long, long), List<(string Path, long Size)>> _contents = new();
@@ -128,24 +132,41 @@ public sealed class NexusRequirements
     {
         if (req.External) return RequirementState.External;
 
+        // Pose par Prism et toujours en place : ses fichiers sont encore au registre et sur le disque.
+        // Un mod retire garde sa trace d'installation, mais plus aucun fichier : il ne compte pas.
         if (NexusModInstaller.Installed().Any(i => i.GameId == game.Id && i.ModId == req.ModId && StillThere(game, i)))
             return RequirementState.Installed;
 
         var files = await MainFilesAsync(req.GameId, req.ModId, ct);
-        var keys = files.Where(f => KeyExtensions.Contains(Path.GetExtension(f.Path).ToLowerInvariant()))
-                        .OrderByDescending(f => f.Size).Take(4).ToList();
-        if (keys.Count == 0) keys = files.OrderByDescending(f => f.Size).Take(2).ToList();
-        return keys.Any(k => ExistsInGame(game, k.Path)) ? RequirementState.Installed : RequirementState.Missing;
+
+        // Un nom de DLL proxy (winmm.dll, version.dll...) ne prouve rien : OptiScaler ou ReShade
+        // peuvent le porter. Il ne compte que si sa taille est exactement celle du prerequis.
+        bool Generic(string path) => ProxyNames.Contains(Path.GetFileName(path));
+        var keys = files.Where(f => KeyExtensions.Contains(Path.GetExtension(f.Path).ToLowerInvariant()) && !Generic(f.Path))
+                        .OrderByDescending(f => f.Size).ToList();
+        if (keys.Count > 0)
+        {
+            // Le fichier le plus caracteristique (le plus gros) doit etre la : RED4ext.dll, pas seulement winmm.dll.
+            return ExistsInGame(game, keys[0].Path) ? RequirementState.Installed : RequirementState.Missing;
+        }
+        var proxies = files.Where(f => Generic(f.Path)).ToList();
+        if (proxies.Count > 0)
+            return proxies.All(p => ExistsInGame(game, p.Path, p.Size)) ? RequirementState.Installed : RequirementState.Missing;
+        var any = files.OrderByDescending(f => f.Size).FirstOrDefault();
+        return any.Path is not null && ExistsInGame(game, any.Path) ? RequirementState.Installed : RequirementState.Missing;
     }
 
-    private static bool StillThere(GameInfo game, NexusInstall install)
-        => install.Target.Length == 0 || Directory.Exists(install.Target);
+    private bool StillThere(GameInfo game, NexusInstall install)
+        => _deployments.For(game.Id).Any(e => string.Equals(e.Origin, install.Origin, StringComparison.Ordinal) && File.Exists(e.Path));
 
     /// <summary>
     /// Le chemin d'archive d'un fichier retrouve dans le jeu : tel quel depuis la racine, depuis
     /// le dossier de l'exe, depuis Data, ou apres un ou deux dossiers d'emballage.
     /// </summary>
-    public static bool ExistsInGame(GameInfo game, string archivePath)
+    private static readonly HashSet<string> ProxyNames = new(
+        ReShadeLocator.ProxyNames.Concat(DllDetector.ProxyNames), StringComparer.OrdinalIgnoreCase);
+
+    public static bool ExistsInGame(GameInfo game, string archivePath, long? size = null)
     {
         var seg = archivePath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
         var bases = new List<string> { game.InstallDir, DllInstaller.TargetDirectory(game) };
@@ -153,7 +174,7 @@ public sealed class NexusRequirements
         for (var skip = 0; skip < Math.Min(3, seg.Length); skip++)
         {
             var tail = Path.Combine(seg.Skip(skip).ToArray());
-            if (bases.Any(b => File.Exists(Path.Combine(b, tail)))) return true;
+            if (bases.Any(b => File.Exists(Path.Combine(b, tail)) && (size is null || new FileInfo(Path.Combine(b, tail)).Length == size))) return true;
         }
         return false;
     }

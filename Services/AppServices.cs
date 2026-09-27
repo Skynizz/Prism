@@ -41,7 +41,7 @@ public sealed class AppServices
         Identity = new GameIdentityService(Downloads, Settings);
         Nexus = new NexusService();
         NexusMods = new NexusModInstaller(Backups, Deployments);
-        Requirements = new NexusRequirements();
+        Requirements = new NexusRequirements(Deployments);
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,

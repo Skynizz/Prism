@@ -1451,6 +1451,7 @@ public sealed class GameDetailViewModel : ObservableObject
             }
 
             done += _svc.Changes.RevertOrigin(Game.Id, origin);
+            if (origin.StartsWith("Nexus · ", StringComparison.Ordinal)) NexusModInstaller.Forget(Game.Id, origin);
 
             // Les inscriptions laissees dans ReShade.ini par l'addon retire.
             done += origin switch

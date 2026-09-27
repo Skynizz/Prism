@@ -49,6 +49,18 @@
 
 ### Fixed
 
+- Nexus now names archives `ArchiveXL 4198 1.27.3 2026-09-07T10-15Z ....zip`; Prism reads the mod
+  number from that form too, and from the page itself first.
+- A mod removed with *Remove* still counted as an installed requirement, so nothing was reported
+  missing afterwards.
+- A requirement was reported installed as soon as a file with the same name existed: an OptiScaler
+  on `winmm.dll` passed for RED4ext. Generic DLL names now only count when the size matches.
+- Installing an optional file of a mod deleted the mod's main file. Each Nexus file is now its own
+  install; a new version of the same file still replaces the old one.
+- OptiScaler could take `winmm.dll` or `version.dll` in Cyberpunk 2077, the names RED4ext and
+  Cyber Engine Tweaks load through. It no longer picks them, Prism flags an OptiScaler already
+  sitting there, and installing the loader moves OptiScaler to a free name in the same step.
+
 - Mods set aside by Prism showed up under *Added by Prism*, where *Remove* would have put them
   back into the game.
 - A version recorded as `5` by older builds was shown next to *RenoDX DLSS 5*.

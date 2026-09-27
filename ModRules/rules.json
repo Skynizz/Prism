@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "_about": "Ou poser les mods Nexus, jeu par jeu. Cle = domaine Nexus (verifie via l'API GraphQL v2). Sources : extensions Vortex de Nexus Mods (github.com/Nexus-Mods/vortex-games, GPL-3.0) et, pour Cyberpunk 2077, cyberpunk2077_ext_redux (installers.layouts.ts). modRoot = dossier des mods relatif au jeu ; stopFolders = dossiers de premier niveau qui ancrent une archive sur la racine du jeu ; markers = un fichier ou dossier qui designe un dossier de mod complet ; extensions = fichiers isoles. {dir} = nom du dossier du mod, {mod} = nom du mod.",
   "games": {
     "cyberpunk2077": {
@@ -34,6 +34,9 @@
     "monsterhunterworld": { "modRoot": "nativePC", "stopFolders": ["nativePC"] },
     "baldursgate3": { "unsupported": "nexus.note.bg3" }
   },
+  "proxyReservations": [
+    { "exe": "Cyberpunk2077.exe", "names": ["winmm.dll", "version.dll"], "why": "RED4ext (bin/x64/winmm.dll) et Cyber Engine Tweaks (bin/x64/version.dll) : contenus Nexus des mods 2380 et 107, et RED4EXT_CORE_ONE_NINE_HOOK_DLL de cyberpunk2077_ext_redux." }
+  ],
   "bethesda": {
     "_about": "Jeux Creation Engine / Gamebryo : un dossier Data avec des .esm. Vortex : queryModPath 'Data' (Skyrim, Fallout 3/4/NV, Oblivion, Enderal) et 'Data Files' (Morrowind).",
     "dataFolders": ["Data", "Data Files"],
