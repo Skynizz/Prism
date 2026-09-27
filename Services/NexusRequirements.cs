@@ -37,6 +37,28 @@ public sealed class NexusRequirements
     private readonly Dictionary<string, long> _gameIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<(long, long), List<ModRequirement>> _direct = new();
     private readonly Dictionary<(long, long), List<(string Path, long Size)>> _contents = new();
+    private readonly Dictionary<(long, long), List<long>> _mainFiles = new();
+
+    /// <summary>Fichier principal le plus recent d'un mod : sa page de telechargement est celle a ouvrir.</summary>
+    public async Task<long?> MainFileIdAsync(long gameId, long modId, CancellationToken ct = default)
+    {
+        var ids = await MainFileIdsAsync(gameId, modId, ct);
+        return ids.Count > 0 ? ids[0] : null;
+    }
+
+    private async Task<List<long>> MainFileIdsAsync(long gameId, long modId, CancellationToken ct)
+    {
+        if (_mainFiles.TryGetValue((gameId, modId), out var cached)) return cached;
+        using var files = await QueryAsync("query($m:ID!,$g:ID!){ modFiles(modId:$m, gameId:$g){ fileId category date } }",
+            new { m = modId.ToString(), g = gameId.ToString() }, ct);
+        var ids = files.RootElement.GetProperty("data").GetProperty("modFiles").EnumerateArray()
+            .Where(f => f.GetProperty("category").GetString() == "MAIN")
+            .OrderByDescending(f => f.GetProperty("date").GetInt64())
+            .Select(f => f.GetProperty("fileId").GetInt64())
+            .ToList();
+        _mainFiles[(gameId, modId)] = ids;
+        return ids;
+    }
 
     public async Task<long?> GameIdAsync(string domain, CancellationToken ct = default)
     {
@@ -142,14 +164,8 @@ public sealed class NexusRequirements
         if (_contents.TryGetValue((gameId, modId), out var cached)) return cached;
 
         var result = new List<(string, long)>();
-        using (var files = await QueryAsync("query($m:ID!,$g:ID!){ modFiles(modId:$m, gameId:$g){ fileId category date } }",
-                   new { m = modId.ToString(), g = gameId.ToString() }, ct))
         {
-            var main = files.RootElement.GetProperty("data").GetProperty("modFiles").EnumerateArray()
-                .Where(f => f.GetProperty("category").GetString() == "MAIN")
-                .OrderByDescending(f => f.GetProperty("date").GetInt64())
-                .Select(f => f.GetProperty("fileId").GetInt64())
-                .Take(2).ToList();
+            var main = (await MainFileIdsAsync(gameId, modId, ct)).Take(2).ToList();
 
             foreach (var fileId in main)
             {

@@ -35,6 +35,10 @@
   turn (a mod built on ArchiveXL also needs RED4ext). Each one shows *installed* or *missing* for
   your game, even if you installed it by hand: Prism checks the requirement's own files on disk.
   *Open* takes you to the missing one; download it and it's placed like any other.
+  When some are missing, the strip reads *Required files needed* and *Download all* queues them:
+  Prism opens each one on its main file's download page, installs it when it arrives and moves on
+  by itself, then returns to the mod. Nexus requires one click per file, so you still press its
+  download button once per requirement.
 - **Smarter placement.** Every file of an archive gets its own destination. Cyberpunk 2077 follows
   the layout of its official Vortex extension (`archive\pc\mod`, `r6\scripts`, `r6\tweaks`, CET
   and REDmod folders). Bethesda games send plugins and assets to `Data`, script extenders to the

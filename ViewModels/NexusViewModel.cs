@@ -78,6 +78,8 @@ public sealed class NexusViewModel : ObservableObject
         InstallToRootCommand = new AsyncRelayCommand(_ => ChooseAsync(ModLayout.GameRoot), _ => Pending is not null && !Busy);
         InstallToExeCommand = new AsyncRelayCommand(_ => ChooseAsync(ModLayout.ExeDir), _ => Pending is not null && !Busy);
         DismissCommand = new RelayCommand(_ => Pending = null);
+        DownloadAllCommand = new AsyncRelayCommand(_ => StartQueueAsync(), _ => HasMissing && !QueueActive);
+        StopQueueCommand = new RelayCommand(_ => StopQueue(), _ => QueueActive);
     }
 
     /// <summary>La vue navigue quand on le lui demande : changement de jeu, lien nxm.</summary>
@@ -144,9 +146,105 @@ public sealed class NexusViewModel : ObservableObject
     public bool NoRequirements => OnModPage && _reqLoaded && Requirements.Count == 0;
     public bool HasRequirements => Requirements.Count > 0;
 
+    /// <summary>Prerequis absents du jeu et telechargeables sur Nexus.</summary>
+    public int MissingCount => Requirements.Count(r => r.State == RequirementState.Missing);
+    public bool HasMissing => MissingCount > 0;
+
+    /// <summary>« PREREQUIS », ou « Fichiers requis necessaires · 2 manquants » quand il en manque.</summary>
+    public string RequirementsHeader => HasMissing ? Loc.T("nexus.req.needed", MissingCount) : Loc.T("nexus.req.header");
+    public string DownloadAllLabel => Loc.T("nexus.req.download_all", MissingCount);
+
+    private void RaiseMissing()
+    {
+        OnPropertyChanged(nameof(MissingCount));
+        OnPropertyChanged(nameof(HasMissing));
+        OnPropertyChanged(nameof(RequirementsHeader));
+        OnPropertyChanged(nameof(DownloadAllLabel));
+        DownloadAllCommand.Raise();
+    }
+
+    // ------------------------------------------------------- Tout telecharger
+
+    /// <summary>
+    /// Prerequis manquants, les plus profonds d'abord (RED4ext avant ArchiveXL). Nexus exige un
+    /// telechargement lance par l'utilisateur, fichier par fichier : Prism ouvre chaque prerequis
+    /// sur la page de son fichier principal, attend l'archive, l'installe, puis passe au suivant.
+    /// </summary>
+    private readonly Queue<RequirementRow> _queue = new();
+    private RequirementRow? _queued;
+    private int _queueTotal;
+    private string? _returnUrl;
+
+    private bool _queueActive;
+    public bool QueueActive
+    {
+        get => _queueActive;
+        private set
+        {
+            if (!Set(ref _queueActive, value)) return;
+            DownloadAllCommand.Raise();
+            StopQueueCommand.Raise();
+        }
+    }
+
+    public AsyncRelayCommand DownloadAllCommand { get; }
+    public RelayCommand StopQueueCommand { get; }
+
+    private async Task StartQueueAsync()
+    {
+        _queue.Clear();
+        foreach (var r in Requirements.Where(r => r.State == RequirementState.Missing).OrderByDescending(r => r.Req.Depth))
+            _queue.Enqueue(r);
+        if (_queue.Count == 0) return;
+        _queueTotal = _queue.Count;
+        _returnUrl = Url;
+        QueueActive = true;
+        await NextInQueueAsync();
+    }
+
+    private async Task NextInQueueAsync()
+    {
+        while (_queue.Count > 0)
+        {
+            var row = _queue.Dequeue();
+            if (row.State == RequirementState.Installed) continue;
+            _queued = row;
+            var step = _queueTotal - _queue.Count;
+            string url;
+            try
+            {
+                var fileId = await _svc.Requirements.MainFileIdAsync(row.Req.GameId, row.Req.ModId);
+                url = fileId is { } f ? NexusService.FilePage(new NxmLink(row.Req.GameDomain, row.Req.ModId, f)) : row.Req.Page;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Src, $"Main file of {row.Req.Name}: {ex.Message}");
+                url = row.Req.Page;
+            }
+            SetStatus(Loc.T("nexus.req.queue_step", step, _queueTotal, row.Req.Name), false);
+            NavigateRequested?.Invoke(url);
+            return;
+        }
+
+        // Tout est la : retour sur la page du mod, liste reverifiee.
+        _queued = null;
+        QueueActive = false;
+        SetStatus(Loc.T("nexus.req.queue_done"), false);
+        if (_returnUrl is { } back) NavigateRequested?.Invoke(back);
+    }
+
+    private void StopQueue()
+    {
+        _queue.Clear();
+        _queued = null;
+        QueueActive = false;
+        SetStatus(Loc.T("nexus.req.queue_stopped"), false);
+    }
+
     /// <summary>Page ouverte dans le navigateur : si c'est un mod, ses prerequis.</summary>
     public async Task OnPageChangedAsync(string url)
     {
+        if (QueueActive) return;
         var domain = NexusService.DomainOf(url);
         var modId = NexusService.ModIdOf(url);
         OnModPage = domain is not null && modId is not null;
@@ -159,6 +257,7 @@ public sealed class NexusViewModel : ObservableObject
     {
         _reqCts?.Cancel();
         Requirements.Clear();
+        RaiseMissing();
         _reqLoaded = false;
         OnPropertyChanged(nameof(HasRequirements));
         OnPropertyChanged(nameof(NoRequirements));
@@ -173,7 +272,12 @@ public sealed class NexusViewModel : ObservableObject
         {
             var list = await _svc.Requirements.AllAsync(domain, modId, cts.Token);
             if (cts.IsCancellationRequested) return;
-            foreach (var r in list) Requirements.Add(new RequirementRow(r, url => NavigateRequested?.Invoke(url)));
+            foreach (var r in list)
+            {
+                var row = new RequirementRow(r, url => NavigateRequested?.Invoke(url));
+                row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(RequirementRow.State)) RaiseMissing(); };
+                Requirements.Add(row);
+            }
             _reqLoaded = true;
             OnPropertyChanged(nameof(HasRequirements));
             OnPropertyChanged(nameof(NoRequirements));
@@ -360,6 +464,12 @@ public sealed class NexusViewModel : ObservableObject
             catch (Exception ex) { Log.Warn(Src, $"Requirements check after install: {ex.Message}"); }
         }
         if (_reqFor is { } shown) await CheckRequirementsAsync(shown.Domain, CancellationToken.None);
+
+        if (QueueActive && _queued is { } current && (plan.ModId is null || plan.ModId == current.Req.ModId))
+        {
+            current.State = RequirementState.Installed;
+            await NextInQueueAsync();
+        }
     }
 
     private void SetStatus(string message, bool error)
@@ -371,6 +481,7 @@ public sealed class NexusViewModel : ObservableObject
     public void Relocalize()
     {
         foreach (var r in Requirements) r.Relocalize();
+        RaiseMissing();
         OnPropertyChanged(nameof(PendingTitle));
     }
 }

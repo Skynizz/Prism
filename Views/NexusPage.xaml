@@ -74,8 +74,28 @@
                 BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"
                 Visibility="{Binding OnModPage, Converter={StaticResource BoolVis}}">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Left" Text="{l:T nexus.req.header}" Style="{StaticResource T.Label}"
-                           VerticalAlignment="Center" MinWidth="124" Margin="0,0,12,0" />
+                <TextBlock DockPanel.Dock="Left" Text="{Binding RequirementsHeader}"
+                           VerticalAlignment="Center" MinWidth="124" Margin="0,0,12,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource T.Label}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasMissing}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource BrWarn}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- Un clic par fichier, impose par Nexus : Prism ouvre chaque prerequis et enchaine. -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button Style="{StaticResource Btn.Primary}" Content="{Binding DownloadAllLabel}"
+                            Command="{Binding DownloadAllCommand}" ToolTip="{l:T nexus.req.download_all_tip}"
+                            Visibility="{Binding HasMissing, Converter={StaticResource BoolVis}}" />
+                    <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.req.stop}" Margin="8,0,0,0"
+                            Command="{Binding StopQueueCommand}"
+                            Visibility="{Binding QueueActive, Converter={StaticResource BoolVis}}" />
+                </StackPanel>
                 <Grid VerticalAlignment="Center">
                     <TextBlock Text="{l:T nexus.req.none}" Style="{StaticResource T.Ter}" VerticalAlignment="Center"
                                Visibility="{Binding NoRequirements, Converter={StaticResource BoolVis}}" />
