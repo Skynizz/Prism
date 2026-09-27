@@ -81,12 +81,20 @@ public static class DllDetector
 
         var sawD3D12 = false;
         var sawVulkan = false;
+        var sawUpk = false;
+        var sawPak = false;
+        string? unityPlayer = null;
 
         var exeCandidates = new List<(string Path, long Size)>();
 
         foreach (var file in Walk(game.InstallDir, 0))
         {
             var name = Path.GetFileName(file);
+
+            // Archives du moteur : .upk = Unreal 3, .pak/.utoc = Unreal 4 et 5.
+            if (name.EndsWith(".upk", StringComparison.OrdinalIgnoreCase)) sawUpk = true;
+            else if (name.EndsWith(".pak", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".utoc", StringComparison.OrdinalIgnoreCase)) sawPak = true;
+            else if (name.Equals("UnityPlayer.dll", StringComparison.OrdinalIgnoreCase)) unityPlayer = file;
 
             // Beaucoup de jeux Unreal renomment leur executable : l'arborescence, elle,
             // reste toujours <Projet>\Binaries\Win64.
@@ -162,7 +170,6 @@ public static class DllDetector
         game.Api =
             sawD3D12 || game.HasDlssG ? GameApi.DirectX12
             : sawVulkan ? GameApi.Vulkan
-            : game.HasDlss ? GameApi.DirectX11
             : GameApi.Unknown;
 
         // Un build Unreal se reconnait a son « -Shipping.exe » : c'est lui qui charge les DLL, pas
@@ -172,11 +179,34 @@ public static class DllDetector
             .OrderByDescending(e => e.Size).FirstOrDefault().Path
             ?? exeCandidates.OrderByDescending(e => e.Size).FirstOrDefault().Path;
 
+        // Rien de parlant dans les fichiers : les imports de l'executable disent l'API, y compris
+        // DirectX 9, 10 et OpenGL, que rien d'autre ne revele.
+        if (game.Api == GameApi.Unknown && ApiFromImports(game.Executable) is { } api)
+            game.Api = api;
+        // Dernier recours : DLSS sans autre indice, l'API la plus courante de ces jeux.
+        if (game.Api == GameApi.Unknown && game.HasDlss) game.Api = GameApi.DirectX11;
+
+        EngineProbe.Probe(game, sawUpk, sawPak, unityPlayer);
+
         // ReShade compte seulement s'il est charge par le jeu : a cote de l'executable, sous
         // un nom de proxy, ou par OptiScaler. Un ReShade64.dll oublie dans un sous-dossier non.
         game.HasReShade = ReShadeLocator.Scan(DllInstaller.TargetDirectory(game)).Present;
         game.Scanned = true;
         if (raise) game.RaiseAll();
+    }
+
+    /// <summary>API deduite des imports : la plus recente l'emporte (un jeu DX12 importe souvent d3d11).</summary>
+    private static GameApi? ApiFromImports(string? exe)
+    {
+        var imports = PeInfo.Imports(exe);
+        if (imports.Count == 0) return null;
+        if (imports.Contains("d3d12.dll")) return GameApi.DirectX12;
+        if (imports.Contains("vulkan-1.dll")) return GameApi.Vulkan;
+        if (imports.Contains("d3d11.dll")) return GameApi.DirectX11;
+        if (imports.Contains("d3d10.dll") || imports.Contains("d3d10_1.dll")) return GameApi.DirectX10;
+        if (imports.Contains("d3d9.dll")) return GameApi.DirectX9;
+        if (imports.Contains("opengl32.dll")) return GameApi.OpenGL;
+        return null;
     }
 
     /// <summary>Un dxgi.dll peut etre ReShade, OptiScaler ou un vrai systeme : la description tranche (ReShade : voir ReShadeLocator).</summary>

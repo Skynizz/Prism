@@ -454,9 +454,9 @@ public sealed partial class RenoDxWikiService
         // Build dediee connue de l'index, absente du wiki.
         if (indexed is not null) return GamePlan(game, null, indexed, is32, reason);
 
-        // 2. Mod generique du moteur.
+        // 2. Mod generique du moteur. Le wiki le reserve a UE4 et UE5 : un jeu Unreal 3 n'en a pas.
         if (string.Equals(game.Engine, "Unreal", StringComparison.OrdinalIgnoreCase))
-            return UnrealPlan(game, keys, is32);
+            return game.EngineGeneration == 3 ? Ue3Plan() : UnrealPlan(game, keys, is32);
 
         if (string.Equals(game.Engine, "Unity", StringComparison.OrdinalIgnoreCase))
             return UnityPlan(game, keys, is32);
@@ -514,6 +514,20 @@ public sealed partial class RenoDxWikiService
         return plan;
     }
 
+    /// <summary>Unreal 3 : pas de mod generique RenoDX (« any UE4-5 game »). Rien a installer d'office.</summary>
+    private static HdrPlan Ue3Plan()
+    {
+        var plan = new HdrPlan
+        {
+            Kind = HdrModKind.UeExtended,
+            MatchReason = Loc.T("hdr.reason.ue3"),
+            ExternalUrl = WikiPageUrl,
+            BlockedReason = Loc.T("hdr.block.ue3")
+        };
+        plan.Steps.Add(Manual(Loc.T("hdr.step.ue3")));
+        return plan;
+    }
+
     private HdrPlan UnrealPlan(GameInfo game, HashSet<string> keys, bool is32)
     {
         var ueRow = Entries.FirstOrDefault(e => e.Kind == HdrModKind.UeExtended && keys.Contains(e.Key));
@@ -550,10 +564,11 @@ public sealed partial class RenoDxWikiService
         AddCommonSteps(plan, game);
         if (preset) plan.Steps.Add(Manual(Loc.T("hdr.step.ue_preset")));
         AddNoteSteps(plan, row?.Note, kind, skipReShadeKeys: preset);
-        // Jeu absent du wiki et du mod : l'ordre que le wiki donne pour les jeux non listes.
+        // Jeu absent du wiki et du mod : l'ordre que le wiki donne pour les jeux non listes. Sur UE4,
+        // le wiki deconseille Engine.ini : l'ordre s'en passe.
         if (kind == HdrModKind.UeExtended && row is null && !preset)
-            plan.Steps.Add(Manual(Loc.T("hdr.step.ue_order")));
-        if (kind == HdrModKind.UeExtended) plan.Steps.Add(Manual(Loc.T("hdr.step.ue5_sliders")));
+            plan.Steps.Add(Manual(Loc.T(game.EngineGeneration == 4 ? "hdr.step.ue_order_ue4" : "hdr.step.ue_order")));
+        if (kind == HdrModKind.UeExtended && game.EngineGeneration != 4) plan.Steps.Add(Manual(Loc.T("hdr.step.ue5_sliders")));
         AddClosingSteps(plan);
         return plan;
     }

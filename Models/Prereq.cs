@@ -37,7 +37,7 @@ public sealed class PrereqCheck
 }
 
 /// <summary>API de rendu presumee d'un titre, deduite des fichiers presents.</summary>
-public enum GameApi { Unknown, DirectX11, DirectX12, Vulkan }
+public enum GameApi { Unknown, DirectX11, DirectX12, Vulkan, DirectX9, DirectX10, OpenGL }
 
 public static class GameApiExtensions
 {
@@ -46,6 +46,9 @@ public static class GameApiExtensions
         GameApi.DirectX11 => "DirectX 11",
         GameApi.DirectX12 => "DirectX 12",
         GameApi.Vulkan => "Vulkan",
+        GameApi.DirectX9 => "DirectX 9",
+        GameApi.DirectX10 => "DirectX 10",
+        GameApi.OpenGL => "OpenGL",
         _ => Loc.T("api.unknown")
     };
 

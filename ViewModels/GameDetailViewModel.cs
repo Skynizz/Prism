@@ -102,7 +102,19 @@ public sealed class GameDetailViewModel : ObservableObject
         _ => Loc.T("common.unknown")
     };
 
-    public string EngineLabel => Game.Engine ?? Loc.T("common.unidentified");
+    public string EngineLabel => Game.EngineLabel ?? Loc.T("common.unidentified");
+
+    /// <summary>
+    /// Ce qui change pour un vieux jeu : API anterieure a DirectX 11, ou Unreal 3. Vide sinon.
+    /// Les voies concernees se bloquent d'elles-memes ; cette ligne dit pourquoi, d'un coup.
+    /// </summary>
+    public string LegacyNote => string.Join(" ", new[]
+    {
+        Game.Api is GameApi.DirectX9 or GameApi.DirectX10 or GameApi.OpenGL ? Loc.T("compat.legacy_api", Game.Api.Label()) : null,
+        Game.EngineGeneration == 3 ? Loc.T("compat.ue3") : null
+    }.Where(x => x is not null));
+
+    public bool HasLegacyNote => LegacyNote.Length > 0;
     public string ApiLabel => Game.Api.Label();
     public string ExecutableName => Path.GetFileName(Game.Executable ?? "") is { Length: > 0 } n ? n : Loc.T("common.not_found");
     public string TargetDir => FrameGenService.TargetDir(Game);
@@ -550,6 +562,73 @@ public sealed class GameDetailViewModel : ObservableObject
         };
     }
 
+    // ------------------------------------------------------- Preset DLSS
+
+    /// <summary>Un preset DLSS Super Resolution, valeur de NvApiDriverSettings.h.</summary>
+    public sealed record DlssPresetChoice(uint Value, string Label, string Note);
+
+    /// <summary>
+    /// Presets proposes. Valeurs officielles (EValues_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION) :
+    /// J 10, K 11, L 12, M 13, « Latest » 0x00FFFFFF ; 0 = rien d'impose, le jeu decide.
+    /// Roles d'apres NVIDIA (DLSS 4.5) : K par defaut pour DLAA/Qualite/Equilibre, M optimise pour
+    /// Performance, L pour l'Ultra Performance en 4K.
+    /// </summary>
+    public IReadOnlyList<DlssPresetChoice> DlssPresets { get; private set; } = BuildDlssPresets();
+
+    private static DlssPresetChoice[] BuildDlssPresets() => new[]
+    {
+        new DlssPresetChoice(0, Loc.T("preset.game"), Loc.T("preset.game_note")),
+        new DlssPresetChoice(0x00FFFFFF, Loc.T("preset.latest"), Loc.T("preset.latest_note")),
+        new DlssPresetChoice(11, "K", Loc.T("preset.k_note")),
+        new DlssPresetChoice(13, "M", Loc.T("preset.m_note")),
+        new DlssPresetChoice(12, "L", Loc.T("preset.l_note")),
+        new DlssPresetChoice(10, "J", Loc.T("preset.j_note")),
+    };
+
+    private DlssPresetChoice? _dlssPreset;
+    private bool _loadingPreset;
+
+    /// <summary>Preset impose par le profil du pilote pour cet executable. Le changer l'ecrit aussitot.</summary>
+    public DlssPresetChoice? SelectedDlssPreset
+    {
+        get => _dlssPreset;
+        set
+        {
+            if (!Set(ref _dlssPreset, value) || value is null || _loadingPreset) return;
+            ApplyDlssPreset(value);
+        }
+    }
+
+    public bool CanChooseDlssPreset => _svc.Gpu.IsNvidia && Game.Executable is not null;
+
+    private string ExeName => Path.GetFileName(Game.Executable ?? "");
+
+    private void LoadDlssPreset()
+    {
+        if (!CanChooseDlssPreset) return;
+        _loadingPreset = true;
+        try
+        {
+            var on = NvDriverSettings.Read(ExeName, NvDriverSettings.DlssSrOverride) == 1;
+            var value = on ? NvDriverSettings.Read(ExeName, NvDriverSettings.DlssSrPresetSelection) ?? 0 : 0;
+            SelectedDlssPreset = DlssPresets.FirstOrDefault(p => p.Value == value) ?? DlssPresets[0];
+        }
+        finally { _loadingPreset = false; }
+    }
+
+    /// <summary>
+    /// Ecrit dans le profil du pilote : l'override DLSS-SR active, puis le preset. « Le jeu decide »
+    /// retire les deux reglages. Aucun fichier du jeu n'est touche.
+    /// </summary>
+    private void ApplyDlssPreset(DlssPresetChoice choice)
+    {
+        var ok = choice.Value == 0
+            ? NvDriverSettings.Clear(ExeName, NvDriverSettings.DlssSrOverride, NvDriverSettings.DlssSrPresetSelection)
+            : NvDriverSettings.Write(ExeName, (NvDriverSettings.DlssSrOverride, 1), (NvDriverSettings.DlssSrPresetSelection, choice.Value));
+        _notify(ok ? Loc.T("preset.set", choice.Label, Game.Name) : Loc.T("preset.err"), !ok);
+        if (!ok) LoadDlssPreset();
+    }
+
     // ---------------------------------------------------------- Deja installe
 
     private bool _dlss5Installed, _hdrInstalled, _fgInstalled;
@@ -867,6 +946,8 @@ public sealed class GameDetailViewModel : ObservableObject
     public void Relocalize()
     {
         var keep = SelectedFg?.Backend;
+        DlssPresets = BuildDlssPresets();
+        LoadDlssPreset();
 
         FgOptions.Clear();
         foreach (var o in _svc.FrameGen.OptionsFor(_svc.Gpu, Game)) FgOptions.Add(o);
@@ -1446,6 +1527,9 @@ public sealed class GameDetailViewModel : ObservableObject
         var plan = _svc.Cleaner.Plan(Game);
         if (!plan.IsEmpty) done += _svc.Cleaner.Execute(Game, plan).FilesChanged;
 
+        if (CanChooseDlssPreset)
+            NvDriverSettings.Clear(ExeName, NvDriverSettings.DlssSrOverride, NvDriverSettings.DlssSrPresetSelection);
+
         Profile = new GameProfile { GameId = Game.Id };
         _svc.Profiles.Update(Profile);
         DllDetector.Inspect(Game);
@@ -1677,7 +1761,7 @@ public sealed class GameDetailViewModel : ObservableObject
             });
 
         Add(Loc.T("pipeline.game"), ExecutableName, true, UiStatus.Detected, first: true);
-        Add(Loc.T("label.engine"), Game.Engine ?? "n/d", Game.Engine is not null, UiStatus.Detected);
+        Add(Loc.T("label.engine"), Game.EngineLabel ?? "n/d", Game.Engine is not null, UiStatus.Detected);
         Add("API", Game.Api.Short(), Game.Api != GameApi.Unknown, UiStatus.Detected);
 
         var sr = Sr;
@@ -1758,6 +1842,7 @@ public sealed class GameDetailViewModel : ObservableObject
 
     private void Build()
     {
+        LoadDlssPreset();
         Slots.Clear();
         foreach (var kind in new[] { DllKind.Dlss, DllKind.DlssG, DllKind.DlssD })
             Slots.Add(new DllSlotViewModel(kind, Game, _svc.Manifest, _svc.Installer,
@@ -1792,6 +1877,8 @@ public sealed class GameDetailViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedDlss5Build));
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(EngineLabel));
+        OnPropertyChanged(nameof(LegacyNote));
+        OnPropertyChanged(nameof(HasLegacyNote));
         OnPropertyChanged(nameof(FgUnavailableReason));
         BuildHdr();
         OnPropertyChanged(nameof(ReShadeStatus));

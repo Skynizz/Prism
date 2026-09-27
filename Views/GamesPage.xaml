@@ -181,6 +181,9 @@
                         <TextBlock Text="{l:T label.identity}" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,8" />
                         <c:Field Label="{l:T label.engine}"  Value="{Binding EngineLabel}" LabelWidth="92" />
                         <c:Field Label="API"     Value="{Binding ApiLabel}" LabelWidth="92" />
+                        <TextBlock Text="{Binding LegacyNote}" Style="{StaticResource T.Sec}" TextWrapping="Wrap"
+                                   Margin="92,2,0,4" Foreground="{DynamicResource BrWarn}"
+                                   Visibility="{Binding HasLegacyNote, Converter={StaticResource BoolVis}}" />
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="{l:T library.change_exe}" Style="{StaticResource Btn.Quiet}"
                                     Height="22" VerticalAlignment="Center" Command="{Binding ChooseExeCommand}"

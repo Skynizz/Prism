@@ -67,9 +67,12 @@ public sealed class GameScanner
         if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe)) return null;
 
         var dir = Path.GetDirectoryName(exe)!;
-        const string marker = @"\Binaries\Win64";
-        var at = dir.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        var root = at > 0 ? Path.GetDirectoryName(dir[..at]) ?? dir : dir;
+        var at = dir.IndexOf(@"\Binaries\Win64", StringComparison.OrdinalIgnoreCase);
+        if (at < 0) at = dir.IndexOf(@"\Binaries\Win32", StringComparison.OrdinalIgnoreCase);
+        // Unreal 4/5 : <Jeu>\<Projet>\Binaries. Unreal 3 : <Jeu>\Binaries, avec Engine a cote.
+        var root = at <= 0 ? dir
+            : Directory.Exists(Path.Combine(dir[..at], "Engine")) ? dir[..at]
+            : Path.GetDirectoryName(dir[..at]) ?? dir;
 
         return new GameInfo
         {

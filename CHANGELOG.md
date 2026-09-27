@@ -15,6 +15,14 @@
 - **Installed buttons.** Once DLSS 5, HDR or frame generation is in place and valid, its button
   reads *Installed*. Remove a file or break a signature and it goes back to *Install*, without a
   rescan. *Reinstall* stays available.
+- **DLSS preset.** Pick K, M, L, J or Latest per game, or let the game decide. It goes into the
+  game's NVIDIA driver profile, the same place the NVIDIA app writes to, so no game file is
+  touched. *Reset injections* clears it too.
+- **Older games.** The API is read from the executable's imports, so DirectX 9, DirectX 10 and
+  OpenGL games are named as such, with a note on what still works (ReShade) and what doesn't
+  (DLSS, frame generation). The Unreal version is read from the binary (*Unreal 4.26*). Unreal 3
+  games are recognised, even 32-bit ones, and no longer get a generic HDR mod that can't work on
+  them. On Unreal 4, the HDR steps drop the UE5-only advice.
 
 ### Fixed
 

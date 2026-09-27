@@ -313,6 +313,32 @@
                         </StackPanel>
                     </HeaderedContentControl>
 
+                    <!-- ========================================== PRESET DLSS
+                         Ecrit dans le profil du pilote NVIDIA, comme l'application NVIDIA :
+                         aucun fichier du jeu n'est touche. -->
+                    <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T preset.header}"
+                                            Visibility="{Binding CanChooseDlssPreset, Converter={StaticResource BoolVis}}">
+                        <StackPanel Margin="14,12,14,14">
+                            <TextBlock Style="{StaticResource T.Prose}" Text="{l:T preset.help}" Margin="0,0,0,10" />
+                            <ListBox ItemsSource="{Binding DlssPresets}" SelectedItem="{Binding SelectedDlssPreset}"
+                                     Style="{StaticResource S.Rows}" ItemContainerStyle="{StaticResource PathRow}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource T.Strong}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Note}" Style="{StaticResource T.Sec}"
+                                                       VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
                     <!-- =================================== PANNEAUX DE RUNTIME -->
                     <ItemsControl ItemsSource="{Binding Slots}">
                         <ItemsControl.ItemTemplate>

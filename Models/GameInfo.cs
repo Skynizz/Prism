@@ -74,6 +74,18 @@ public sealed class GameInfo : ObservableObject
     /// les mods RenoDX generiques quand aucun mod specifique au jeu n'existe.
     /// </summary>
     public string? Engine { get; set; }
+
+    /// <summary>Generation d'Unreal (3, 4, 5) quand elle est etablie ; null si inconnue ou autre moteur.</summary>
+    public int? EngineGeneration { get; set; }
+
+    /// <summary>Version precise du moteur quand le binaire la porte : « 4.26 », « 2022.3 ».</summary>
+    public string? EngineVersion { get; set; }
+
+    /// <summary>« Unreal 4.26 », « Unreal 5 », « Unity 2022.3 », ou le moteur seul.</summary>
+    public string? EngineLabel => Engine is null ? null
+        : EngineVersion is { } v ? $"{Engine} {v}"
+        : EngineGeneration is { } g ? $"{Engine} {g}"
+        : Engine;
     public bool HasReShade { get; set; }
     public bool HasRenoDx { get; set; }
     public bool HasOptiScaler { get; set; }
@@ -113,6 +125,7 @@ public sealed class GameInfo : ObservableObject
         OnPropertyChanged(nameof(DlssVersionLabel));
         OnPropertyChanged(nameof(StateLabel));
         OnPropertyChanged(nameof(Engine));
+        OnPropertyChanged(nameof(EngineLabel));
     }
 }
 

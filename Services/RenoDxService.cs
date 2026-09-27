@@ -96,7 +96,7 @@ public sealed class RenoDxService
         foreach (var addon in Addons.Where(a => !a.Is32Bit))
         {
             var slug = addon.Slug.ToLowerInvariant();
-            if (slug == "unrealengine" && game.Engine == "Unreal") yield return addon;
+            if (slug == "unrealengine" && game.Engine == "Unreal" && game.EngineGeneration != 3) yield return addon;
             else if (slug == "generic") yield return addon;
         }
     }
