@@ -47,6 +47,20 @@
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="14,0" />
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource Btn.Quiet}" Command="{Binding ToggleAccountCommand}" Margin="0,0,12,0"
+                            ToolTip="{l:T nexus.acct.tip}">
+                        <TextBlock Text="{Binding AccountLabel}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPremium}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource BrAccent}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
                     <ProgressBar Width="110" Height="4" Value="{Binding Progress, Mode=OneWay}" Maximum="100"
                                  VerticalAlignment="Center" Margin="0,0,10,0"
                                  Visibility="{Binding ShowProgress, Converter={StaticResource BoolVis}}" />
@@ -68,6 +82,82 @@
 
         <TextBlock DockPanel.Dock="Top" Style="{StaticResource T.Prose}" Margin="16,8,16,0"
                    Text="{l:T nexus.help}" />
+
+        <!-- ========================================== COMPTE NEXUS -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource S.Notice}" Margin="16,10,16,0" DataContext="{Binding Nexus}"
+                Visibility="{Binding ShowAccount, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding AccountLabel}" Style="{StaticResource T.Strong}" />
+                <TextBlock Text="{l:T nexus.acct.help}" Style="{StaticResource T.Sec}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <PasswordBox x:Name="KeyBox" Width="360" PasswordChanged="OnKeyChanged" VerticalAlignment="Center" />
+                    <Button Style="{StaticResource Btn.Primary}" Content="{l:T nexus.acct.save}" Margin="8,0,0,0"
+                            Command="{Binding SaveKeyCommand}" />
+                    <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.acct.get_key}" Margin="8,0,0,0"
+                            Command="{Binding OpenKeysPageCommand}" />
+                    <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.acct.forget}" Margin="8,0,0,0"
+                            Command="{Binding ForgetKeyCommand}"
+                            Visibility="{Binding HasKey, Converter={StaticResource BoolVis}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding AccountError}" Foreground="{DynamicResource BrErr}" Margin="0,6,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- ========================================= MODS INSTALLES -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"
+                BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"
+                Visibility="{Binding HasInstalledMods, Converter={StaticResource BoolVis}}">
+            <StackPanel>
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource Btn.Primary}" Content="{Binding UpdateAllLabel}"
+                                Command="{Binding UpdateAllCommand}" ToolTip="{l:T nexus.mods.update_all_tip}"
+                                Visibility="{Binding HasUpdates, Converter={StaticResource BoolVis}}" />
+                        <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.mods.check}" Margin="8,0,0,0"
+                                Command="{Binding CheckUpdatesCommand}" />
+                        <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.mods.details}" Margin="4,0,0,0"
+                                Command="{Binding ToggleInstalledCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding InstalledHeader}" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource T.Label}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasUpdates}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource BrWarn}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding InstalledMods}" Margin="0,6,0,2"
+                              Visibility="{Binding ShowInstalled, Converter={StaticResource BoolVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="200" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <c:StatusDot Status="{Binding Status}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="8,0" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="{Binding InstalledVersion}" Style="{StaticResource T.MonoDim}"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="3" Text="{Binding StateLabel}" Style="{StaticResource T.Sec}"
+                                           VerticalAlignment="Center" />
+                                <Button Grid.Column="4" Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.mods.update}"
+                                        Command="{Binding UpdateCommand}"
+                                        Visibility="{Binding CanUpdate, Converter={StaticResource BoolVis}}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
 
         <!-- ============================================== PREREQUIS -->
         <Border DockPanel.Dock="Top" Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"

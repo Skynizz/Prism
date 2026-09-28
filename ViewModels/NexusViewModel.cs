@@ -53,6 +53,67 @@ public sealed class RequirementRow : ObservableObject
     public void Relocalize() => OnPropertyChanged(nameof(StateLabel));
 }
 
+public enum ModVersionState { Checking, UpToDate, Update, Unknown, Updated }
+
+/// <summary>Un mod Nexus installe dans le jeu cible : version en place, derniere version.</summary>
+public sealed class ModUpdateRow : ObservableObject
+{
+    public ModUpdateRow(NexusInstall install, Func<ModUpdateRow, Task> update)
+    {
+        Install = install;
+        UpdateCommand = new AsyncRelayCommand(_ => update(this), _ => State == ModVersionState.Update);
+    }
+
+    public NexusInstall Install { get; }
+    public ModUpdateInfo? Info { get; private set; }
+    public string Name => Install.Origin.StartsWith("Nexus · ", StringComparison.Ordinal) ? Install.Origin[8..] : Install.Origin;
+    public string InstalledVersion => Info?.InstalledVersion ?? Install.Version ?? "?";
+    public string? LatestVersion => Info?.LatestVersion;
+
+    private ModVersionState _state = ModVersionState.Checking;
+    public ModVersionState State
+    {
+        get => _state;
+        set
+        {
+            if (!Set(ref _state, value)) return;
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(StateLabel));
+            OnPropertyChanged(nameof(CanUpdate));
+            UpdateCommand.Raise();
+        }
+    }
+
+    public void Apply(ModUpdateInfo info)
+    {
+        Info = info;
+        OnPropertyChanged(nameof(InstalledVersion));
+        OnPropertyChanged(nameof(LatestVersion));
+        State = !info.Known ? ModVersionState.Unknown : info.HasUpdate ? ModVersionState.Update : ModVersionState.UpToDate;
+    }
+
+    public UiStatus Status => State switch
+    {
+        ModVersionState.UpToDate or ModVersionState.Updated => UiStatus.Ready,
+        ModVersionState.Update => UiStatus.Warning,
+        _ => UiStatus.Idle
+    };
+
+    public string StateLabel => State switch
+    {
+        ModVersionState.UpToDate => Loc.T("nexus.mods.state.uptodate"),
+        ModVersionState.Updated => Loc.T("nexus.mods.state.updated"),
+        ModVersionState.Update => Loc.T("nexus.mods.state.update", LatestVersion ?? "?"),
+        ModVersionState.Unknown => Loc.T("nexus.mods.state.unknown"),
+        _ => Loc.T("nexus.req.checking")
+    };
+
+    public bool CanUpdate => State == ModVersionState.Update;
+    public AsyncRelayCommand UpdateCommand { get; }
+
+    public void Relocalize() => OnPropertyChanged(nameof(StateLabel));
+}
+
 /// <summary>
 /// Page Nexus Mods : le site dans Prism, sur la page du jeu cible. Un telechargement lance
 /// sur le site arrive ici, est lu, puis pose au bon endroit et suivi comme le reste.
@@ -80,6 +141,17 @@ public sealed class NexusViewModel : ObservableObject
         DismissCommand = new RelayCommand(_ => Pending = null);
         DownloadAllCommand = new AsyncRelayCommand(_ => StartQueueAsync(), _ => HasMissing && !QueueActive);
         StopQueueCommand = new RelayCommand(_ => StopQueue(), _ => QueueActive);
+
+        ToggleAccountCommand = new RelayCommand(_ => ShowAccount = !ShowAccount);
+        SaveKeyCommand = new AsyncRelayCommand(_ => SaveKeyAsync());
+        ForgetKeyCommand = new RelayCommand(_ => { _svc.NexusAccount.Forget(); AccountError = null; });
+        OpenKeysPageCommand = new RelayCommand(_ => NavigateRequested?.Invoke(NexusAccount.KeysPage));
+        _svc.NexusAccount.Changed += RaiseAccount;
+
+        ToggleInstalledCommand = new RelayCommand(_ => ShowInstalled = !ShowInstalled);
+        CheckUpdatesCommand = new AsyncRelayCommand(_ => RefreshInstalledAsync(), _ => !QueueActive);
+        UpdateAllCommand = new AsyncRelayCommand(_ => UpdateAsync(InstalledMods.Where(r => r.State == ModVersionState.Update).ToList()),
+            _ => UpdateCount > 0 && !QueueActive);
     }
 
     /// <summary>La vue navigue quand on le lui demande : changement de jeu, lien nxm.</summary>
@@ -170,8 +242,12 @@ public sealed class NexusViewModel : ObservableObject
     /// telechargement lance par l'utilisateur, fichier par fichier : Prism ouvre chaque prerequis
     /// sur la page de son fichier principal, attend l'archive, l'installe, puis passe au suivant.
     /// </summary>
-    private readonly Queue<RequirementRow> _queue = new();
-    private RequirementRow? _queued;
+    /// <summary>Un fichier a obtenir : prerequis manquant, ou nouvelle version d'un mod installe.</summary>
+    private sealed record QueueItem(string Name, string Domain, long GameId, long ModId, long? FileId, string? OriginOverride, Action? Done);
+
+    private readonly Queue<QueueItem> _queue = new();
+    private QueueItem? _queued;
+    private bool _premiumRun;
     private int _queueTotal;
     private string? _returnUrl;
 
@@ -184,44 +260,110 @@ public sealed class NexusViewModel : ObservableObject
             if (!Set(ref _queueActive, value)) return;
             DownloadAllCommand.Raise();
             StopQueueCommand.Raise();
+            UpdateAllCommand.Raise();
+            CheckUpdatesCommand.Raise();
         }
     }
 
     public AsyncRelayCommand DownloadAllCommand { get; }
     public RelayCommand StopQueueCommand { get; }
 
-    private async Task StartQueueAsync()
+    private Task StartQueueAsync()
     {
+        var items = Requirements.Where(r => r.State == RequirementState.Missing).OrderByDescending(r => r.Req.Depth)
+            .Select(r => new QueueItem(r.Req.Name, r.Req.GameDomain, r.Req.GameId, r.Req.ModId, null, null,
+                () => r.State = RequirementState.Installed))
+            .ToList();
+        return RunQueueAsync(items);
+    }
+
+    /// <summary>
+    /// Premium : tout est telecharge et installe en arriere-plan, par l'API. Compte gratuit : Nexus
+    /// exige un clic par fichier, Prism ouvre chaque page et enchaine apres chaque installation.
+    /// </summary>
+    private async Task RunQueueAsync(List<QueueItem> items)
+    {
+        if (items.Count == 0) return;
+        await _svc.NexusAccount.RefreshAsync();
+        if (_svc.NexusAccount.IsPremium) { await RunPremiumAsync(items); return; }
+
         _queue.Clear();
-        foreach (var r in Requirements.Where(r => r.State == RequirementState.Missing).OrderByDescending(r => r.Req.Depth))
-            _queue.Enqueue(r);
-        if (_queue.Count == 0) return;
+        foreach (var i in items) _queue.Enqueue(i);
         _queueTotal = _queue.Count;
         _returnUrl = Url;
         QueueActive = true;
         await NextInQueueAsync();
     }
 
+    private async Task RunPremiumAsync(List<QueueItem> items)
+    {
+        _premiumRun = true;
+        QueueActive = true;
+        var done = new List<string>();
+        var failed = new List<string>();
+        try
+        {
+            for (var i = 0; i < items.Count && QueueActive; i++)
+            {
+                var item = items[i];
+                SetStatus(Loc.T("nexus.premium.step", i + 1, items.Count, item.Name), false);
+                try
+                {
+                    var fileId = item.FileId ?? await _svc.Requirements.MainFileIdAsync(item.GameId, item.ModId)
+                                 ?? throw new InvalidOperationException(Loc.T("nexus.acct.err.no_link"));
+                    var uri = await _svc.NexusAccount.DownloadLinkAsync(item.Domain, item.ModId, fileId);
+                    var name = Uri.UnescapeDataString(Path.GetFileName(new Uri(uri).AbsolutePath));
+                    var path = DownloadPathFor(name);
+                    if (File.Exists(path)) File.Delete(path);
+
+                    Busy = true;
+                    await _svc.Downloads.DownloadAsync(uri, path, null, new Progress<double>(p => Progress = p));
+                    var page = NexusService.FilePage(new NxmLink(item.Domain, item.ModId, fileId));
+                    if (await OnDownloadedAsync(path, page, $"{item.Name} at Nexus", item.OriginOverride))
+                    {
+                        item.Done?.Invoke();
+                        done.Add(item.Name);
+                    }
+                    else failed.Add(item.Name);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(Src, $"Premium download of {item.Name}: {ex.Message}");
+                    failed.Add($"{item.Name} ({ex.Message})");
+                }
+            }
+        }
+        finally
+        {
+            _premiumRun = false;
+            QueueActive = false;
+            Busy = false;
+            Progress = 0;
+        }
+
+        var summary = Loc.T("nexus.premium.done", done.Count, items.Count);
+        if (failed.Count > 0) summary += " · " + Loc.T("nexus.premium.failed", string.Join(", ", failed));
+        SetStatus(summary, failed.Count > 0);
+        _notify(summary, failed.Count > 0);
+        if (_reqFor is { } shown) await CheckRequirementsAsync(shown.Domain, CancellationToken.None);
+        await RefreshInstalledAsync();
+    }
+
     private async Task NextInQueueAsync()
     {
         while (_queue.Count > 0)
         {
-            var row = _queue.Dequeue();
-            if (row.State == RequirementState.Installed) continue;
-            _queued = row;
+            var item = _queue.Dequeue();
+            _queued = item;
             var step = _queueTotal - _queue.Count;
-            string url;
+            var url = $"{NexusService.Site}/{item.Domain}/mods/{item.ModId}?tab=files";
             try
             {
-                var fileId = await _svc.Requirements.MainFileIdAsync(row.Req.GameId, row.Req.ModId);
-                url = fileId is { } f ? NexusService.FilePage(new NxmLink(row.Req.GameDomain, row.Req.ModId, f)) : row.Req.Page;
+                var fileId = item.FileId ?? await _svc.Requirements.MainFileIdAsync(item.GameId, item.ModId);
+                if (fileId is { } f) url = NexusService.FilePage(new NxmLink(item.Domain, item.ModId, f));
             }
-            catch (Exception ex)
-            {
-                Log.Warn(Src, $"Main file of {row.Req.Name}: {ex.Message}");
-                url = row.Req.Page;
-            }
-            SetStatus(Loc.T("nexus.req.queue_step", step, _queueTotal, row.Req.Name), false);
+            catch (Exception ex) { Log.Warn(Src, $"Main file of {item.Name}: {ex.Message}"); }
+            SetStatus(Loc.T("nexus.req.queue_step", step, _queueTotal, item.Name), false);
             NavigateRequested?.Invoke(url);
             return;
         }
@@ -231,6 +373,7 @@ public sealed class NexusViewModel : ObservableObject
         QueueActive = false;
         SetStatus(Loc.T("nexus.req.queue_done"), false);
         if (_returnUrl is { } back) NavigateRequested?.Invoke(back);
+        await RefreshInstalledAsync();
     }
 
     private void StopQueue()
@@ -317,6 +460,8 @@ public sealed class NexusViewModel : ObservableObject
     /// <summary>Page des mods du jeu cible ; a defaut, la liste des jeux de Nexus.</summary>
     public async Task<string> HomeUrlAsync()
     {
+        _ = _svc.NexusAccount.RefreshAsync();
+        _ = RefreshInstalledAsync();
         var game = _detail()?.Game;
         if (game is null) return NexusService.GamesPage;
         var domain = await _svc.Nexus.DomainForAsync(game);
@@ -370,13 +515,13 @@ public sealed class NexusViewModel : ObservableObject
     }
 
     /// <summary>Archive recue : jeu verifie, contenu lu, puis installation ou choix demande.</summary>
-    public async Task OnDownloadedAsync(string file, string? pageUrl, string? pageTitle)
+    public async Task<bool> OnDownloadedAsync(string file, string? pageUrl, string? pageTitle, string? originOverride = null)
     {
         Busy = true;
         try
         {
             var detail = _detail();
-            if (detail is null) { SetStatus(Loc.T("nexus.err.no_game"), true); return; }
+            if (detail is null) { SetStatus(Loc.T("nexus.err.no_game"), true); return false; }
 
             var game = detail.Game;
             var domain = NexusService.DomainOf(pageUrl);
@@ -388,28 +533,37 @@ public sealed class NexusViewModel : ObservableObject
                 if (other is null)
                 {
                     SetStatus(Loc.T("nexus.err.other_game", domain, game.Name), true);
-                    return;
+                    return false;
                 }
                 game = other;
                 if (!other.Scanned) DllDetector.Inspect(other);
             }
 
             SetStatus(Loc.T("nexus.analyzing", Path.GetFileName(file)), false);
-            var plan = await _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle, pageModId: NexusService.ModIdOf(pageUrl));
+            var pageModId = NexusService.ModIdOf(pageUrl);
+            var plan = await _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle, pageModId: pageModId,
+                fileId: NexusService.FileIdOf(pageUrl));
+            // Mise a jour demandee depuis la liste : la nouvelle version remplace l'ancienne installation.
+            plan.OriginOverride = originOverride
+                ?? (QueueActive && _queued is { } q && q.ModId == (plan.ModId ?? pageModId) ? q.OriginOverride : null);
 
-            if (plan.Blocked) { SetStatus(plan.Note!, true); return; }
-            if (plan.Layout == ModLayout.Unknown) { _pendingGame = game; Pending = plan; SetStatus(plan.Note!, false); return; }
+            if (plan.Blocked) { SetStatus(plan.Note!, true); return false; }
+            if (plan.Layout == ModLayout.Unknown) { _pendingGame = game; Pending = plan; SetStatus(plan.Note!, false); return false; }
 
-            await InstallAsync(game, plan);
+            return await InstallAsync(game, plan);
         }
         catch (Exception ex)
         {
             SetStatus(Loc.T("err.install_failed", ex.Message), true);
+            return false;
         }
         finally
         {
-            Busy = false;
-            Progress = 0;
+            if (!_premiumRun)
+            {
+                Busy = false;
+                Progress = 0;
+            }
         }
     }
 
@@ -425,7 +579,7 @@ public sealed class NexusViewModel : ObservableObject
         finally { Busy = false; }
     }
 
-    private async Task InstallAsync(GameInfo game, ModPlan plan)
+    private async Task<bool> InstallAsync(GameInfo game, ModPlan plan)
     {
         var detail = _detail();
         var sameGame = detail?.Game.Id == game.Id;
@@ -433,15 +587,15 @@ public sealed class NexusViewModel : ObservableObject
         // Addon, preset ou shader : ReShade d'abord, par le chemin habituel de Prism.
         if (plan.NeedsReShade && !HdrInstaller.ReShadeReady(game))
         {
-            if (!sameGame) { SetStatus(Loc.T("nexus.err.reshade", game.Name), true); return; }
+            if (!sameGame) { SetStatus(Loc.T("nexus.err.reshade", game.Name), true); return false; }
             SetStatus(Loc.T("nexus.reshade_first"), false);
-            if (!await detail!.EnsureReShadeAsync()) { SetStatus(Loc.T("nexus.err.reshade", game.Name), true); return; }
+            if (!await detail!.EnsureReShadeAsync()) { SetStatus(Loc.T("nexus.err.reshade", game.Name), true); return false; }
         }
 
         var result = _svc.NexusMods.Install(game, plan);
         SetStatus(result.Message, !result.Success);
         _notify(result.Message, !result.Success);
-        if (!result.Success) return;
+        if (!result.Success) return false;
 
         DllDetector.Inspect(game);
         if (sameGame) detail!.Refresh();
@@ -465,11 +619,126 @@ public sealed class NexusViewModel : ObservableObject
         }
         if (_reqFor is { } shown) await CheckRequirementsAsync(shown.Domain, CancellationToken.None);
 
-        if (QueueActive && _queued is { } current && (plan.ModId is null || plan.ModId == current.Req.ModId))
+        // File gratuite : le fichier attendu est la, on ouvre le suivant.
+        if (QueueActive && !_premiumRun && _queued is { } current && (plan.ModId is null || plan.ModId == current.ModId))
         {
-            current.State = RequirementState.Installed;
+            current.Done?.Invoke();
             await NextInQueueAsync();
         }
+        else if (!QueueActive) await RefreshInstalledAsync();
+        return true;
+    }
+
+    // ------------------------------------------------------------ Compte Nexus
+
+    private bool _showAccount;
+    public bool ShowAccount { get => _showAccount; set => Set(ref _showAccount, value); }
+
+    /// <summary>Saisie de la cle API ; jamais affichee une fois enregistree.</summary>
+    public string ApiKeyInput { get; set; } = "";
+
+    private string? _accountError;
+    public string? AccountError { get => _accountError; private set => Set(ref _accountError, value); }
+
+    public bool HasKey => _svc.NexusAccount.HasKey;
+    public bool IsPremium => _svc.NexusAccount.IsPremium;
+
+    public string AccountLabel => !_svc.NexusAccount.HasKey ? Loc.T("nexus.acct.none")
+        : !_svc.NexusAccount.Validated ? Loc.T("nexus.acct.checking")
+        : _svc.NexusAccount.IsPremium ? Loc.T("nexus.acct.premium", _svc.NexusAccount.UserName ?? "")
+        : Loc.T("nexus.acct.free", _svc.NexusAccount.UserName ?? "");
+
+    public RelayCommand ToggleAccountCommand { get; }
+    public AsyncRelayCommand SaveKeyCommand { get; }
+    public RelayCommand ForgetKeyCommand { get; }
+    public RelayCommand OpenKeysPageCommand { get; }
+
+    private async Task SaveKeyAsync()
+    {
+        AccountError = await _svc.NexusAccount.SetKeyAsync(ApiKeyInput);
+        if (AccountError is null)
+        {
+            ApiKeyInput = "";
+            OnPropertyChanged(nameof(ApiKeyInput));
+            SetStatus(AccountLabel, false);
+        }
+    }
+
+    private void RaiseAccount()
+    {
+        OnPropertyChanged(nameof(HasKey));
+        OnPropertyChanged(nameof(IsPremium));
+        OnPropertyChanged(nameof(AccountLabel));
+    }
+
+    // ------------------------------------------------------ Mods installes
+
+    /// <summary>Mods Nexus poses par Prism dans le jeu cible, avec leur version face a la derniere.</summary>
+    public ObservableCollection<ModUpdateRow> InstalledMods { get; } = new();
+
+    private bool _showInstalled;
+    public bool ShowInstalled { get => _showInstalled; set => Set(ref _showInstalled, value); }
+
+    public bool HasInstalledMods => InstalledMods.Count > 0;
+    public int UpdateCount => InstalledMods.Count(r => r.State == ModVersionState.Update);
+    public bool HasUpdates => UpdateCount > 0;
+    public string InstalledHeader => HasUpdates ? Loc.T("nexus.mods.header", InstalledMods.Count, UpdateCount)
+        : Loc.T("nexus.mods.header_ok", InstalledMods.Count);
+    public string UpdateAllLabel => Loc.T("nexus.mods.update_all", UpdateCount);
+
+    public RelayCommand ToggleInstalledCommand { get; }
+    public AsyncRelayCommand CheckUpdatesCommand { get; }
+    public AsyncRelayCommand UpdateAllCommand { get; }
+
+    private CancellationTokenSource? _modsCts;
+
+    public async Task RefreshInstalledAsync()
+    {
+        _modsCts?.Cancel();
+        var cts = _modsCts = new CancellationTokenSource();
+        InstalledMods.Clear();
+        RaiseInstalled();
+        var game = _detail()?.Game;
+        if (game is null) return;
+
+        foreach (var install in NexusModInstaller.Installed().Where(i => i.GameId == game.Id && _svc.Requirements.IsDeployed(game, i)))
+        {
+            var row = new ModUpdateRow(install, r => UpdateAsync(new List<ModUpdateRow> { r }));
+            row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ModUpdateRow.State)) RaiseInstalled(); };
+            InstalledMods.Add(row);
+        }
+        RaiseInstalled();
+
+        foreach (var row in InstalledMods.ToList())
+        {
+            if (cts.IsCancellationRequested) return;
+            try { row.Apply(await _svc.Requirements.CheckUpdateAsync(row.Install, cts.Token)); }
+            catch (OperationCanceledException) { return; }
+            catch (Exception ex)
+            {
+                Log.Warn(Src, $"Update check of {row.Name}: {ex.Message}");
+                row.State = ModVersionState.Unknown;
+            }
+        }
+    }
+
+    private Task UpdateAsync(List<ModUpdateRow> rows)
+    {
+        var items = rows.Where(r => r.Info is { HasUpdate: true, GameId: not null, LatestFileId: not null, ModId: not null } && r.Install.Domain is not null)
+            .Select(r => new QueueItem(r.Name, r.Install.Domain!, r.Info!.GameId!.Value, r.Info.ModId!.Value, r.Info.LatestFileId,
+                r.Install.Origin, () => r.State = ModVersionState.Updated))
+            .ToList();
+        return RunQueueAsync(items);
+    }
+
+    private void RaiseInstalled()
+    {
+        OnPropertyChanged(nameof(HasInstalledMods));
+        OnPropertyChanged(nameof(UpdateCount));
+        OnPropertyChanged(nameof(HasUpdates));
+        OnPropertyChanged(nameof(InstalledHeader));
+        OnPropertyChanged(nameof(UpdateAllLabel));
+        UpdateAllCommand.Raise();
     }
 
     private void SetStatus(string message, bool error)
@@ -481,7 +750,10 @@ public sealed class NexusViewModel : ObservableObject
     public void Relocalize()
     {
         foreach (var r in Requirements) r.Relocalize();
+        foreach (var r in InstalledMods) r.Relocalize();
         RaiseMissing();
+        RaiseInstalled();
+        RaiseAccount();
         OnPropertyChanged(nameof(PendingTitle));
     }
 }

@@ -26,6 +26,11 @@ public sealed class ModPlan
     public string? Version { get; init; }
     public string? Domain { get; init; }
     public long? ModId { get; init; }
+    /// <summary>Fichier Nexus precis (file_id), pour suivre ses mises a jour.</summary>
+    public long? FileId { get; init; }
+
+    /// <summary>Mise a jour : l'installation remplacee garde son identite, meme si le nom du fichier a change.</summary>
+    public string? OriginOverride { get; set; }
 
     /// <summary>Racine de l'archive extraite.</summary>
     public required string Source { get; init; }
@@ -56,7 +61,8 @@ public sealed class ModPlan
     /// Identite de l'installation : le mod et, s'il differe du nom du mod, le fichier. Deux fichiers
     /// d'un meme mod (principal + option) coexistent ; une nouvelle version du meme fichier remplace l'ancienne.
     /// </summary>
-    public string Origin => FileLabel is null || Same(FileLabel, Name) ? $"Nexus · {Name}" : $"Nexus · {Name} · {FileLabel}";
+    public string Origin => OriginOverride
+        ?? (FileLabel is null || Same(FileLabel, Name) ? $"Nexus · {Name}" : $"Nexus · {Name} · {FileLabel}");
 
     private static bool Same(string a, string b)
     {
@@ -76,6 +82,8 @@ public sealed class NexusInstall
     public string Origin { get; set; } = "";
     public string? Domain { get; set; }
     public long? ModId { get; set; }
+    public long? FileId { get; set; }
+    public string? FileLabel { get; set; }
     public string? Version { get; set; }
     public string Archive { get; set; } = "";
     public string Target { get; set; } = "";
@@ -136,7 +144,7 @@ public sealed class NexusModInstaller
     // ------------------------------------------------------------------ Analyse
 
     public async Task<ModPlan> AnalyzeAsync(GameInfo game, string archive, string? domain, string? pageTitle,
-        CancellationToken ct = default, long? pageModId = null)
+        CancellationToken ct = default, long? pageModId = null, long? fileId = null)
     {
         var (fileName, archiveModId, version) = NexusService.ParseArchiveName(archive);
         var name = NexusService.ModNameFromTitle(pageTitle) ?? fileName;
@@ -147,7 +155,7 @@ public sealed class NexusModInstaller
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         await ArchiveExtractor.ExtractAsync(archive, work, ct);
 
-        var plan = new ModPlan { Archive = archive, Name = name, FileLabel = fileName, Version = version, Domain = domain, ModId = modId, Source = work };
+        var plan = new ModPlan { Archive = archive, Name = name, FileLabel = fileName, Version = version, Domain = domain, ModId = modId, FileId = fileId, Source = work };
 
         foreach (var f in Directory.EnumerateFiles(work, "*", SearchOption.AllDirectories))
         {
@@ -569,7 +577,8 @@ public sealed class NexusModInstaller
         list.RemoveAll(i => i.GameId == game.Id && i.Origin == plan.Origin);
         list.Add(new NexusInstall
         {
-            GameId = game.Id, Origin = plan.Origin, Domain = plan.Domain, ModId = plan.ModId, Version = plan.Version,
+            GameId = game.Id, Origin = plan.Origin, Domain = plan.Domain, ModId = plan.ModId, FileId = plan.FileId,
+            FileLabel = plan.FileLabel, Version = plan.Version,
             Archive = Path.GetFileName(plan.Archive), Target = plan.Target ?? "", InstalledAt = DateTimeOffset.Now
         });
         JsonStore.Save(StoreFile, list);

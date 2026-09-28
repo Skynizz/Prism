@@ -113,6 +113,14 @@ public sealed partial class NexusService
         return NotGames.Contains(domain) ? null : domain;
     }
 
+    /// <summary>Fichier vise par une page de telechargement (…?tab=files&amp;file_id=123).</summary>
+    public static long? FileIdOf(string? url)
+    {
+        if (url is null) return null;
+        var m = FileIdRegex().Match(url);
+        return m.Success ? long.Parse(m.Groups[1].Value) : null;
+    }
+
     /// <summary>Numero du mod d'une page Nexus, s'il y en a un.</summary>
     public static long? ModIdOf(string? url)
     {
@@ -160,6 +168,9 @@ public sealed partial class NexusService
 
     [GeneratedRegex(@"^(.+) (\d+) (\S+) \d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z \w+$")]
     private static partial Regex CurrentArchiveRegex();
+
+    [GeneratedRegex(@"[?&]file_id=(\d+)")]
+    private static partial Regex FileIdRegex();
 
     [GeneratedRegex(@"[^\p{L}\p{Nd}]+")]
     private static partial Regex NonWord();

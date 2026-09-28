@@ -42,6 +42,7 @@ public sealed class AppServices
         Nexus = new NexusService();
         NexusMods = new NexusModInstaller(Backups, Deployments);
         Requirements = new NexusRequirements(Deployments);
+        NexusAccount = new NexusAccount();
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -80,6 +81,7 @@ public sealed class AppServices
     public NexusService Nexus { get; }
     public NexusModInstaller NexusMods { get; }
     public NexusRequirements Requirements { get; }
+    public NexusAccount NexusAccount { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }

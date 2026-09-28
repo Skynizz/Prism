@@ -8,6 +8,10 @@ namespace Prism.Services;
 
 public enum RequirementState { Checking, Installed, Missing, External }
 
+/// <summary>Version installee d'un fichier Nexus face a la plus recente du meme fichier.</summary>
+public sealed record ModUpdateInfo(NexusInstall Install, long? GameId, string? InstalledVersion, string? LatestVersion,
+    long? LatestFileId, string? LatestName, bool HasUpdate, bool Known, long? ModId = null);
+
 /// <summary>Un prerequis d'un mod, tel que le declare sa page Nexus.</summary>
 public sealed record ModRequirement(string GameDomain, long GameId, long ModId, string Name, string? Url, bool External, string? Notes, int Depth)
 {
@@ -127,6 +131,48 @@ public sealed class NexusRequirements
         return list;
     }
 
+    /// <summary>
+    /// Le fichier installe a-t-il une version plus recente ? Nexus range les versions successives d'un
+    /// meme fichier dans un groupe (groupId) et passe les anciennes en OLD_VERSION : la plus recente du
+    /// groupe, hors versions retirees, est la reference.
+    /// </summary>
+    public async Task<ModUpdateInfo> CheckUpdateAsync(NexusInstall install, CancellationToken ct = default)
+    {
+        // Traces anterieures : numero et version se lisent dans le nom d'archive.
+        var parsed = NexusService.ParseArchiveName(install.Archive);
+        var modId = install.ModId ?? parsed.ModId;
+        var version = install.Version ?? parsed.Version;
+        var unknown = new ModUpdateInfo(install, null, version, null, null, null, false, false, modId);
+        if (install.Domain is null || modId is null) return unknown;
+        var gameId = await GameIdAsync(install.Domain, ct);
+        if (gameId is null) return unknown;
+
+        using var doc = await QueryAsync("query($m:ID!,$g:ID!){ modFiles(modId:$m, gameId:$g){ fileId name version category groupId date } }",
+            new { m = modId.Value.ToString(), g = gameId.Value.ToString() }, ct);
+        var files = doc.RootElement.GetProperty("data").GetProperty("modFiles").EnumerateArray().Select(f => new
+        {
+            Id = f.GetProperty("fileId").GetInt64(),
+            Name = f.GetProperty("name").GetString() ?? "",
+            Version = f.GetProperty("version").GetString() ?? "",
+            Category = f.GetProperty("category").GetString() ?? "",
+            Group = f.GetProperty("groupId").ToString(),
+            Date = f.GetProperty("date").GetInt64()
+        }).ToList();
+
+        // Le fichier installe : par son numero, sinon par son nom et sa version, sinon par sa version, sinon par son nom.
+        var label = RenoDxWikiService.Normalize(install.FileLabel ?? parsed.Name);
+        var mine = files.FirstOrDefault(f => install.FileId is not null && f.Id == install.FileId)
+                   ?? files.FirstOrDefault(f => RenoDxWikiService.Normalize(f.Name) == label && f.Version == version)
+                   ?? files.FirstOrDefault(f => version is not null && f.Version == version)
+                   ?? files.Where(f => RenoDxWikiService.Normalize(f.Name) == label).OrderBy(f => f.Date).FirstOrDefault();
+        if (mine is null) return unknown with { GameId = gameId };
+
+        var latest = files.Where(f => f.Group == mine.Group && f.Category is not ("OLD_VERSION" or "ARCHIVED" or "DELETED" or "REMOVED"))
+                          .OrderByDescending(f => f.Date).FirstOrDefault() ?? mine;
+        var newer = latest.Id != mine.Id && latest.Date > mine.Date;
+        return new ModUpdateInfo(install, gameId, version ?? mine.Version, latest.Version, latest.Id, latest.Name, newer, true, modId);
+    }
+
     /// <summary>Etat d'un prerequis dans ce jeu.</summary>
     public async Task<RequirementState> StateAsync(GameInfo game, ModRequirement req, CancellationToken ct = default)
     {
@@ -155,6 +201,8 @@ public sealed class NexusRequirements
         var any = files.OrderByDescending(f => f.Size).FirstOrDefault();
         return any.Path is not null && ExistsInGame(game, any.Path) ? RequirementState.Installed : RequirementState.Missing;
     }
+
+    public bool IsDeployed(GameInfo game, NexusInstall install) => StillThere(game, install);
 
     private bool StillThere(GameInfo game, NexusInstall install)
         => _deployments.For(game.Id).Any(e => string.Equals(e.Origin, install.Origin, StringComparison.Ordinal) && File.Exists(e.Path));

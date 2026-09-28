@@ -39,6 +39,14 @@
   Prism opens each one on its main file's download page, installs it when it arrives and moves on
   by itself, then returns to the mod. Nexus requires one click per file, so you still press its
   download button once per requirement.
+- **Nexus account and Premium.** Paste your personal API key once (it is encrypted by Windows and
+  only ever sent to api.nexusmods.com). With a Premium account, *Download all* fetches and installs
+  every requirement in the background through the Nexus API, without opening a single page. A free
+  account keeps one click per file, as Nexus requires.
+- **Mod updates.** A *Nexus mods* strip lists what Prism installed in the game with its version
+  against the latest one of the same file on Nexus (optional files follow their own line).
+  *Update all* replaces each outdated file in place: in the background with Premium, one page per
+  file otherwise.
 - **Smarter placement.** Every file of an archive gets its own destination. Cyberpunk 2077 follows
   the layout of its official Vortex extension (`archive\pc\mod`, `r6\scripts`, `r6\tweaks`, CET
   and REDmod folders). Bethesda games send plugins and assets to `Data`, script extenders to the

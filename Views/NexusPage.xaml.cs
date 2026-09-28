@@ -45,11 +45,13 @@ public partial class NexusPage : UserControl
         {
             _main.PropertyChanged -= OnMainChanged;
             _main.Nexus.NavigateRequested -= Navigate;
+            _main.Nexus.PropertyChanged -= OnNexusChanged;
         }
         _main = main;
         if (_main is null) return;
         _main.PropertyChanged += OnMainChanged;
         _main.Nexus.NavigateRequested += Navigate;
+        _main.Nexus.PropertyChanged += OnNexusChanged;
     }
 
     /// <summary>Un autre jeu choisi pendant que la page est ouverte : sa page Nexus.</summary>
@@ -205,6 +207,19 @@ public partial class NexusPage : UserControl
         if (Vm is null) return;
         _homeFor = _main?.Detail?.Game.Id ?? "";
         await Vm.GoHomeAsync();
+    }
+
+    /// <summary>La cle ne passe jamais par une liaison : le champ mot de passe la remet au modele.</summary>
+    private void OnKeyChanged(object sender, RoutedEventArgs e)
+    {
+        if (Vm is not null) Vm.ApiKeyInput = KeyBox.Password;
+    }
+
+    /// <summary>Cle enregistree : le modele vide sa saisie, le champ suit.</summary>
+    private void OnNexusChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(NexusViewModel.ApiKeyInput) && Vm?.ApiKeyInput.Length == 0 && KeyBox.Password.Length > 0)
+            KeyBox.Clear();
     }
 
     private void OnGetRuntime(object sender, RoutedEventArgs e)
