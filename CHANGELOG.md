@@ -57,6 +57,18 @@
 
 ### Fixed
 
+- *Repair* could loop forever on "Streamline files from different versions" when the odd plugin was
+  left by another tool (a 2.13 `sl.dlss_nr.dll` next to Streamline 2.14.1): reinstalling never
+  touched it. The plugin is now compared with `sl.interposer.dll`, a foreign one is set aside
+  (restorable), and *Repair* checks afterwards and says so when a problem is still there.
+- OptiScaler could be moved to `d3d12.dll`, where it hooks into Direct3D's own start-up (seen in
+  Cyberpunk 2077: the DXGI factory failed with ReShade on `dxgi.dll`). `wininet.dll` and
+  `winhttp.dll` are now used when the game really loads them, `d3d12.dll` only as a last resort,
+  and an OptiScaler already on `d3d12.dll` is flagged with a one-click rename.
+- Deleting another tool's file inside an install kept no lasting backup.
+- A Nexus file uploaded as `name.zip` kept `.zip` in its install name; the temporary OptiScaler
+  copy made while moving it stayed in the cache.
+
 - Nexus now names archives `ArchiveXL 4198 1.27.3 2026-09-07T10-15Z ....zip`; Prism reads the mod
   number from that form too, and from the page itself first.
 - A mod removed with *Remove* still counted as an installed requirement, so nothing was reported

@@ -114,6 +114,8 @@ public sealed class FileTransaction
                 if (step.Op == Op.Delete)
                 {
                     if (!step.Existed) continue;
+                    if (!step.Ours && _backups.Capture(_game, step.Dest, _origin) is null)
+                        throw new IOException(Loc.T("tx.no_backup", Path.GetFileName(step.Dest)));
                     step.Touched = true;
                     DllInstaller.ClearReadOnly(step.Dest);
                     File.Delete(step.Dest);

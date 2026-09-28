@@ -508,11 +508,17 @@ public sealed class GameDetailViewModel : ObservableObject
         }
 
         if (MixedStreamline() is { } mixed)
+        {
+            // Plugin d'une autre version laisse par un autre outil : reinstaller ne l'enleve jamais,
+            // il faut le mettre de cote. Pose par Prism : la reinstallation le remet au bon niveau.
+            var foreignOdd = mixed.Odd.Count > 0 && mixed.Odd.All(p => !_svc.Deployments.WasDeployed(p));
             extra.Add(new DiagnosisFinding
             {
                 Id = "sl-mixed", State = UiStatus.Error, Title = Loc.T("diag.f.sl_mixed"),
-                Evidence = mixed, Fix = kind is not null ? DiagnosisFix.Reinstall : DiagnosisFix.Streamline
+                Evidence = foreignOdd ? mixed.Text + " · " + Loc.T("diag.f.sl_mixed_foreign") : mixed.Text,
+                Fix = foreignOdd ? DiagnosisFix.SetAside : kind is not null ? DiagnosisFix.Reinstall : DiagnosisFix.Streamline
             });
+        }
 
         Diagnosis = Merge(log, extra);
         _liveLogStamp = LogStamp();
@@ -521,20 +527,28 @@ public sealed class GameDetailViewModel : ObservableObject
         HealCommand?.Raise();
     }
 
-    /// <summary>Composants sl.* de versions differentes dans un meme dossier : null s'ils sont apparies.</summary>
-    private string? MixedStreamline()
+    /// <summary>
+    /// Composants sl.* de versions differentes dans un meme dossier : null s'ils sont apparies.
+    /// La reference est sl.interposer.dll, qui charge les plugins ; a defaut, la version majoritaire.
+    /// <c>Odd</c> : les plugins qui s'en ecartent.
+    /// </summary>
+    private (string Text, List<string> Odd)? MixedStreamline()
     {
         foreach (var dir in Game.StreamlineDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             string[] files;
             try { files = Directory.GetFiles(dir, "sl.*.dll"); } catch { continue; }
             var versions = files
-                .Select(f => (Name: Path.GetFileName(f), Version: DllDetector.ReadProductVersion(f)))
+                .Select(f => (Path: f, Name: Path.GetFileName(f), Version: DllDetector.ReadProductVersion(f)))
                 .Where(v => !string.IsNullOrWhiteSpace(v.Version))
                 .ToList();
-            if (versions.Select(v => v.Version).Distinct().Count() > 1)
-                return string.Join(" · ", versions.GroupBy(v => v.Version)
-                    .Select(g => $"{g.Key}: {string.Join(", ", g.Select(v => v.Name).Take(3))}"));
+            if (versions.Select(v => v.Version).Distinct().Count() <= 1) continue;
+
+            var reference = versions.FirstOrDefault(v => v.Name.Equals("sl.interposer.dll", StringComparison.OrdinalIgnoreCase)).Version
+                            ?? versions.GroupBy(v => v.Version).OrderByDescending(g => g.Count()).First().Key;
+            var text = string.Join(" · ", versions.GroupBy(v => v.Version)
+                .Select(g => $"{g.Key}: {string.Join(", ", g.Select(v => v.Name).Take(3))}"));
+            return (text, versions.Where(v => v.Version != reference).Select(v => v.Path).ToList());
         }
         return null;
     }
@@ -760,7 +774,7 @@ public sealed class GameDetailViewModel : ObservableObject
     // ----------------------------------------------------------- Reparer
 
     /// <summary>Corrections que « Reparer » sait enchainer seul, dans l'ordre ou elles s'appliquent.</summary>
-    private static readonly DiagnosisFix[] HealOrder = { DiagnosisFix.ReShade, DiagnosisFix.Streamline, DiagnosisFix.Reinstall };
+    private static readonly DiagnosisFix[] HealOrder = { DiagnosisFix.SetAside, DiagnosisFix.MoveProxy, DiagnosisFix.ReShade, DiagnosisFix.Streamline, DiagnosisFix.Reinstall };
 
     public bool CanHeal => Diagnosis.Findings.Any(f => HealOrder.Contains(f.Fix)) && !Busy;
 
@@ -790,7 +804,16 @@ public sealed class GameDetailViewModel : ObservableObject
             DllDetector.Inspect(Game);
             _notify(Loc.T("heal.rolled_back", Game.Name, new DiagnosisFinding { Id = "", State = UiStatus.Idle, Title = "", Fix = step }.FixLabel) + (left.Count > 0 ? " " + Loc.T("restore.refused", string.Join(", ", left)) : ""), true);
         }
-        else _notify(Loc.T("heal.done", Game.Name, fixes.Count), false);
+        else
+        {
+            // Verification : une constatation qui survit a sa correction n'est pas « reparee ».
+            var before = Diagnosis.Findings.Where(f => HealOrder.Contains(f.Fix)).Select(f => f.Id).ToHashSet();
+            DllDetector.Inspect(Game);
+            RunDiagnosis();
+            var still = Diagnosis.Findings.Where(f => before.Contains(f.Id)).Select(f => f.Title).ToList();
+            if (still.Count > 0) _notify(Loc.T("heal.not_resolved", Game.Name, string.Join(", ", still)), true);
+            else _notify(Loc.T("heal.done", Game.Name, fixes.Count), false);
+        }
 
         Refresh();
     }
@@ -803,6 +826,18 @@ public sealed class GameDetailViewModel : ObservableObject
                 return await InstallReShadeAsync();
             case DiagnosisFix.Streamline:
                 return await DeployStreamlineAsync();
+            case DiagnosisFix.MoveProxy:
+                return MoveOptiScaler();
+            case DiagnosisFix.SetAside:
+                // Plugins Streamline d'une autre version, poses par un autre outil : mis de cote, annulable.
+                if (MixedStreamline() is not { Odd.Count: > 0 } odd) return true;
+                var items = odd.Odd.Where(p => !_svc.Deployments.WasDeployed(p))
+                    .Select(p => new CleanItem { Path = p, Action = CleanAction.Remove, Source = "Streamline", Display = Path.GetFileName(p) })
+                    .ToList();
+                if (items.Count == 0) return true;
+                var result = _svc.Cleaner.Execute(Game, new CleanPlan { Items = items });
+                if (result.Success) Log.Info(Src, $"{Game.Name}: set aside {string.Join(", ", items.Select(i => i.Display))}");
+                return result.Success;
             case DiagnosisFix.Reinstall:
                 var kind = Dlss5Addon.All.FirstOrDefault(a => File.Exists(Path.Combine(TargetDir, a.FileName))) ?? Dlss5Addon.ShortFuse;
                 // L'addon ne se charge qu'avec ReShade en version add-on.
@@ -811,6 +846,38 @@ public sealed class GameDetailViewModel : ObservableObject
             default:
                 return true;
         }
+    }
+
+    /// <summary>
+    /// OptiScaler change de nom : hors des noms reserves aux chargeurs du jeu, et hors de d3d12.dll
+    /// quand un nom plus sur est libre. Une transaction : l'original est sauvegarde, le proprietaire garde.
+    /// </summary>
+    private bool MoveOptiScaler()
+    {
+        var dir = TargetDir;
+        var current = FrameGenService.LoadedOptiScaler(dir);
+        if (current is null) return true;
+        var reserved = ModRules.ReservedProxies(dir);
+        if (!reserved.Contains(current) && current != "d3d12.dll") return true;
+        if (FrameGenService.PickProxyName(dir) is not { } to || to == current)
+        {
+            _notify(Loc.T("nexus.err.proxy_full", current), true);
+            return false;
+        }
+
+        var from = Path.Combine(dir, current);
+        var owner = _svc.Deployments.For(Game.Id).FirstOrDefault(e => string.Equals(e.Path, from, StringComparison.OrdinalIgnoreCase));
+        var keep = Path.Combine(AppPaths.Cache, $"optiscaler-{Guid.NewGuid():N}.dll");
+        File.Copy(from, keep, overwrite: true);
+        var tx = new FileTransaction(Game, _svc.Backups, _svc.Deployments, owner?.Origin ?? "OptiScaler");
+        tx.Copy(keep, Path.Combine(dir, to), owner?.Component ?? "OptiScaler", owner?.Version ?? "", track: owner is not null);
+        tx.Delete(from);
+        var result = tx.Commit();
+        try { File.Delete(keep); } catch { /* cache */ }
+        if (!result.Success) { _notify(result.Message, true); return false; }
+        Log.Info(Src, $"{Game.Name}: OptiScaler {current} → {to}");
+        _notify(Loc.T("nexus.opti_moved", current, to), false);
+        return true;
     }
 
     /// <summary>Ou les reparations ecrivent : a cote de l'exe, de Streamline et des runtimes NGX.</summary>

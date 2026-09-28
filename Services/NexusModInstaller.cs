@@ -547,6 +547,7 @@ public sealed class NexusModInstaller
         // Un fichier du mod prend le nom d'un OptiScaler (RED4ext et winmm.dll) : OptiScaler change
         // de nom dans la meme transaction. Retirer le mod remet tout comme avant.
         var moved = new List<(string From, string To, DeployedFile? Owner)>();
+        var copies = new List<string>();
         foreach (var dest in targets.ToList())
         {
             if (!File.Exists(dest) || !LeftoverCleaner.IsOptiScaler(dest)) continue;
@@ -560,11 +561,14 @@ public sealed class NexusModInstaller
             // Copie prise avant la transaction : celle-ci ecrit d'abord le fichier du mod a la place.
             var keep = Path.Combine(NexusService.Downloads, $"optiscaler-{Guid.NewGuid():N}.dll");
             File.Copy(dest, keep, overwrite: true);
+            copies.Add(keep);
             tx.Copy(keep, to, "OptiScaler", owner?.Version ?? "", track: owner is null);
             moved.Add((dest, to, owner));
         }
 
         var result = tx.Commit();
+        foreach (var c in copies)
+            try { File.Delete(c); } catch { /* copie temporaire */ }
         if (!result.Success) return result;
 
         foreach (var (from, to, owner) in moved)

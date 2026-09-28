@@ -441,9 +441,39 @@ public sealed class FrameGenService
         // Un nom qu'un chargeur de mods du jeu utilise (RED4ext, CET...) ne sert jamais a OptiScaler.
         var reserved = ModRules.ReservedProxies(dir);
         var taken = new HashSet<string>(alsoTaken ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-        return DllDetector.ProxyNames
-            .Where(n => n.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault(n => !reserved.Contains(n) && !taken.Contains(n) && !File.Exists(Path.Combine(dir, n)));
+        bool Free(string n) => !reserved.Contains(n) && !taken.Contains(n) && !File.Exists(Path.Combine(dir, n));
+
+        // Noms pris en charge par OptiScaler (setup_windows.bat), dans l'ordre de preference :
+        //  - dxgi, winmm, version, dbghelp : charges par presque tous les jeux ;
+        //  - wininet, winhttp : seulement si le jeu les charge vraiment (imports de l'exe, ou d'une DLL
+        //    du dossier que l'exe charge) — sinon OptiScaler ne demarrerait jamais ;
+        //  - d3d12 en dernier : il s'insere dans le demarrage de Direct3D. Constate sur Cyberpunk 2077 :
+        //    avec ReShade sur dxgi.dll, la creation de la fabrique DXGI echoue (DXGI_ERROR_INVALID_CALL).
+        foreach (var n in new[] { "dxgi.dll", "winmm.dll", "version.dll", "dbghelp.dll" })
+            if (Free(n)) return n;
+        var loaded = LoadedByGame(dir);
+        foreach (var n in new[] { "wininet.dll", "winhttp.dll" })
+            if (Free(n) && loaded.Contains(n)) return n;
+        return Free("d3d12.dll") ? "d3d12.dll" : null;
+    }
+
+    /// <summary>DLL que le jeu charge au demarrage : imports des .exe du dossier, et des DLL locales qu'ils importent.</summary>
+    public static HashSet<string> LoadedByGame(string dir)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var exe in Directory.EnumerateFiles(dir, "*.exe"))
+                foreach (var dll in PeInfo.Imports(exe))
+                {
+                    result.Add(dll);
+                    var local = Path.Combine(dir, dll);
+                    if (File.Exists(local))
+                        foreach (var sub in PeInfo.Imports(local)) result.Add(sub);
+                }
+        }
+        catch { /* dossier illisible */ }
+        return result;
     }
 
     /// <summary>Les six binaires Streamline du DLSS-G injecte sont en place et identiques aux empreintes epinglees.</summary>

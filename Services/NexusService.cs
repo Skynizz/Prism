@@ -139,11 +139,20 @@ public sealed partial class NexusService
     {
         var stem = Path.GetFileNameWithoutExtension(file);
         var m = CurrentArchiveRegex().Match(stem);
-        if (m.Success) return (m.Groups[1].Value.Trim(), long.Parse(m.Groups[2].Value), m.Groups[3].Value);
+        if (m.Success) return (Clean(m.Groups[1].Value), long.Parse(m.Groups[2].Value), m.Groups[3].Value);
         m = ArchiveRegex().Match(stem);
-        if (!m.Success) return (stem, null, null);
+        if (!m.Success) return (Clean(stem), null, null);
         var version = m.Groups[3].Success ? m.Groups[3].Value.Replace('-', '.') : "";
-        return (m.Groups[1].Value.Trim(), long.Parse(m.Groups[2].Value), version.Length == 0 ? null : version);
+        return (Clean(m.Groups[1].Value), long.Parse(m.Groups[2].Value), version.Length == 0 ? null : version);
+
+        // Un fichier envoye sur Nexus sous le nom « input_loader_v0.2.3.zip » garde son extension dans le nom.
+        static string Clean(string name)
+        {
+            name = name.Trim();
+            foreach (var ext in new[] { ".zip", ".7z", ".rar" })
+                if (name.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) return name[..^ext.Length].Trim();
+            return name;
+        }
     }
 
     /// <summary>Nom du mod d'apres le titre de la page : « Cyber Engine Tweaks at Cyberpunk 2077 Nexus - Mods and community ».</summary>

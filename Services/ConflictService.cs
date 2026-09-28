@@ -56,8 +56,16 @@ public static class ConflictService
                 : ReShadeLocator.Scan(dir).Active.Any(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) ? "ReShade" : null;
             if (who is not null)
                 list.Add(new ModConflict("conflict-reserved-" + name, UiStatus.Warning, Loc.T("conflict.reserved", who, name),
-                    Loc.T("conflict.reserved_ev", name), DiagnosisFix.None));
+                    Loc.T("conflict.reserved_ev", name), who == "OptiScaler" ? DiagnosisFix.MoveProxy : DiagnosisFix.None));
         }
+
+        // OptiScaler sur d3d12.dll alors qu'un nom plus sur est libre : il s'insere dans le demarrage
+        // de Direct3D (fabrique DXGI en echec constatee avec ReShade sur dxgi.dll, Cyberpunk 2077).
+        var d3d12 = Path.Combine(dir, "d3d12.dll");
+        if (File.Exists(d3d12) && LeftoverCleaner.IsOptiScaler(d3d12) &&
+            FrameGenService.PickProxyName(dir) is { } better && better != "d3d12.dll")
+            list.Add(new ModConflict("conflict-opti-d3d12", UiStatus.Warning, Loc.T("conflict.opti_d3d12"),
+                Loc.T("conflict.opti_d3d12_ev", better), DiagnosisFix.MoveProxy));
 
         if (LeftoverCleaner.HasRhiTraces(game))
             list.Add(new ModConflict("leftovers-rhi", UiStatus.Warning, Loc.T("conflict.rhi_leftovers"),
