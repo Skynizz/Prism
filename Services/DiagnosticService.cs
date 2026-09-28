@@ -216,6 +216,23 @@ public sealed class DiagnosticService
         };
     }
 
+    /// <summary>
+    /// L'addon en place est-il exactement celui de la release (meme empreinte que la copie en cache) ?
+    /// Un addon identique n'est jamais « depasse », meme publie plusieurs jours apres sa compilation.
+    /// </summary>
+    private static bool SameAsRelease(string addonPath, RhiRepoService.Release release)
+    {
+        try
+        {
+            var files = Path.Combine(AppPaths.ComponentCache, "rhi", AppPaths.Sanitize(release.Tag), "files");
+            if (!File.Exists(addonPath) || !Directory.Exists(files)) return false;
+            var mine = DownloadService.Sha256Cached(addonPath);
+            return Directory.EnumerateFiles(files, "*.addon64", SearchOption.AllDirectories)
+                .Any(f => DownloadService.Sha256Cached(f).Equals(mine, StringComparison.OrdinalIgnoreCase));
+        }
+        catch { return false; }
+    }
+
     /// <summary>Addon, DLSS et Streamline en place, compares a la derniere version stable publiee.</summary>
     private List<DiagnosisFinding> VersionFindings(GameInfo game, string dir, Dlss5Addon kind)
     {
@@ -245,7 +262,7 @@ public sealed class DiagnosticService
         var latestAddon = _rhi.Family(kind.TagPrefix).FirstOrDefault();
         if (entry?.Version is { } recorded && recorded.Contains('.'))
             Older("outdated-addon", kind.Label, recorded, latestAddon?.Version);
-        else if (latestAddon is not null && AddonBuildDate(addonPath) is { } built
+        else if (latestAddon is not null && !SameAsRelease(addonPath, latestAddon) && AddonBuildDate(addonPath) is { } built
                  && latestAddon.Published.UtcDateTime.Date > built.AddDays(1))
             // Version inconnue (pose a la main, ou inscrite « 5 » par une ancienne version de Prism) :
             // seule la date de build du fichier est sure, comparee a la publication de la derniere release.

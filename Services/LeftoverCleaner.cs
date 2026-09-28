@@ -151,6 +151,9 @@ public sealed class LeftoverCleaner
                 foreach (var f in SafeFilesDeep(shaders)) Add(f, CleanAction.Remove, "ReShade");
         }
 
+        // 6. Dossiers de mods orphelins : reglages et journaux laisses par un mod retire.
+        foreach (var f in ModCleanup.OrphanFiles(game, prism)) Add(f, CleanAction.Remove, ModCleanup.Source);
+
         return new CleanPlan
         {
             Items = items.Values
@@ -222,6 +225,7 @@ public sealed class LeftoverCleaner
         var msg = Loc.T("clean.done", game.Name, done);
         if (failed.Count > 0) msg += " " + Loc.T("restore.refused", string.Join(", ", failed));
         Log.Info(Src, $"{game.Name}: {done} file(s) cleaned, {failed.Count} refused, stored in {root}");
+        ModCleanup.PruneEmpty(game);
         return new InstallResult(done > 0, msg, done);
     }
 

@@ -103,6 +103,18 @@
             </StackPanel>
         </Border>
 
+        <!-- ============================== RESTES DE MODS RETIRES -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"
+                BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"
+                Visibility="{Binding HasLeftovers, Converter={StaticResource BoolVis}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Base}" Content="{l:T nexus.leftovers.clean}"
+                        Command="{Binding CleanLeftoversCommand}" ToolTip="{l:T nexus.leftovers.tip}" />
+                <TextBlock Text="{Binding LeftoversLabel}" Style="{StaticResource T.Label}" Foreground="{DynamicResource BrWarn}"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
         <!-- ========================================= MODS INSTALLES -->
         <Border DockPanel.Dock="Top" Background="{DynamicResource BrChrome}" BorderBrush="{DynamicResource BrLine}"
                 BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"

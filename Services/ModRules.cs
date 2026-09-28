@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Prism.Core;
+using Prism.Models;
 
 namespace Prism.Services;
 
@@ -30,8 +31,23 @@ public sealed class ExtensionRule
     public string Dest { get; set; } = "";
 }
 
+/// <summary>Dossier qui accueille un dossier par mod, et le fichier qui prouve qu'un mod s'y trouve.</summary>
+public sealed class ModContainer
+{
+    public string Path { get; set; } = "";
+    /// <summary>Extensions (« .dll ») ou noms exacts (« init.lua »).</summary>
+    public List<string> Keys { get; set; } = new();
+
+    public bool IsKey(string fileName)
+        => Keys.Any(k => k.StartsWith('.') ? fileName.EndsWith(k, StringComparison.OrdinalIgnoreCase)
+                                          : fileName.Equals(k, StringComparison.OrdinalIgnoreCase));
+}
+
 public sealed class GameModRule
 {
+    /// <summary>Executable qui identifie le jeu sans passer par Nexus (restes de mods, noms reserves).</summary>
+    public string? Exe { get; set; }
+    public List<ModContainer> ModContainers { get; set; } = new();
     public string? ModRoot { get; set; }
     public List<string> StopFolders { get; set; } = new();
     public List<ModMarker> Markers { get; set; } = new();
@@ -93,6 +109,14 @@ public static class ModRules
             if (stream is not null) Load(new StreamReader(stream).ReadToEnd());
         }
         catch (Exception ex) { Log.Warn(Src, $"Embedded rules unreadable: {ex.Message}"); }
+    }
+
+    /// <summary>Regle du jeu reconnue a son executable.</summary>
+    public static GameModRule? ForGame(GameInfo game)
+    {
+        var exe = System.IO.Path.GetFileName(game.Executable ?? "");
+        return exe.Length == 0 ? null
+            : Games.Values.FirstOrDefault(r => r.Exe is not null && r.Exe.Equals(exe, StringComparison.OrdinalIgnoreCase));
     }
 
     public static GameModRule? For(string? domain)

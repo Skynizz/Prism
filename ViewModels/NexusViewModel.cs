@@ -149,6 +149,7 @@ public sealed class NexusViewModel : ObservableObject
         _svc.NexusAccount.Changed += RaiseAccount;
 
         ToggleInstalledCommand = new RelayCommand(_ => ShowInstalled = !ShowInstalled);
+        CleanLeftoversCommand = new RelayCommand(_ => CleanLeftovers(), _ => HasLeftovers && !QueueActive);
         CheckUpdatesCommand = new AsyncRelayCommand(_ => RefreshInstalledAsync(), _ => !QueueActive);
         UpdateAllCommand = new AsyncRelayCommand(_ => UpdateAsync(InstalledMods.Where(r => r.State == ModVersionState.Update).ToList()),
             _ => UpdateCount > 0 && !QueueActive);
@@ -699,6 +700,7 @@ public sealed class NexusViewModel : ObservableObject
         InstalledMods.Clear();
         RaiseInstalled();
         var game = _detail()?.Game;
+        RefreshLeftovers(game);
         if (game is null) return;
 
         foreach (var install in NexusModInstaller.Installed().Where(i => i.GameId == game.Id && _svc.Requirements.IsDeployed(game, i)))
@@ -731,6 +733,58 @@ public sealed class NexusViewModel : ObservableObject
         return RunQueueAsync(items);
     }
 
+    // --------------------------------------------------- Restes de mods retires
+
+    private int _leftoverDirs;
+    private int _leftoverFiles;
+    public bool HasLeftovers => _leftoverDirs > 0;
+    public string LeftoversLabel => Loc.T("nexus.leftovers", _leftoverDirs, _leftoverFiles);
+    public RelayCommand CleanLeftoversCommand { get; }
+
+    /// <summary>Dossiers de mods sans mod dedans : reglages laisses en jeu, ou simplement vides.</summary>
+    private void RefreshLeftovers(GameInfo? game)
+    {
+        _leftoverDirs = _leftoverFiles = 0;
+        if (game is not null)
+        {
+            var tracked = _svc.Changes.For(game.Id).Select(c => c.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var dirs = ModCleanup.OrphanDirs(game, tracked);
+            _leftoverDirs = dirs.Count;
+            _leftoverFiles = dirs.Sum(d => Directory.EnumerateFiles(d, "*", SearchOption.AllDirectories).Count());
+        }
+        OnPropertyChanged(nameof(HasLeftovers));
+        OnPropertyChanged(nameof(LeftoversLabel));
+        CleanLeftoversCommand.Raise();
+    }
+
+    /// <summary>Met de cote (annulable) ce qui reste des mods retires, puis supprime leurs dossiers vides.</summary>
+    private void CleanLeftovers()
+    {
+        var detail = _detail();
+        if (detail is null) return;
+        var game = detail.Game;
+        if (GameGuard.Check(game) is { } blocked) { SetStatus(blocked.Message, true); return; }
+
+        var tracked = _svc.Changes.For(game.Id).Select(c => c.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var items = ModCleanup.OrphanFiles(game, tracked)
+            .Select(f => new CleanItem { Path = f, Action = CleanAction.Remove, Source = ModCleanup.Source,
+                                         Display = Path.GetRelativePath(game.InstallDir, f) })
+            .ToList();
+        var files = 0;
+        if (items.Count > 0)
+        {
+            var r = _svc.Cleaner.Execute(game, new CleanPlan { Items = items });
+            if (!r.Success) { SetStatus(r.Message, true); return; }
+            files = items.Count;
+        }
+        var dirs = ModCleanup.PruneEmpty(game);
+        var msg = Loc.T("nexus.leftovers.done", dirs, files);
+        SetStatus(msg, false);
+        _notify(msg, false);
+        detail.Refresh();
+        RefreshLeftovers(game);
+    }
+
     private void RaiseInstalled()
     {
         OnPropertyChanged(nameof(HasInstalledMods));
@@ -754,6 +808,7 @@ public sealed class NexusViewModel : ObservableObject
         RaiseMissing();
         RaiseInstalled();
         RaiseAccount();
+        OnPropertyChanged(nameof(LeftoversLabel));
         OnPropertyChanged(nameof(PendingTitle));
     }
 }

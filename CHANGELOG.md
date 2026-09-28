@@ -57,6 +57,14 @@
 
 ### Fixed
 
+- *Remove* on a Nexus mod left its folders behind, empty or holding the settings and logs the mod
+  wrote in game. The mod's folder now goes entirely (anything not placed by Prism is set aside and
+  restorable), and the Nexus page offers to clean up the leftovers of mods removed earlier without
+  touching other mods, ReShade or OptiScaler.
+- A RenoDX DLSS 5 add-on identical to the latest release was reported outdated when the release was
+  published days after it was built, so *Repair* kept reinstalling it. The file is now compared with
+  the release itself.
+
 - *Repair* could loop forever on "Streamline files from different versions" when the odd plugin was
   left by another tool (a 2.13 `sl.dlss_nr.dll` next to Streamline 2.14.1): reinstalling never
   touched it. The plugin is now compared with `sl.interposer.dll`, a foreign one is set aside

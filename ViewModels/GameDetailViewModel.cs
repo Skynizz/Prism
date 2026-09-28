@@ -880,6 +880,25 @@ public sealed class GameDetailViewModel : ObservableObject
         return true;
     }
 
+    /// <summary>
+    /// Apres le retrait d'un mod Nexus : ce que le mod a cree en jeu dans son propre dossier (reglages,
+    /// journaux) est mis de cote — annulable depuis Modifications — puis ses dossiers vides partent.
+    /// </summary>
+    private int CleanModLeftovers(List<string> removedDirs)
+    {
+        var tracked = _svc.Changes.For(Game.Id).Select(c => c.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var orphans = ModCleanup.OrphanDirs(Game, tracked)
+            .Where(o => removedDirs.Any(d => (d + Path.DirectorySeparatorChar).StartsWith(o + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        var items = orphans.SelectMany(o => Directory.EnumerateFiles(o, "*", SearchOption.AllDirectories))
+            .Select(f => new CleanItem { Path = f, Action = CleanAction.Remove, Source = ModCleanup.Source, Display = Path.GetFileName(f) })
+            .ToList();
+        var done = 0;
+        if (items.Count > 0 && _svc.Cleaner.Execute(Game, new CleanPlan { Items = items }).Success) done += items.Count;
+        done += ModCleanup.PruneEmpty(Game);
+        return done;
+    }
+
     /// <summary>Ou les reparations ecrivent : a cote de l'exe, de Streamline et des runtimes NGX.</summary>
     private IEnumerable<string> HealDirectories()
         => new[] { TargetDir }
@@ -1517,8 +1536,16 @@ public sealed class GameDetailViewModel : ObservableObject
                 done += _svc.Hdr.Remove(Game).FilesChanged;
             }
 
+            var nexus = origin.StartsWith("Nexus · ", StringComparison.Ordinal);
+            var removedDirs = nexus
+                ? _svc.Deployments.For(Game.Id).Where(e => e.Origin == origin).Select(e => Path.GetFullPath(Path.GetDirectoryName(e.Path)!)).Distinct().ToList()
+                : new List<string>();
             done += _svc.Changes.RevertOrigin(Game.Id, origin);
-            if (origin.StartsWith("Nexus · ", StringComparison.Ordinal)) NexusModInstaller.Forget(Game.Id, origin);
+            if (nexus)
+            {
+                NexusModInstaller.Forget(Game.Id, origin);
+                done += CleanModLeftovers(removedDirs);
+            }
 
             // Les inscriptions laissees dans ReShade.ini par l'addon retire.
             done += origin switch

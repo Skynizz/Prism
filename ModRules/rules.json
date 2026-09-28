@@ -1,9 +1,17 @@
 {
-  "version": 2,
+  "version": 3,
   "_about": "Ou poser les mods Nexus, jeu par jeu. Cle = domaine Nexus (verifie via l'API GraphQL v2). Sources : extensions Vortex de Nexus Mods (github.com/Nexus-Mods/vortex-games, GPL-3.0) et, pour Cyberpunk 2077, cyberpunk2077_ext_redux (installers.layouts.ts). modRoot = dossier des mods relatif au jeu ; stopFolders = dossiers de premier niveau qui ancrent une archive sur la racine du jeu ; markers = un fichier ou dossier qui designe un dossier de mod complet ; extensions = fichiers isoles. {dir} = nom du dossier du mod, {mod} = nom du mod.",
   "games": {
     "cyberpunk2077": {
+      "exe": "Cyberpunk2077.exe",
       "stopFolders": ["archive", "bin", "engine", "r6", "red4ext", "mods"],
+      "modContainers": [
+        { "path": "red4ext/plugins", "keys": [".dll"] },
+        { "path": "bin/x64/plugins/cyber_engine_tweaks/mods", "keys": ["init.lua"] },
+        { "path": "r6/scripts", "keys": [".reds"] },
+        { "path": "r6/tweaks", "keys": [".yaml", ".yml", ".tweak"] },
+        { "path": "mods", "keys": ["info.json"] }
+      ],
       "markers": [
         { "file": "init.lua", "dest": "bin/x64/plugins/cyber_engine_tweaks/mods/{dir}" },
         { "file": "info.json", "withSibling": ["archives", "scripts", "tweaks", "customSounds"], "dest": "mods/{dir}", "note": "nexus.note.redmod" }
