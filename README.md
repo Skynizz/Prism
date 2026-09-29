@@ -439,7 +439,7 @@ Prism/
 ├─ Services/      scan, detection, downloads, signatures, installers, transactions,
 │                 change registry, vanilla restore, RenoDX wiki, self-update
 ├─ ViewModels/    MainViewModel (shell), GameDetailViewModel, NexusViewModel
-├─ Views/         window + 12 pages, Controls/
+├─ Views/         window + 13 pages, Controls/
 ├─ Themes/        Classic and Studio design tokens and styles
 ├─ Assets/        icon, splash screen, installer artwork
 ├─ installer/     Inno Setup script

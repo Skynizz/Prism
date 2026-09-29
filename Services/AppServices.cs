@@ -44,6 +44,7 @@ public sealed class AppServices
         Requirements = new NexusRequirements(Deployments);
         NexusAccount = new NexusAccount();
         Shaders = new ShaderPackService(Downloads, Backups, Deployments);
+        ModHealth = new ModHealthService(Deployments, Requirements, Nexus);
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -84,6 +85,7 @@ public sealed class AppServices
     public NexusRequirements Requirements { get; }
     public NexusAccount NexusAccount { get; }
     public ShaderPackService Shaders { get; }
+    public ModHealthService ModHealth { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }

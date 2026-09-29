@@ -4,6 +4,17 @@
 
 ### New
 
+- **Mods page: health check.** For the selected game Prism now checks that the installed mods
+  can actually load. It lists the frameworks the mods present depend on (Cyberpunk: RED4ext,
+  redscript, Cyber Engine Tweaks, ArchiveXL, TweakXL and the REDmod DLC; any game: SKSE, F4SE,
+  SFSE, xNVSE, OBSE, UE4SS, BepInEx, MelonLoader) and flags one as missing only when a mod
+  needs it. It also reports files Prism placed that are gone, missing Nexus requirements,
+  conflicts, and the errors RED4ext, redscript and CET logged at the last launch. Each problem
+  comes with its fix: download from Nexus (in the background for Premium), reinstall the mod,
+  open the REDmod install in Steam, or open the log. *Fix all* runs every fix at once. The check
+  runs again after each install and when the game closes.
+- Premium downloads that fail now log why.
+
 - **NVIDIA driver page.** Per-game driver profile settings without the NVIDIA app or Profile
   Inspector, sorted in four groups: DLSS (render scale 33–100 %, Ray Reconstruction and Frame
   Generation presets), latency (Low Latency Off/On/Ultra, VSync with Fast, frame limiter with a

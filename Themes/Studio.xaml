@@ -321,6 +321,8 @@
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoReShade}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoDriver">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoDriver}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoMods">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoMods}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">

@@ -51,6 +51,7 @@ public sealed class MainViewModel : ObservableObject
             // Ajoutees apres coup : leur index suit les pages existantes, dont les numeros servent ailleurs.
             new() { Key = "nav.reshade",      Icon = "IcoReShade",    Index = 10, Group = "PIPELINE" },
             new() { Key = "nav.driver",       Icon = "IcoDriver",     Index = 11, Group = "PIPELINE" },
+            new() { Key = "nav.mods",         Icon = "IcoMods",       Index = 12, Group = "PIPELINE" },
             new() { Key = "nav.nexus",        Icon = "IcoNexus",      Index = 9, Group = "PIPELINE" },
             new() { Key = "nav.changes",      Icon = "IcoChanges",    Index = 5, Group = "TOOLING" },
             new() { Key = "nav.components",   Icon = "IcoComponents", Index = 6, Group = "TOOLING" },
@@ -61,6 +62,7 @@ public sealed class MainViewModel : ObservableObject
         Nexus = new NexusViewModel(_svc, () => Detail, () => Games, Notify);
         Shaders = new ShaderPacksViewModel(_svc, () => Detail, Notify);
         Driver = new DriverSettingsViewModel(_svc, () => Detail, Notify);
+        Mods = new ModsViewModel(_svc, () => Detail, Nexus, () => GoTo(9), Notify);
         Nexus.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(NexusViewModel.Busy) or nameof(NexusViewModel.Status)) RaiseWork(); };
         Shaders.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(ShaderPacksViewModel.Busy) or nameof(ShaderPacksViewModel.Activity)) RaiseWork(); };
 
@@ -164,6 +166,7 @@ public sealed class MainViewModel : ObservableObject
         Nexus.Relocalize();
         Shaders.Relocalize();
         Driver.Relocalize();
+        Mods.Relocalize();
         ReloadChanges();
         ReloadBackups();
         RaiseCatalogProps();
@@ -327,6 +330,7 @@ public sealed class MainViewModel : ObservableObject
     public NexusViewModel Nexus { get; }
     public ShaderPacksViewModel Shaders { get; }
     public DriverSettingsViewModel Driver { get; }
+    public ModsViewModel Mods { get; }
 
     // ------------------------------------------------------ Travail en cours
 
@@ -383,6 +387,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(InspectorVisible));
             Shaders?.Reload();
             Driver?.Reload();
+            if (Mods is not null) _ = Mods.CheckAsync();
             RaiseWork();
         }
     }
@@ -427,7 +432,10 @@ public sealed class MainViewModel : ObservableObject
         var found = ProcessWatcher.FindRunning(Games);
         if (found?.Id == RunningGame?.Id) return;
 
+        var closed = RunningGame;
         RunningGame = found;
+        // Jeu ferme : ses journaux (RED4ext, redscript, CET...) disent ce qui a charge ou non.
+        if (closed is not null && found is null && Detail?.Game.Id == closed.Id) _ = Mods.CheckAsync();
         if (found is not null) Log.Info(Src, $"Active game: {found.Name}");
         Detail?.Refresh();
     }

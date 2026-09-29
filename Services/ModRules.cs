@@ -43,8 +43,38 @@ public sealed class ModContainer
                                           : fileName.Equals(k, StringComparison.OrdinalIgnoreCase));
 }
 
+/// <summary>Chargeur de mods du jeu (CET, RED4ext, REDmod...) : ce qui le prouve et ce qui l'exige.</summary>
+public sealed class FrameworkRule
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>Mod Nexus qui le fournit.</summary>
+    public long? Nexus { get; set; }
+    /// <summary>DLC Steam qui le fournit (REDmod : 2060310).</summary>
+    public long? SteamApp { get; set; }
+    /// <summary>Fichiers relatifs au jeu qui prouvent qu'il est installe.</summary>
+    public List<string> Files { get; set; } = new();
+    /// <summary>Il devient indispensable des qu'un fichier de ce nom, ou de cette extension, existe dans ce dossier.</summary>
+    public string? NeededDir { get; set; }
+    public string? NeededFile { get; set; }
+    public List<string>? NeededExt { get; set; }
+    /// <summary>Utile sans etre exige (REDmod : case Mods du launcher).</summary>
+    public bool Optional { get; set; }
+    public string? Note { get; set; }
+}
+
+/// <summary>Journal d'un chargeur, relu apres un lancement.</summary>
+public sealed class LogRule
+{
+    public string Dir { get; set; } = "";
+    public string Pattern { get; set; } = "*.log";
+    public string Error { get; set; } = "";
+}
+
 public sealed class GameModRule
 {
+    public List<FrameworkRule> Frameworks { get; set; } = new();
+    public List<LogRule> Logs { get; set; } = new();
     /// <summary>Executable qui identifie le jeu sans passer par Nexus (restes de mods, noms reserves).</summary>
     public string? Exe { get; set; }
     public List<ModContainer> ModContainers { get; set; } = new();

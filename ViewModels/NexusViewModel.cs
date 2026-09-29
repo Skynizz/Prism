@@ -158,6 +158,29 @@ public sealed class NexusViewModel : ObservableObject
     /// <summary>La vue navigue quand on le lui demande : changement de jeu, lien nxm.</summary>
     public event Action<string>? NavigateRequested;
 
+    /// <summary>Une file de telechargements (prerequis, mises a jour, corrections) vient de se terminer.</summary>
+    public event Action? QueueFinished;
+
+    /// <summary>
+    /// Telechargements demandes par le bilan des mods : bases manquantes, prerequis, reinstallations.
+    /// Renvoie vrai si une file a demarre.
+    /// </summary>
+    public async Task<bool> DownloadAsync(IEnumerable<HealthFinding> findings)
+    {
+        var items = new List<QueueItem>();
+        foreach (var f in findings)
+        {
+            if (f.Domain is null || f.ModId is null) continue;
+            var gameId = await _svc.Requirements.GameIdAsync(f.Domain);
+            if (gameId is null) continue;
+            items.Add(new QueueItem(f.FixName ?? f.ModId.ToString()!, f.Domain, gameId.Value, f.ModId.Value,
+                f.Fix == HealthFixKind.Reinstall ? f.FileId : null, f.Fix == HealthFixKind.Reinstall ? f.Origin : null, null));
+        }
+        if (items.Count == 0 || QueueActive) return false;
+        await RunQueueAsync(items);
+        return true;
+    }
+
     // ------------------------------------------------------------------- Etat
 
     private string _url = "";
@@ -325,7 +348,11 @@ public sealed class NexusViewModel : ObservableObject
                         item.Done?.Invoke();
                         done.Add(item.Name);
                     }
-                    else failed.Add(item.Name);
+                    else
+                    {
+                        Log.Warn(Src, $"Premium install of {item.Name} failed: {Status}");
+                        failed.Add($"{item.Name} ({Status})");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -348,6 +375,7 @@ public sealed class NexusViewModel : ObservableObject
         _notify(summary, failed.Count > 0);
         if (_reqFor is { } shown) await CheckRequirementsAsync(shown.Domain, CancellationToken.None);
         await RefreshInstalledAsync();
+        QueueFinished?.Invoke();
     }
 
     private async Task NextInQueueAsync()
@@ -375,6 +403,7 @@ public sealed class NexusViewModel : ObservableObject
         SetStatus(Loc.T("nexus.req.queue_done"), false);
         if (_returnUrl is { } back) NavigateRequested?.Invoke(back);
         await RefreshInstalledAsync();
+        QueueFinished?.Invoke();
     }
 
     private void StopQueue()
@@ -628,7 +657,11 @@ public sealed class NexusViewModel : ObservableObject
             current.Done?.Invoke();
             await NextInQueueAsync();
         }
-        else if (!QueueActive) await RefreshInstalledAsync();
+        else if (!QueueActive)
+        {
+            await RefreshInstalledAsync();
+            QueueFinished?.Invoke();
+        }
         return true;
     }
 

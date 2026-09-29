@@ -1,0 +1,78 @@
+<UserControl x:Class="Prism.Views.ModsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             xmlns:l="clr-namespace:Prism.Core"
+             FontFamily="{DynamicResource FontUi}">
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <StackPanel DockPanel.Dock="Top" Style="{StaticResource S.Empty}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+            <Path Data="{DynamicResource IcoMods}" Style="{StaticResource S.Icon}"
+                  Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{l:T empty.no_target}" Style="{StaticResource T.Sec}"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="20,18,20,24" DataContext="{Binding Mods}">
+
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button Style="{StaticResource Btn.Secondary}" Content="{l:T health.check}"
+                                Command="{Binding CheckCommand}" />
+                        <Button Style="{StaticResource Btn.Primary}" Content="{l:T health.fix_all}" Margin="8,0,0,0"
+                                Command="{Binding FixAllCommand}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="{l:T nav.mods}" Style="{StaticResource T.Display}" />
+                        <c:StatusDot Status="{Binding SummaryStatus}" Text="{Binding Summary}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </DockPanel>
+                <TextBlock Style="{StaticResource T.Prose}" MaxWidth="740" Margin="0,5,0,0" Text="{l:T health.intro}" />
+
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T health.sec.bases}" Margin="0,14,0,0"
+                                        Visibility="{Binding HasFrameworks, Converter={StaticResource BoolVis}}">
+                    <ItemsControl ItemsSource="{Binding Frameworks}" Margin="14,6,14,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource BrHair}" BorderThickness="0,0,0,1" Padding="0,8">
+                                    <DockPanel>
+                                        <c:StatusDot DockPanel.Dock="Right" Status="{Binding Status}" Text="{Binding StateLabel}"
+                                                     VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource T.Strong}" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </HeaderedContentControl>
+
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{l:T health.sec.problems}" Margin="0,14,0,0"
+                                        Visibility="{Binding HasFindings, Converter={StaticResource BoolVis}}">
+                    <ItemsControl ItemsSource="{Binding Findings}" Margin="14,6,14,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource BrHair}" BorderThickness="0,0,0,1" Padding="0,9">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Secondary}" Content="{Binding FixLabel}"
+                                                Command="{Binding FixCommand}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                                Visibility="{Binding CanFix, Converter={StaticResource BoolVis}}" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <c:StatusDot Status="{Binding Status}" Text="{Binding Title}" />
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource T.MonoDim}" Margin="0,3,0,0"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </HeaderedContentControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
