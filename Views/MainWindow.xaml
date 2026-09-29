@@ -296,6 +296,7 @@
                     <TabItem><v:SettingsPage /></TabItem>
                     <TabItem><v:NexusPage /></TabItem>
                     <TabItem><v:ReShadePage /></TabItem>
+                    <TabItem><v:DriverPage /></TabItem>
                 </TabControl>
 
                 <!-- Travail en cours (installation, injection, telechargement) : barre fine en haut des pages. -->

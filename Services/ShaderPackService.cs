@@ -173,22 +173,34 @@ public sealed class ShaderPackService
     {
         var dir = Path.Combine(AppPaths.ComponentCache, "shaders", AppPaths.Sanitize(pack.Id));
         Directory.CreateDirectory(dir);
-        var url = pack.Url;
-        var ext = ".zip";
-        if (pack.Kind == "release")
-        {
-            using var doc = JsonDocument.Parse(await _downloads.GetStringAsync(pack.Url, ct));
-            var wanted = pack.Asset ?? ".zip";
-            var asset = doc.RootElement.GetProperty("assets").EnumerateArray()
-                .FirstOrDefault(a => (a.GetProperty("name").GetString() ?? "").EndsWith(wanted, StringComparison.OrdinalIgnoreCase));
-            url = asset.ValueKind == JsonValueKind.Object ? asset.GetProperty("browser_download_url").GetString()!
-                : throw new InvalidOperationException(Loc.T("shaders.err.no_asset", pack.Name));
-            ext = wanted;
-        }
-
+        var ext = pack.Kind == "release" ? pack.Asset ?? ".zip" : ".zip";
         var archive = Path.Combine(dir, "pack" + ext);
-        if (File.Exists(archive) && DateTime.Now - File.GetLastWriteTime(archive) > TimeSpan.FromDays(1)) File.Delete(archive);
-        await _downloads.DownloadAsync(url, archive, null, progress, ct);
+        var fresh = File.Exists(archive) && DateTime.Now - File.GetLastWriteTime(archive) < TimeSpan.FromDays(1);
+
+        if (!fresh)
+        {
+            try
+            {
+                var url = pack.Url;
+                if (pack.Kind == "release")
+                {
+                    using var doc = JsonDocument.Parse(await _downloads.GetStringAsync(pack.Url, ct));
+                    var asset = doc.RootElement.GetProperty("assets").EnumerateArray()
+                        .FirstOrDefault(a => (a.GetProperty("name").GetString() ?? "").EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                    url = asset.ValueKind == JsonValueKind.Object ? asset.GetProperty("browser_download_url").GetString()!
+                        : throw new InvalidOperationException(Loc.T("shaders.err.no_asset", pack.Name));
+                }
+                var temp = archive + ".new";
+                if (File.Exists(temp)) File.Delete(temp);
+                await _downloads.DownloadAsync(url, temp, null, progress, ct);
+                File.Move(temp, archive, overwrite: true);
+            }
+            // GitHub limite les requetes anonymes (403 « rate limit ») : l'archive deja telechargee sert.
+            catch (Exception ex) when (ex is not OperationCanceledException && File.Exists(archive))
+            {
+                Log.Warn(Src, $"{pack.Name}: {ex.Message} — cached archive used");
+            }
+        }
 
         var files = Path.Combine(dir, "files");
         if (Directory.Exists(files)) Directory.Delete(files, recursive: true);

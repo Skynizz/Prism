@@ -4,6 +4,17 @@
 
 ### New
 
+- **NVIDIA driver page.** Per-game driver profile settings without the NVIDIA app or Profile
+  Inspector, sorted in four groups: DLSS (render scale 33–100 %, Ray Reconstruction and Frame
+  Generation presets), latency (Low Latency Off/On/Ultra, VSync with Fast, frame limiter with a
+  G-SYNC value just under the refresh rate), driver frame generation (Smooth Motion, RTX 40 and up,
+  driver 571.86+) and power and display (power management, G-SYNC per game). IDs and values come
+  from NVIDIA's own NvApiDriverSettings.h; the hidden ones (Ultra Low Latency, Smooth Motion) are
+  cross-checked with Profile Inspector's reference. Only values set for the game count: settings
+  inherited from the global profile or predefined by NVIDIA show as default. *Reset all* hands the
+  game back to the driver. Low Latency and Smooth Motion need administrator rights; the page says
+  so and can restart Prism elevated.
+
 - **ReShade page and shader library.** A new ReShade page shows the game's ReShade and 49 shader
   packs sorted by use: HDR (Lilium, RenoFX, PumboAutoHDR, QD-OLED APL Fixer…), basics, color and
   sharpness, lighting and AO (iMMERSE, qUINT…), photo and cinema, retro and special. Search, one
@@ -67,6 +78,10 @@
   depth. The rules live in `ModRules/rules.json` and update from GitHub without a new release.
 
 ### Fixed
+
+- The DLSS preset could show a value inherited from the global driver profile as if it were forced
+  for the game.
+- Shader packs fall back on the downloaded archive when GitHub rate-limits anonymous requests.
 
 - Secondary buttons on the Nexus page (*Get my key*, *Clean up*) and the API key field were white
   on white.

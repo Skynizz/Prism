@@ -50,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
             new() { Key = "nav.injection",    Icon = "IcoInjection",  Index = 4, Group = "PIPELINE" },
             // Ajoutees apres coup : leur index suit les pages existantes, dont les numeros servent ailleurs.
             new() { Key = "nav.reshade",      Icon = "IcoReShade",    Index = 10, Group = "PIPELINE" },
+            new() { Key = "nav.driver",       Icon = "IcoDriver",     Index = 11, Group = "PIPELINE" },
             new() { Key = "nav.nexus",        Icon = "IcoNexus",      Index = 9, Group = "PIPELINE" },
             new() { Key = "nav.changes",      Icon = "IcoChanges",    Index = 5, Group = "TOOLING" },
             new() { Key = "nav.components",   Icon = "IcoComponents", Index = 6, Group = "TOOLING" },
@@ -59,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedNav = Nav[0];
         Nexus = new NexusViewModel(_svc, () => Detail, () => Games, Notify);
         Shaders = new ShaderPacksViewModel(_svc, () => Detail, Notify);
+        Driver = new DriverSettingsViewModel(_svc, () => Detail, Notify);
         Nexus.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(NexusViewModel.Busy) or nameof(NexusViewModel.Status)) RaiseWork(); };
         Shaders.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(ShaderPacksViewModel.Busy) or nameof(ShaderPacksViewModel.Activity)) RaiseWork(); };
 
@@ -161,6 +163,7 @@ public sealed class MainViewModel : ObservableObject
         Detail?.Relocalize();
         Nexus.Relocalize();
         Shaders.Relocalize();
+        Driver.Relocalize();
         ReloadChanges();
         ReloadBackups();
         RaiseCatalogProps();
@@ -323,6 +326,7 @@ public sealed class MainViewModel : ObservableObject
 
     public NexusViewModel Nexus { get; }
     public ShaderPacksViewModel Shaders { get; }
+    public DriverSettingsViewModel Driver { get; }
 
     // ------------------------------------------------------ Travail en cours
 
@@ -378,6 +382,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(HasSelection));
             OnPropertyChanged(nameof(InspectorVisible));
             Shaders?.Reload();
+            Driver?.Reload();
             RaiseWork();
         }
     }

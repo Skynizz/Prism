@@ -101,6 +101,7 @@
     <Geometry x:Key="IcoExternal">M9,2.5 H13.5 V7 M13.5,2.5 L7.5,8.5 M11,9.5 V13.5 H2.5 V5 H6.5</Geometry>
     <Geometry x:Key="IcoNexus">M8,2 V10 M4.5,6.5 L8,10 L11.5,6.5 M2.5,11 V13.5 H13.5 V11</Geometry>
     <Geometry x:Key="IcoReShade">M8,2 L14,13 H2 Z M8,6.5 V13 M5,10 L11,10</Geometry>
+    <Geometry x:Key="IcoDriver">M4,4 H12 V12 H4 Z M6.5,2 V4 M9.5,2 V4 M6.5,12 V14 M9.5,12 V14 M2,6.5 H4 M2,9.5 H4 M12,6.5 H14 M12,9.5 H14</Geometry>
     <Geometry x:Key="IcoChevron">M3,6 L8,11 L13,6</Geometry>
     <Geometry x:Key="IcoCheck">M3,8.5 L6.5,12 L13,4.5</Geometry>
     <Geometry x:Key="IcoWarn">M8,1.8 L15,13.8 H1 Z M8,6.2 V9.6 M8,11.4 V11.9</Geometry>

@@ -79,6 +79,34 @@ public static class NvDriverSettings
         return value;
     }
 
+    /// <summary>
+    /// Valeur choisie pour cet executable seulement : definie dans son propre profil (settingLocation =
+    /// NVDRS_CURRENT_PROFILE_LOCATION) et non predefinie par NVIDIA (isCurrentPredefined = 0). Une valeur
+    /// heritee du profil global ou fournie d'office par NVIDIA donne null : le jeu ou le pilote decide.
+    /// </summary>
+    public static uint? ReadOwn(string exeName, uint settingId)
+    {
+        uint? value = null;
+        WithProfile(exeName, create: false, (session, profile) =>
+        {
+            WithSetting((buffer, size) =>
+            {
+                var s = Fn<GetSett>(GetSetting)(session, profile, settingId, buffer);
+                if (s == Ok && Marshal.ReadInt32(buffer, LocationOffset) == CurrentProfileLocation
+                            && Marshal.ReadInt32(buffer, PredefinedFlagOffset) == 0)
+                    value = unchecked((uint)Marshal.ReadInt32(buffer, CurrentValueOffset(size)));
+                return s;
+            });
+            return false;
+        });
+        return value;
+    }
+
+    // NVDRS_SETTING_V1 : version (4) · settingName (4096) · settingId · settingType · settingLocation · isCurrentPredefined.
+    private const int LocationOffset = 4108;
+    private const int PredefinedFlagOffset = 4112;
+    private const int CurrentProfileLocation = 0;   // NVDRS_CURRENT_PROFILE_LOCATION
+
     /// <summary>Ecrit des reglages DWORD pour cet executable (profil cree s'il n'existe pas), puis enregistre.</summary>
     public static bool Write(string exeName, params (uint Id, uint Value)[] values)
         => WithProfile(exeName, create: true, (session, profile) =>

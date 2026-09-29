@@ -623,8 +623,10 @@ public sealed class GameDetailViewModel : ObservableObject
         _loadingPreset = true;
         try
         {
-            var on = NvDriverSettings.Read(ExeName, NvDriverSettings.DlssSrOverride) == 1;
-            var value = on ? NvDriverSettings.Read(ExeName, NvDriverSettings.DlssSrPresetSelection) ?? 0 : 0;
+            // Seul ce qui a ete choisi pour ce jeu compte : une valeur heritee du profil global ou
+            // predefinie par NVIDIA n'est pas un preset impose.
+            var on = NvDriverSettings.ReadOwn(ExeName, NvDriverSettings.DlssSrOverride) == 1;
+            var value = on ? NvDriverSettings.ReadOwn(ExeName, NvDriverSettings.DlssSrPresetSelection) ?? 0 : 0;
             SelectedDlssPreset = DlssPresets.FirstOrDefault(p => p.Value == value) ?? DlssPresets[0];
         }
         finally { _loadingPreset = false; }
