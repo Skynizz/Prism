@@ -317,6 +317,8 @@
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoInjection}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoNexus">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoNexus}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Icon}" Value="IcoReShade">
+                            <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoReShade}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoChanges">
                             <Setter TargetName="Ico" Property="Data" Value="{DynamicResource IcoChanges}" /></DataTrigger>
                         <DataTrigger Binding="{Binding Icon}" Value="IcoComponents">
@@ -486,6 +488,14 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Padding" Value="12,0" />
+    </Style>
+
+    <!-- Bouton secondaire : cadre lisible dans les deux themes, a cote d'un bouton principal. -->
+    <Style x:Key="Btn.Secondary" TargetType="Button" BasedOn="{StaticResource Btn.Base}">
+        <Setter Property="Background" Value="{DynamicResource BrRaise}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrFg}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrLine}" />
+        <Setter Property="BorderThickness" Value="1" />
     </Style>
 
     <Style x:Key="Btn.Danger" TargetType="Button" BasedOn="{StaticResource Btn.Base}">

@@ -295,7 +295,13 @@
                     <TabItem><v:LogsPage /></TabItem>
                     <TabItem><v:SettingsPage /></TabItem>
                     <TabItem><v:NexusPage /></TabItem>
+                    <TabItem><v:ReShadePage /></TabItem>
                 </TabControl>
+
+                <!-- Travail en cours (installation, injection, telechargement) : barre fine en haut des pages. -->
+                <ProgressBar Grid.Column="1" VerticalAlignment="Top" Height="3" IsIndeterminate="True"
+                             Panel.ZIndex="10" IsHitTestVisible="False"
+                             Visibility="{Binding IsWorking, Converter={StaticResource BoolVis}}" />
             </Grid>
 
             <!-- ============================================ BARRE D'ETAT -->
@@ -304,8 +310,12 @@
                     Padding="12,0">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <c:StatusDot Status="{Binding ShellStatus}" Text="" />
-                        <TextBlock Text="{Binding Status}" Style="{StaticResource T.Ter}"
+                        <c:StatusDot Status="{Binding ShellStatus}" Text=""
+                                     Visibility="{Binding IsWorking, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                        <!-- Pendant un travail : ce qui se fait, et une barre qui avance. -->
+                        <ProgressBar Width="90" Height="3" IsIndeterminate="True" VerticalAlignment="Center"
+                                     Visibility="{Binding IsWorking, Converter={StaticResource BoolVis}}" />
+                        <TextBlock Text="{Binding ShellMessage}" Style="{StaticResource T.Ter}"
                                    Margin="8,0,0,0" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" MaxWidth="700" />
                     </StackPanel>

@@ -43,6 +43,7 @@ public sealed class AppServices
         NexusMods = new NexusModInstaller(Backups, Deployments);
         Requirements = new NexusRequirements(Deployments);
         NexusAccount = new NexusAccount();
+        Shaders = new ShaderPackService(Downloads, Backups, Deployments);
         Scanner = new GameScanner
         {
             ExtraFolders = Settings.Current.ExtraLibraryFolders,
@@ -82,6 +83,7 @@ public sealed class AppServices
     public NexusModInstaller NexusMods { get; }
     public NexusRequirements Requirements { get; }
     public NexusAccount NexusAccount { get; }
+    public ShaderPackService Shaders { get; }
     public GameScanner Scanner { get; }
     public GpuInfo Gpu { get; }
     public DisplayInfo Display { get; }
@@ -105,6 +107,7 @@ public sealed class AppServices
         await Dlss5.LoadAsync(ct);
         await Diagnostics.LoadAsync(ct);
         await ModRules.RefreshAsync(Downloads, ct);
+        await Shaders.RefreshAsync(ct);
 
         progress?.Report(Loc.T("init.streamline"));
         await Streamline.LoadAsync(ct);

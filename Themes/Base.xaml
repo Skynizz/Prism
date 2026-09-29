@@ -278,8 +278,32 @@
                             <Rectangle x:Name="PART_Track" />
                             <Rectangle x:Name="PART_Indicator" Fill="{TemplateBinding Foreground}"
                                        HorizontalAlignment="Left" />
+                            <!-- Duree inconnue : une bande qui glisse, rognee par le cadre. -->
+                            <Rectangle x:Name="Sweep" Width="140" HorizontalAlignment="Left" Visibility="Collapsed"
+                                       Fill="{TemplateBinding Foreground}">
+                                <Rectangle.RenderTransform>
+                                    <TranslateTransform x:Name="SweepX" X="-140" />
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
                         </Grid>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Sweep" Property="Visibility" Value="Visible" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="SweepRun">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SweepX" Storyboard.TargetProperty="X"
+                                                         From="-140" To="2200" Duration="0:0:1.6" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="SweepRun" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

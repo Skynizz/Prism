@@ -106,6 +106,14 @@
         <Setter Property="Padding" Value="9,0" />
     </Style>
 
+    <!-- Bouton secondaire : cadre lisible dans les deux themes, a cote d'un bouton principal. -->
+    <Style x:Key="Btn.Secondary" TargetType="Button" BasedOn="{StaticResource Btn.Base}">
+        <Setter Property="Background" Value="{DynamicResource BrRaise}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrFg}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
     <Style x:Key="Btn.Danger" TargetType="Button" BasedOn="{StaticResource Btn.Base}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource BrErr}" />
@@ -203,6 +211,42 @@
                         <DataTrigger Binding="{Binding Text.Length, RelativeSource={RelativeSource Self}}" Value="0">
                             <Setter TargetName="Hint" Property="Visibility" Value="Visible" />
                         </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Champ secret (cle API Nexus) : meme apparence que les champs texte, lisible dans les deux themes. -->
+    <Style TargetType="PasswordBox">
+        <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource SzSmall}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrFg}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource BrAccent}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource BrAccentDim}" />
+        <Setter Property="Background" Value="{DynamicResource BrSunken}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="{DynamicResource CtrlH}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border x:Name="B" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{DynamicResource RdCtrl}">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrLineHi}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource BrAccentDim}" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

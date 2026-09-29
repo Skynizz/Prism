@@ -4,6 +4,17 @@
 
 ### New
 
+- **ReShade page and shader library.** A new ReShade page shows the game's ReShade and 49 shader
+  packs sorted by use: HDR (Lilium, RenoFX, PumboAutoHDR, QD-OLED APL Fixer…), basics, color and
+  sharpness, lighting and AO (iMMERSE, qUINT…), photo and cinema, retro and special. Search, one
+  click to install or remove a pack, and *HDR essentials* for Lilium. Packs go into
+  `reshade-shaders` like the official installer does, never overwrite each other, keep shared
+  headers while a pack still needs them, and `ReShade.ini` gets the search paths it needs. The
+  catalog updates from GitHub.
+- **Work indicator.** Installs, injections and downloads show a moving bar at the top of the
+  window and the current step in the status bar. Archive extraction and file copies run off the
+  interface thread, so the window no longer freezes during an install.
+
 - **Live doctor.** While a game runs, its `ReShade.log` is read again every time it changes
   (LIVE badge). The diagnostic now also checks the disk: neural runtime missing, misplaced or
   untrusted, incomplete Streamline, outdated shader compiler, add-on not preloaded, and Streamline
@@ -56,6 +67,9 @@
   depth. The rules live in `ModRules/rules.json` and update from GitHub without a new release.
 
 ### Fixed
+
+- Secondary buttons on the Nexus page (*Get my key*, *Clean up*) and the API key field were white
+  on white.
 
 - *Remove* on a Nexus mod left its folders behind, empty or holding the settings and logs the mod
   wrote in game. The mod's folder now goes entirely (anything not placed by Prism is set aside and

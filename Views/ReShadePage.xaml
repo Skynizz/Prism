@@ -1,0 +1,116 @@
+<UserControl x:Class="Prism.Views.ReShadePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Prism.Views.Controls"
+             xmlns:l="clr-namespace:Prism.Core"
+             FontFamily="{DynamicResource FontUi}">
+
+    <DockPanel>
+        <c:GameBar DockPanel.Dock="Top" />
+
+        <StackPanel DockPanel.Dock="Top" Style="{StaticResource S.Empty}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}, ConverterParameter=invert}">
+            <Path Data="{DynamicResource IcoReShade}" Style="{StaticResource S.Icon}"
+                  Stroke="{DynamicResource BrFgDim}" Width="28" Height="28" Stretch="Uniform"
+                  HorizontalAlignment="Center" />
+            <TextBlock Text="{l:T empty.no_target}" Style="{StaticResource T.Sec}"
+                       HorizontalAlignment="Center" Margin="0,12,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Visibility="{Binding HasSelection, Converter={StaticResource BoolVis}}">
+            <StackPanel Margin="20,18,20,24">
+
+                <TextBlock Text="{l:T nav.reshade}" Style="{StaticResource T.Display}" />
+                <TextBlock Style="{StaticResource T.Prose}" MaxWidth="740" Margin="0,5,0,0" Text="{l:T shaders.intro}" />
+
+                <!-- ============================================= RESHADE -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="RESHADE" Margin="0,16,0,0"
+                                        DataContext="{Binding Detail}">
+                    <DockPanel Margin="14,12,14,12">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource Btn.Primary}" Content="{l:T shaders.reshade_install}"
+                                    Command="{Binding InstallReShadeCommand}"
+                                    Visibility="{Binding Game.HasReShade, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ReShadeStatus}"
+                                       Style="{StaticResource T.Mono}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T shaders.reshade_hint}" Style="{StaticResource T.Ter}" Margin="12,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding Game.HasReShade, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                        </StackPanel>
+                    </DockPanel>
+                </HeaderedContentControl>
+
+                <!-- ============================================= SHADERS -->
+                <HeaderedContentControl Style="{StaticResource S.Box}" Header="{Binding Header}" Margin="0,12,0,0"
+                                        DataContext="{Binding Shaders}">
+                    <StackPanel Margin="14,12,14,8">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}"
+                                    Content="{l:T shaders.essentials}" ToolTip="{l:T shaders.essentials_tip}"
+                                    Command="{Binding InstallEssentialsCommand}" VerticalAlignment="Center" />
+                            <TextBox Width="240" Tag="{l:T shaders.search}" HorizontalAlignment="Left"
+                                     Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <ItemsControl ItemsSource="{Binding Categories}" Style="{StaticResource Seg.Host}"
+                                      HorizontalAlignment="Left" Margin="0,10,0,6">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Style="{StaticResource Seg.Item}" GroupName="shadercat"
+                                                 Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                 Command="{Binding DataContext.PickCategoryCommand,
+                                                           RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                 CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Visible}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource BrHair}" BorderThickness="0,0,0,1" Padding="0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="260" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource T.Strong}" />
+                                                    <Border Style="{StaticResource S.Tag}" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                            Visibility="{Binding Essential, Converter={StaticResource BoolVis}}">
+                                                        <TextBlock Text="{l:T shaders.essential}" Style="{StaticResource T.Tag}" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Author}" Style="{StaticResource T.Ter}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding Tags}" Style="{StaticResource T.MonoDim}"
+                                                       VerticalAlignment="Center" Margin="12,0" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="2" Text="{Binding CategoryLabel}" Style="{StaticResource T.Ter}"
+                                                       VerticalAlignment="Center" Margin="0,0,16,0" />
+                                            <TextBlock Grid.Column="3" Text="{Binding StateLabel}" Style="{StaticResource T.Sec}"
+                                                       Foreground="{DynamicResource BrOk}" VerticalAlignment="Center" />
+                                            <Grid Grid.Column="4" VerticalAlignment="Center" MinWidth="96">
+                                                <Button Style="{StaticResource Btn.Secondary}" Content="{l:T btn.install}"
+                                                        Command="{Binding InstallCommand}"
+                                                        Visibility="{Binding Installed, Converter={StaticResource BoolVis}, ConverterParameter=invert}" />
+                                                <Button Style="{StaticResource Btn.Quiet}" Content="{l:T shaders.remove}"
+                                                        Command="{Binding RemoveCommand}"
+                                                        Visibility="{Binding Installed, Converter={StaticResource BoolVis}}" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </HeaderedContentControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

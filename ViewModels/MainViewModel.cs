@@ -48,7 +48,8 @@ public sealed class MainViewModel : ObservableObject
             new() { Key = "nav.dlss",         Icon = "IcoDlss",       Index = 2, Group = "PIPELINE" },
             new() { Key = "nav.framegen",    Icon = "IcoFrameGen",   Index = 3, Group = "PIPELINE" },
             new() { Key = "nav.injection",    Icon = "IcoInjection",  Index = 4, Group = "PIPELINE" },
-            // Ajoutee apres coup : son index suit les pages existantes, dont les numeros servent ailleurs.
+            // Ajoutees apres coup : leur index suit les pages existantes, dont les numeros servent ailleurs.
+            new() { Key = "nav.reshade",      Icon = "IcoReShade",    Index = 10, Group = "PIPELINE" },
             new() { Key = "nav.nexus",        Icon = "IcoNexus",      Index = 9, Group = "PIPELINE" },
             new() { Key = "nav.changes",      Icon = "IcoChanges",    Index = 5, Group = "TOOLING" },
             new() { Key = "nav.components",   Icon = "IcoComponents", Index = 6, Group = "TOOLING" },
@@ -57,6 +58,9 @@ public sealed class MainViewModel : ObservableObject
         };
         SelectedNav = Nav[0];
         Nexus = new NexusViewModel(_svc, () => Detail, () => Games, Notify);
+        Shaders = new ShaderPacksViewModel(_svc, () => Detail, Notify);
+        Nexus.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(NexusViewModel.Busy) or nameof(NexusViewModel.Status)) RaiseWork(); };
+        Shaders.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(ShaderPacksViewModel.Busy) or nameof(ShaderPacksViewModel.Activity)) RaiseWork(); };
 
         // Le rail est groupe par famille : SYSTEM, PIPELINE, TOOLING.
         NavView = CollectionViewSource.GetDefaultView(Nav);
@@ -156,6 +160,7 @@ public sealed class MainViewModel : ObservableObject
         foreach (var component in Components) component.Relocalize();
         Detail?.Relocalize();
         Nexus.Relocalize();
+        Shaders.Relocalize();
         ReloadChanges();
         ReloadBackups();
         RaiseCatalogProps();
@@ -317,6 +322,29 @@ public sealed class MainViewModel : ObservableObject
     public bool HasSelection => Detail is not null;
 
     public NexusViewModel Nexus { get; }
+    public ShaderPacksViewModel Shaders { get; }
+
+    // ------------------------------------------------------ Travail en cours
+
+    /// <summary>Une installation, une injection ou un telechargement est en cours quelque part.</summary>
+    public bool IsWorking => Detail?.Busy == true || Nexus.Busy || Shaders.Busy;
+
+    /// <summary>Ce que la barre d'etat affiche : l'etape en cours pendant un travail, sinon le dernier message.</summary>
+    public string? ShellMessage => !IsWorking ? Status
+        : Shaders.Busy ? Shaders.Activity
+        : Nexus.Busy ? Nexus.Status
+        : Loc.T("work.in_progress");
+
+    private void RaiseWork()
+    {
+        OnPropertyChanged(nameof(IsWorking));
+        OnPropertyChanged(nameof(ShellMessage));
+    }
+
+    private void OnDetailChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(GameDetailViewModel.Busy)) RaiseWork();
+    }
 
     // ------------------------------------------------------------ Adaptatif
 
@@ -344,9 +372,13 @@ public sealed class MainViewModel : ObservableObject
         get => _detail;
         private set
         {
+            if (_detail is not null) _detail.PropertyChanged -= OnDetailChanged;
             Set(ref _detail, value);
+            if (_detail is not null) _detail.PropertyChanged += OnDetailChanged;
             OnPropertyChanged(nameof(HasSelection));
             OnPropertyChanged(nameof(InspectorVisible));
+            Shaders?.Reload();
+            RaiseWork();
         }
     }
 
@@ -543,7 +575,7 @@ public sealed class MainViewModel : ObservableObject
     }
 
     private string _status = "Pret";
-    public string Status { get => _status; private set => Set(ref _status, value); }
+    public string Status { get => _status; private set { if (Set(ref _status, value)) OnPropertyChanged(nameof(ShellMessage)); } }
 
     private bool _statusIsError;
     public bool StatusIsError { get => _statusIsError; private set => Set(ref _statusIsError, value); }
@@ -681,6 +713,7 @@ public sealed class MainViewModel : ObservableObject
         Status = message;
         StatusIsError = isError;
         OnPropertyChanged(nameof(ShellStatus));
+        OnPropertyChanged(nameof(ShellMessage));
         if (isError) Log.Warn(Src, message); else Log.Info(Src, message);
         ReloadBackups();
         ReloadChanges();

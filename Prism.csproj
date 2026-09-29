@@ -45,6 +45,8 @@
     <EmbeddedResource Include="Diagnostics\signatures.json" LogicalName="Diagnostics.signatures.json" />
     <!-- Regles de placement des mods Nexus, aussi relues depuis GitHub. -->
     <EmbeddedResource Include="ModRules\rules.json" LogicalName="ModRules.rules.json" />
+    <!-- Catalogue des packs de shaders ReShade, aussi relu depuis GitHub. -->
+    <EmbeddedResource Include="ReShadePacks\packs.json" LogicalName="ReShadePacks.packs.json" />
   </ItemGroup>
 
 </Project>

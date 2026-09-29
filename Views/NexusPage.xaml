@@ -93,7 +93,7 @@
                     <PasswordBox x:Name="KeyBox" Width="360" PasswordChanged="OnKeyChanged" VerticalAlignment="Center" />
                     <Button Style="{StaticResource Btn.Primary}" Content="{l:T nexus.acct.save}" Margin="8,0,0,0"
                             Command="{Binding SaveKeyCommand}" />
-                    <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.acct.get_key}" Margin="8,0,0,0"
+                    <Button Style="{StaticResource Btn.Secondary}" Content="{l:T nexus.acct.get_key}" Margin="8,0,0,0"
                             Command="{Binding OpenKeysPageCommand}" />
                     <Button Style="{StaticResource Btn.Quiet}" Content="{l:T nexus.acct.forget}" Margin="8,0,0,0"
                             Command="{Binding ForgetKeyCommand}"
@@ -108,7 +108,7 @@
                 BorderThickness="0,0,0,1" Padding="16,5" DataContext="{Binding Nexus}"
                 Visibility="{Binding HasLeftovers, Converter={StaticResource BoolVis}}">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Base}" Content="{l:T nexus.leftovers.clean}"
+                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Secondary}" Content="{l:T nexus.leftovers.clean}"
                         Command="{Binding CleanLeftoversCommand}" ToolTip="{l:T nexus.leftovers.tip}" />
                 <TextBlock Text="{Binding LeftoversLabel}" Style="{StaticResource T.Label}" Foreground="{DynamicResource BrWarn}"
                            VerticalAlignment="Center" />
@@ -233,7 +233,7 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
                     <Button Style="{StaticResource Btn.Primary}" Content="{l:T nexus.to_root}"
                             Command="{Binding InstallToRootCommand}" />
-                    <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.to_exe}" Margin="8,0,0,0"
+                    <Button Style="{StaticResource Btn.Secondary}" Content="{l:T nexus.to_exe}" Margin="8,0,0,0"
                             Command="{Binding InstallToExeCommand}" />
                     <Button Style="{StaticResource Btn.Quiet}" Content="{l:T reset.cancel}" Margin="8,0,0,0"
                             Command="{Binding DismissCommand}" />
@@ -265,7 +265,7 @@
                       HorizontalAlignment="Center" />
                 <TextBlock Text="{l:T nexus.runtime_missing}" Style="{StaticResource T.Sec}"
                            HorizontalAlignment="Center" Margin="0,12,0,0" />
-                <Button Style="{StaticResource Btn.Base}" Content="{l:T nexus.runtime_get}" Click="OnGetRuntime"
+                <Button Style="{StaticResource Btn.Secondary}" Content="{l:T nexus.runtime_get}" Click="OnGetRuntime"
                         HorizontalAlignment="Center" Margin="0,12,0,0" />
             </StackPanel>
         </Grid>

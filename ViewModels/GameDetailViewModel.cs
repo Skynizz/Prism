@@ -1050,6 +1050,8 @@ public sealed class GameDetailViewModel : ObservableObject
     {
         Busy = true;
         Progress = 0;
+        // La barre de travail s'affiche avant que l'installation ne commence.
+        await Ui.Yield();
         try
         {
             var result = await action(new Progress<double>(p => Progress = p));
@@ -2107,6 +2109,7 @@ public sealed class GameDetailViewModel : ObservableObject
         if (!Guard()) return false;
         Busy = true;
         Progress = 0;
+        await Ui.Yield();
         try
         {
             var result = await _svc.ReShade.InstallAsync(Game, new Progress<double>(p => Progress = p));

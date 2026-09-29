@@ -542,8 +542,10 @@ public sealed class NexusViewModel : ObservableObject
 
             SetStatus(Loc.T("nexus.analyzing", Path.GetFileName(file)), false);
             var pageModId = NexusService.ModIdOf(pageUrl);
-            var plan = await _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle, pageModId: pageModId,
-                fileId: NexusService.FileIdOf(pageUrl));
+            await Ui.Yield();
+            // Extraction et lecture de l'archive hors du fil de l'interface : la fenetre reste fluide.
+            var plan = await Task.Run(() => _svc.NexusMods.AnalyzeAsync(game, file, domain, pageTitle, pageModId: pageModId,
+                fileId: NexusService.FileIdOf(pageUrl)));
             // Mise a jour demandee depuis la liste : la nouvelle version remplace l'ancienne installation.
             plan.OriginOverride = originOverride
                 ?? (QueueActive && _queued is { } q && q.ModId == (plan.ModId ?? pageModId) ? q.OriginOverride : null);
@@ -593,7 +595,7 @@ public sealed class NexusViewModel : ObservableObject
             if (!await detail!.EnsureReShadeAsync()) { SetStatus(Loc.T("nexus.err.reshade", game.Name), true); return false; }
         }
 
-        var result = _svc.NexusMods.Install(game, plan);
+        var result = await Task.Run(() => _svc.NexusMods.Install(game, plan));
         SetStatus(result.Message, !result.Success);
         _notify(result.Message, !result.Success);
         if (!result.Success) return false;
