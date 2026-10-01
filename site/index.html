@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prism — the graphics stack of your PC games</title>
+  <meta name="description" content="DLSS 5 neural rendering, Multi Frame Generation, RenoDX HDR, ReShade and Nexus Mods for your PC games. Installed in one click, verified, reversible. Free and open source.">
+  <meta property="og:title" content="Prism — the graphics stack of your PC games">
+  <meta property="og:description" content="DLSS 5, Multi Frame Generation, RenoDX HDR and Nexus Mods. One click, verified, reversible. Free and open source.">
+  <meta property="og:image" content="media/og.jpg">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="media/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="neon" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="Prism">
+      <svg class="mark" viewBox="80 235 320 195" aria-hidden="true"><use href="#prism-mark"/></svg>
+      <span>Prism</span>
+    </a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#safety">Safety</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/Skynizz/Prism" rel="noopener">GitHub</a>
+      <a class="nav-cta" href="https://github.com/Skynizz/Prism/releases/latest" data-download>Download</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- ============================================================ hero -->
+    <section class="hero">
+      <svg class="hero-mark" viewBox="80 235 320 195" role="img" aria-label="Prism logo">
+        <defs>
+          <g id="prism-mark">
+            <polygon class="tri-fill" points="238,252 328,412 150,412"/>
+            <line class="beam" x1="97" y1="372" x2="186" y2="349"/>
+            <line class="inner" x1="186" y1="349" x2="292" y2="331"/>
+            <polygon class="tri" points="238,252 328,412 150,412"/>
+            <line class="ray r1" x1="292" y1="331" x2="375" y2="293"/>
+            <line class="ray r2" x1="292" y1="331" x2="380" y2="335"/>
+            <line class="ray r3" x1="292" y1="331" x2="375" y2="377"/>
+          </g>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="7" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <use href="#prism-mark" class="animated"/>
+      </svg>
+
+      <p class="eyebrow">Version <span data-version>1.2</span> · Free and open source</p>
+      <h1>The graphics stack<br>of your PC games.</h1>
+      <p class="lede">DLSS&nbsp;5 neural rendering, Multi Frame Generation, RenoDX HDR, ReShade and Nexus&nbsp;Mods.
+        Installed in one click. Verified. Reversible.</p>
+
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/Skynizz/Prism/releases/latest" data-download>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>
+          <span>Download for Windows</span>
+        </a>
+        <a class="btn ghost" href="#trailer">Watch the trailer</a>
+      </div>
+      <p class="meta" data-meta>Windows 10 &amp; 11 · x64 · installer with automatic updates</p>
+      <p class="meta os-note" data-os-note hidden>Prism runs on Windows. Open this page on your gaming PC to download it.</p>
+    </section>
+
+    <!-- ============================================================ trailer -->
+    <section id="trailer" class="trailer">
+      <div class="frame">
+        <video controls preload="none" poster="media/poster.webp" playsinline>
+          <source src="media/trailer.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
+    <!-- ============================================================ features -->
+    <section id="features" class="features">
+      <header class="section-head">
+        <p class="eyebrow">What it does</p>
+        <h2>Every layer. One tool.</h2>
+        <p class="lede">Prism reads what each game actually ships — engine, API, DLSS runtimes, Streamline — and installs the right stack for your GPU.</p>
+      </header>
+
+      <article class="row">
+        <div class="copy">
+          <p class="eyebrow">DLSS 5</p>
+          <h3>Neural rendering, injected.</h3>
+          <p>The RenoDX DLSS package with DLSS 310.9.1, Streamline 2.14.1 and the neural runtime matched to your GPU. Every NVIDIA file is checked before it is written. The recommended path is picked for your game.</p>
+        </div>
+        <figure><img src="media/dlss5.webp" alt="DLSS 5 page in Prism with the recommended path highlighted" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <article class="row flip">
+        <div class="copy">
+          <p class="eyebrow">Injection</p>
+          <h3>The whole pipeline, on one screen.</h3>
+          <p>Game, engine, API, DLSS Super Resolution, Frame Generation, Multi Frame Generation, Ray Reconstruction, DLSS&nbsp;5 and HDR — read from the game itself, so you see exactly what runs.</p>
+        </div>
+        <figure><img src="media/pipeline.webp" alt="Render chain of Cyberpunk 2077 in Prism, every stage lit" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <article class="row">
+        <div class="copy">
+          <p class="eyebrow">Multi Frame Generation</p>
+          <h3>Up to ×6.</h3>
+          <p>Paths filtered by GPU generation: native MFG on RTX&nbsp;50, RenoDX MFG Unlock ×2–×6 on RTX&nbsp;40, ported DLSS-G on RTX&nbsp;30 and&nbsp;20. Games without frame generation get it through OptiScaler.</p>
+        </div>
+        <figure><img src="media/mfg.webp" alt="Frame Generation page with the ×6 multiplier selected" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <article class="row flip">
+        <div class="copy">
+          <p class="eyebrow">Nexus Mods</p>
+          <h3>Nexus Mods, built in.</h3>
+          <p>Browse Nexus inside Prism. Click download and every file lands in the right folder. Requirements are found — and their requirements — then <em>Download all</em> gets them. Premium members download in the background.</p>
+        </div>
+        <figure><img src="media/nexus.webp" alt="Nexus Mods page in Prism listing missing requirements with a Download all button" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <article class="row">
+        <div class="copy">
+          <p class="eyebrow">Mod health</p>
+          <h3>Then it checks it all works.</h3>
+          <p>Frameworks your mods depend on, files that went missing, conflicts, and the errors loaders wrote at your last launch. Each problem comes with its fix. It checks again after every install and when the game closes.</p>
+        </div>
+        <figure><img src="media/health.webp" alt="Mods page showing frameworks and a problem with its fix button" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <article class="row flip">
+        <div class="copy">
+          <p class="eyebrow">HDR</p>
+          <h3>RenoDX, matched to your game.</h3>
+          <p>The RenoDX mod list is read live: the right mod for each game, and the notes of its row applied. Nothing guessed.</p>
+        </div>
+        <figure><img src="media/hdr.webp" alt="RenoDX HDR panel matched by Steam AppID" loading="lazy" width="1440" height="705"></figure>
+      </article>
+
+      <div class="grid">
+        <article class="card">
+          <img src="media/driver.webp" alt="NVIDIA driver settings page" loading="lazy" width="1440" height="630">
+          <h4>NVIDIA driver, per game</h4>
+          <p>DLSS presets, render scale, Low Latency, Smooth Motion, frame limiter, G-SYNC — written to the game's driver profile.</p>
+        </article>
+        <article class="card">
+          <img src="media/reshade.webp" alt="ReShade page with the shader library" loading="lazy" width="1440" height="630">
+          <h4>49 ReShade shader packs</h4>
+          <p>Sorted by use, searchable, one click each. Lilium HDR included, search paths written for you.</p>
+        </article>
+        <article class="card">
+          <img src="media/presets.webp" alt="DLSS preset choice" loading="lazy" width="1440" height="630">
+          <h4>DLSS presets</h4>
+          <p>K, M, L, J or Latest, per game, through the same driver profile the NVIDIA app uses. No game file touched.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================================ safety -->
+    <section id="safety" class="safety">
+      <header class="section-head">
+        <p class="eyebrow">Safety</p>
+        <h2>Every file tracked.<br>One click back.</h2>
+      </header>
+      <figure class="wide"><img src="media/tracked.webp" alt="Added by Prism strip with a Remove button on each install" loading="lazy"></figure>
+      <ul class="pillars">
+        <li><strong>Nothing half-done</strong><span>Each install is a transaction: backed up, written, re-read — or fully rolled back.</span></li>
+        <li><strong>Nothing hidden</strong><span>Everything Prism adds is listed on the game, with a Remove button.</span></li>
+        <li><strong>Nothing bundled</strong><span>Prism ships no third-party binary. It fetches from the official sources and verifies them.</span></li>
+        <li><strong>Back to vanilla</strong><span>Restore a game to how its platform installed it, with SHA-256 verification.</span></li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ download -->
+    <section id="download" class="download">
+      <h2>Ready when you are.</h2>
+      <a class="btn primary big" href="https://github.com/Skynizz/Prism/releases/latest" data-download>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>
+        <span>Download for Windows</span>
+      </a>
+      <p class="meta" data-meta-2>Installer · automatic updates · no admin needed to install</p>
+      <p class="alt-links">
+        <a href="https://github.com/Skynizz/Prism/releases/latest" data-zip>Portable .zip</a>
+        <a href="https://github.com/Skynizz/Prism/releases/latest" data-sha>SHA-256</a>
+        <a href="https://github.com/Skynizz/Prism/releases">All releases</a>
+        <a href="https://github.com/Skynizz/Prism">Source code</a>
+      </p>
+      <table class="reqs">
+        <tr><th>OS</th><td>Windows 10 1809 or Windows 11, x64</td></tr>
+        <tr><th>GPU</th><td>Any GPU for ReShade and HDR · NVIDIA RTX 20 series or newer for DLSS</td></tr>
+        <tr><th>Runtime</th><td>None — included</td></tr>
+        <tr><th>Languages</th><td>18</td></tr>
+      </table>
+    </section>
+
+    <!-- ============================================================ faq -->
+    <section id="faq" class="faq">
+      <h2>Questions</h2>
+      <details>
+        <summary>Windows says “Windows protected your PC”.</summary>
+        <p>Prism is not code-signed yet, so SmartScreen warns about a new download. It is only a warning: <em>More info → Run anyway</em>, after checking the file against its SHA-256. Smart App Control, if enabled, blocks unsigned apps outright; a code-signed release fixes that.</p>
+      </details>
+      <details>
+        <summary>Does Prism include NVIDIA or third-party files?</summary>
+        <p>No. Each component is downloaded from its official public source at install time, verified, and recorded.</p>
+      </details>
+      <details>
+        <summary>Can I go back to the original game files?</summary>
+        <p>Yes. <em>Remove</em> undoes one install; <em>Restore vanilla</em> undoes everything Prism did to a game. Backups survive uninstalling Prism.</p>
+      </details>
+      <details>
+        <summary>Why does Prism ask for administrator rights?</summary>
+        <p>Many games live under Program Files, where replacing DLLs needs elevation. The installer itself does not.</p>
+      </details>
+      <details>
+        <summary>Is it safe with online games?</summary>
+        <p>Don't use overlays in multiplayer games with anti-cheat. Prism is meant for single-player games.</p>
+      </details>
+      <details>
+        <summary>Is it really free?</summary>
+        <p>Yes. Prism is open source under the GPL-3.0 license. No Prism account, no paid tier.</p>
+      </details>
+    </section>
+
+    <!-- ============================================================ credits -->
+    <section class="credits">
+      <p class="eyebrow">Built on the work of</p>
+      <p class="names">
+        <a href="https://github.com/clshortfuse/renodx">RenoDX</a>
+        <a href="https://github.com/RankFTW/rhi-repo">rhi-repo</a>
+        <a href="https://reshade.me/">ReShade</a>
+        <a href="https://github.com/optiscaler/OptiScaler">OptiScaler</a>
+        <a href="https://github.com/NVIDIA-RTX/Streamline">Streamline</a>
+        <a href="https://github.com/beeradmoore/dlss-swapper">DLSS Swapper</a>
+        <a href="https://github.com/mavismmg/MFGAdaUnlock-RenoDx">MFG Unlock</a>
+        <a href="https://github.com/EndlesslyFlowering/ReShade_HDR_shaders">Lilium HDR</a>
+        <a href="https://www.nexusmods.com/">Nexus Mods</a>
+      </p>
+      <p class="small">All credit for the mods goes to their authors.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Prism · GPL-3.0 · <a href="https://github.com/Skynizz/Prism">github.com/Skynizz/Prism</a></p>
+    <p class="small">Not affiliated with NVIDIA, Nexus Mods or any game publisher. NVIDIA, DLSS and RTX are trademarks of NVIDIA Corporation.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
