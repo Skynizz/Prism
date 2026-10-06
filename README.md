@@ -80,9 +80,10 @@ Each release publishes a `.sha256` checksum next to every file.
 <td width="50%" valign="top">
 
 #### DLSS 5 — Neural Rendering
-The complete **RenoDX DLSS** package — ShortFuse's add-on or DLSS5 Tool — with DLSS 310.9.1,
-Streamline 2.14.1 and the neural runtime matched to your GPU. NVIDIA signature required; pinned
-checksum for the RTX 20–40 build.
+**OptiScaler DLSS 5** in one click on DirectX 12: the neural pass inside the game's pipeline for a
+fraction of its usual cost, no ReShade needed. Or the complete **RenoDX DLSS** package — ShortFuse's
+add-on or DLSS5 Tool — with DLSS 310.9.1 and Streamline 2.14.1. The neural runtime is matched to
+your GPU: NVIDIA signature required, pinned checksum for the RTX 20–40 build.
 
 </td>
 <td width="50%" valign="top">
@@ -205,11 +206,32 @@ pass can be undone. **Copy file list** exports everything that differs from the 
 
 | API | Path | Why |
 |---|---|---|
-| **DirectX 12 · 11** | **RenoDX DLSS · ShortFuse** *(recommended)* | full stack, verified file by file |
+| **DirectX 12** | **OptiScaler DLSS 5** *(recommended)* | one click, no ReShade, a fraction of the usual cost |
+| **DirectX 11** · 12 | **RenoDX DLSS · ShortFuse** *(recommended on DX11)* | full stack, verified file by file |
 | DirectX 12 | RenoDX DLSS 5 (DLSS5 Tool) | lighter add-on, same stack |
 | DirectX 12 | OptiScaler DLSSNR · PreSR Multipass | neural pass inside the pipeline, no ReShade needed |
 | DirectX 11 · Vulkan | DLSS 5 Bridge | mirrors the native DLSS call |
 | DirectX 11 or 12 | DLSS5 One-Click | single installer, RTX 20–50 |
+
+### OptiScaler DLSS 5
+
+[`Skynizz/optiscaler-dlss5`](https://github.com/Skynizz/optiscaler-dlss5) is an optimised
+OptiScaler fork: the model runs before DLSS Super Resolution (pre-SR) and an edit cache reuses its
+work between frames. In Control Resonant (RTX 4070, 1440p) the Quality preset renders 46.7 fps
+against 34.4 for the stock DLSS-NR pass, with less flicker.
+
+One click on *Install* does all of it, in one transaction:
+
+| File | Source | Check |
+|---|---|---|
+| `OptiScaler.dll`, under a free proxy name (or in place of an OptiScaler already loaded) | latest release of the fork | archive matched against its published `.sha256` |
+| `nvngx.dll_dlssnr.dll` (forwarder) | same archive | |
+| `OptiScaler.ini`, preset to Quality | same archive | settings already tuned in this fork are kept |
+| `nvngx_dlssnr.dll` | driver store (RTX 50), else `rhi-repo` per GPU | NVIDIA-signed **or** pinned SHA-256 |
+
+A RenoDX DLSS add-on placed by Prism is set aside in the same step (one neural pass at a time).
+In game: Insert, then the **DLSS 5** tab; F6 compares with the stock pass live. *Remove* puts
+everything back, the previous OptiScaler included.
 
 ### The RenoDX DLSS package
 
@@ -388,6 +410,7 @@ Prism builds on the work of these projects. All credit for the mods goes to thei
 | ReShade | [reshade.me](https://reshade.me/) | add-on host |
 | RTX40MFG-Unlock | [`dashdogy/RTX40MFG-Unlock`](https://github.com/dashdogy/RTX40MFG-Unlock) | MFG on Ada via proxy |
 | OptiScaler | [`optiscaler/OptiScaler`](https://github.com/optiscaler/OptiScaler) | FSR-FG / XeSS-FG |
+| OptiScaler DLSS 5 | [`Skynizz/optiscaler-dlss5`](https://github.com/Skynizz/optiscaler-dlss5) | Neural Rendering on DX12, optimised |
 | OptiScaler DLSSNR | [`Dagherbou/OptiScaler_DLSSNR`](https://github.com/Dagherbou/OptiScaler_DLSSNR) | Neural Rendering on DX12 |
 | PreSR Multipass | [`wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass`](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass) | Neural Rendering on DX12 |
 | DLSS 5 Bridge | [`NIGos/dlss5-bridge`](https://github.com/NIGos/dlss5-bridge) | Neural Rendering on DX11 / Vulkan |

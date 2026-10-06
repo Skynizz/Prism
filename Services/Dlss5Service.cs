@@ -31,6 +31,32 @@ public sealed class Dlss5Service
     public const string OptiNrRepo = "Dagherbou/OptiScaler_DLSSNR";
     public const string MultipassRepo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass";
     public const string OneClickRepo = "faisalkindi/DLSS5oneclick";
+    public const string OptimisedRepo = "Skynizz/optiscaler-dlss5";
+
+    /// <summary>Nom de l'installation au registre : tout le fork, runtime compris, se retire d'un bloc.</summary>
+    public const string OptimisedOrigin = "OptiScaler DLSS 5";
+
+    /// <summary>Le relais par lequel OptiScaler charge le runtime neural, livre avec le fork.</summary>
+    public const string OptimisedForwarder = "nvngx.dll_dlssnr.dll";
+
+    /// <summary>
+    /// Le preregle « Qualite » du fork, celui de ses mesures (Control, RTX 4070 : +36 % d'images
+    /// rendues face a la passe d'origine, sans perte de detail) : modele avant l'upscaler a chaque
+    /// image, point blanc mesure sur la scene. Tout le reste garde la valeur livree.
+    /// </summary>
+    private static readonly (string Section, string Key, string Value)[] OptimisedPreset =
+    {
+        ("Upscalers", "Dx12Upscaler", "dlss"),
+        ("Menu", "OverlayMenu", "true"),
+        ("DlssNr", "Enabled", "true"),
+        ("DlssNr", "PreSr", "true"),
+        ("DlssNr", "CacheEnabled", "true"),
+        ("DlssNr", "CacheInterval", "1"),
+        ("DlssNr", "CacheRefreshBlend", "1.0"),
+        ("DlssNr", "WorkingScale", "0.67"),
+        ("DlssNr", "JbuUpsample", "true"),
+        ("DlssNr", "WhitePointSource", "3")
+    };
 
     private const string BridgeAsset = "dlss5-bridge.addon64";
     private const string NeuralRuntime = "nvngx_dlssnr.dll";
@@ -59,9 +85,11 @@ public sealed class Dlss5Service
     public string? OptiNrVersion { get; private set; }
     public string? MultipassVersion { get; private set; }
     public string? OneClickVersion { get; private set; }
+    public string? OptimisedVersion { get; private set; }
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
+        OptimisedVersion = (await _github.LatestAsync(OptimisedRepo, ct))?.Tag;
         BridgeVersion = (await _github.LatestAsync(BridgeRepo, ct))?.Tag;
         OptiNrVersion = (await _github.LatestAsync(OptiNrRepo, ct))?.Tag;
         MultipassVersion = (await _github.LatestAsync(MultipassRepo, ct))?.Tag;
@@ -88,9 +116,26 @@ public sealed class Dlss5Service
 
         var (dlssVersion, slVersion) = Dlss5PackageInstaller.StackVersions();
 
+        // OptiScaler DLSS 5 : la passe neurale dans le pipeline du jeu, sans ReShade ni Streamline,
+        // pour une fraction du cout de la passe d'origine. Un clic pose le fork, son preregle et le
+        // runtime neural du GPU : c'est la voie recommandee en DirectX 12.
+        options.Add(new Dlss5Option
+        {
+            Title = OptimisedOrigin,
+            Description = Loc.T("dlss5.optimised.desc"),
+            Backend = Dlss5Backend.OptiScalerDlss5,
+            Apis = new[] { GameApi.DirectX12 },
+            SourceUrl = "https://github.com/" + OptimisedRepo,
+            Version = OptimisedVersion,
+            AutoInstall = true,
+            Recommended = dx12,
+            BlockedReason = Gate(dx12, "DirectX 12")
+        });
+
         // ShortFuse, l'auteur de RenoDX : la methode recommandee « pour la plupart des jeux
         // ayant DLSS natif ». Paquet complet depuis rhi-repo, signatures NVIDIA verifiees. Vulkan
-        // est ecarte : ReShade y passe par sa couche globale, que Prism ne pose pas.
+        // est ecarte : ReShade y passe par sa couche globale, que Prism ne pose pas. En DirectX 12,
+        // OptiScaler DLSS 5 passe devant : plus simple (pas de ReShade) et bien moins couteux.
         var sfApi = dx12 || api is GameApi.DirectX11;
         var sf = _rhi.Family(Dlss5Addon.ShortFuse.TagPrefix).FirstOrDefault();
         options.Add(new Dlss5Option
@@ -102,7 +147,7 @@ public sealed class Dlss5Service
             SourceUrl = RhiRepoService.ReleasesPage,
             Version = sf?.Version,
             AutoInstall = true,
-            Recommended = sfApi,
+            Recommended = api is GameApi.DirectX11,
             BlockedReason = Gate(sfApi, "DirectX 12 / 11")
                             ?? (sf is null ? Loc.T("dlss5.renodx.offline") : null)
         });
@@ -271,7 +316,21 @@ public sealed class Dlss5Service
         var inGame = renodx ? inPlace && !untrusted : game.HasNeuralRuntime;
         var inDriver = NeuralRuntimeInDriverStore();
 
-        checks.Add(new PrereqCheck
+        // OptiScaler DLSS 5 charge le runtime a cote de l'executable, et son installation pose celui
+        // qui convient au GPU : rien a preparer a part.
+        var optimised = option?.Backend == Dlss5Backend.OptiScalerDlss5;
+        var optimisedNr = optimised && Dlss5PackageInstaller.IsRuntimeFor(
+            Path.Combine(DllInstaller.TargetDirectory(game), NeuralRuntime), gpu.SupportsNativeMfg);
+
+        if (optimised)
+            checks.Add(new PrereqCheck
+            {
+                Label = "NEURAL RT",
+                State = optimisedNr ? UiStatus.Ready : UiStatus.Warning,
+                Detail = Loc.T(optimisedNr ? "dlss5.nr.in_game" : "dlss5.nr.in_package"),
+                Hint = optimisedNr ? null : Loc.T("dlss5.nr.hint_optimised")
+            });
+        else checks.Add(new PrereqCheck
         {
             Label = "NEURAL RT",
             State = inGame ? UiStatus.Ready
@@ -384,6 +443,7 @@ public sealed class Dlss5Service
             Dlss5Backend.Bridge => InstallBridgeAsync(game, progress, ct),
             Dlss5Backend.OptiScalerNr => InstallOptiNrAsync(game, OptiNrRepo, "OptiScaler DLSSNR", progress, ct),
             Dlss5Backend.OptiScalerMultipass => InstallOptiNrAsync(game, MultipassRepo, "OptiScaler PreSR Multipass", progress, ct),
+            Dlss5Backend.OptiScalerDlss5 => InstallOptimisedAsync(game, progress, ct),
             Dlss5Backend.OneClick => LaunchOneClickAsync(game, progress, ct),
             _ => Task.FromResult(new InstallResult(false, Loc.T("err.unknown_path")))
         };
@@ -505,6 +565,130 @@ public sealed class Dlss5Service
         catch (Exception ex)
         {
             Log.Error(Src, $"{label} install failed: {ex.Message}");
+            return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// OptiScaler DLSS 5, d'un geste : le fork sous un nom de proxy libre (ou a la place de
+    /// l'OptiScaler deja charge), son relais, sa configuration prereglee et le runtime neural du
+    /// GPU. Archive controlee par son .sha256 publie, runtime signe NVIDIA (RTX 50) ou epingle
+    /// (RTX 20 a 40), et le tout en une transaction : au moindre echec, le jeu reste tel quel.
+    /// </summary>
+    private async Task<InstallResult> InstallOptimisedAsync(
+        GameInfo game, IProgress<double>? progress, CancellationToken ct)
+    {
+        var release = await _github.LatestAsync(OptimisedRepo, ct);
+        var asset = release?.Assets.FirstOrDefault(a =>
+            a.Name.EndsWith("-win-x64.zip", StringComparison.OrdinalIgnoreCase));
+        if (release is null || asset is null)
+            return new InstallResult(false, Loc.T("err.archive_not_found", OptimisedOrigin));
+
+        var dir = DllInstaller.TargetDirectory(game);
+        if (!Directory.Exists(dir)) return new InstallResult(false, Loc.T("err.target_missing"));
+
+        // Une seule passe neurale a la fois : un addon RenoDX DLSS pose par Prism est retire dans la
+        // meme transaction (restaurable) ; pose a la main, il n'est pas le notre : on s'arrete.
+        var addons = Dlss5Addon.All.Select(a => Path.Combine(dir, a.FileName)).Where(File.Exists).ToList();
+        var foreign = addons.Where(p => !_deployments.WasDeployed(p)).Select(Path.GetFileName).ToList();
+        if (foreign.Count > 0)
+            return new InstallResult(false, Loc.T("dlss5.err.foreign", string.Join(", ", foreign)));
+
+        try
+        {
+            var root = Path.Combine(AppPaths.ComponentCache, "dlss5", AppPaths.Sanitize(OptimisedRepo),
+                AppPaths.Sanitize(release.Tag));
+            var archive = Path.Combine(root, asset.Name);
+            Log.Info(Src, $"Downloading {OptimisedOrigin} {release.Tag} ({asset.Size / 1024 / 1024} MB)");
+            await _downloads.DownloadAsync(asset.Url, archive, null,
+                new Progress<double>(p => progress?.Report(p * 0.3)), ct);
+
+            // Empreinte publiee a cote de l'archive : une archive alteree n'est jamais extraite.
+            var shaAsset = release.Assets.FirstOrDefault(a =>
+                a.Name.Equals(asset.Name + ".sha256", StringComparison.OrdinalIgnoreCase));
+            if (shaAsset is not null)
+            {
+                var published = (await _downloads.GetStringAsync(shaAsset.Url, ct)).Trim().Split(' ', '\t')[0];
+                if (!published.Equals(DownloadService.Sha256Cached(archive), StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(archive);
+                    return new InstallResult(false, Loc.T("fg.inj.err.hash", asset.Name));
+                }
+            }
+
+            var extractDir = Path.Combine(root, "files");
+            if (!Directory.Exists(extractDir) || !Directory.EnumerateFileSystemEntries(extractDir).Any())
+                await ArchiveExtractor.ExtractAsync(archive, extractDir, ct);
+
+            var core = ArchiveExtractor.FindFile(extractDir, "OptiScaler.dll");
+            if (core is null) return new InstallResult(false, Loc.T("err.missing_in_archive", "OptiScaler.dll"));
+            var sourceDir = Path.GetDirectoryName(core)!;
+            var forwarder = Path.Combine(sourceDir, OptimisedForwarder);
+            var shippedIni = Path.Combine(sourceDir, "OptiScaler.ini");
+            foreach (var needed in new[] { forwarder, shippedIni })
+                if (!File.Exists(needed))
+                    return new InstallResult(false, Loc.T("err.missing_in_archive", Path.GetFileName(needed)));
+
+            // Un OptiScaler deja charge garde son nom : le fork prend sa place, l'original est sauvegarde.
+            var proxy = FrameGenService.OptiScalerSlot(dir);
+            if (proxy is null) return new InstallResult(false, Loc.T("err.no_proxy"));
+
+            // Runtime neural : garde s'il convient deja au GPU ; sinon celui du pilote (RTX 50), ou la
+            // build verifiee de rhi-repo.
+            var native = _package.NativeGpu;
+            var runtimeDest = Path.Combine(dir, NeuralRuntime);
+            string? runtime = null;
+            var runtimeVersion = "";
+            if (!Dlss5PackageInstaller.IsRuntimeFor(runtimeDest, native))
+            {
+                var driver = native ? FindNeuralRuntimeInDriverStore() : null;
+                if (driver is not null && Dlss5PackageInstaller.IsRuntimeFor(driver, true))
+                {
+                    runtime = driver;
+                    runtimeVersion = DllDetector.ReadVersion(driver) ?? "driver";
+                }
+                else
+                {
+                    var fetched = await _package.NeuralRuntimeAsync(
+                        new Progress<double>(p => progress?.Report(30 + p * 0.6)), ct);
+                    if (fetched.Path is null) return new InstallResult(false, fetched.Error ?? Loc.T("err.unknown_path"));
+                    runtime = fetched.Path;
+                    runtimeVersion = fetched.Version;
+                }
+            }
+
+            var tx = new FileTransaction(game, _backups, _deployments, OptimisedOrigin);
+            foreach (var old in addons) tx.Delete(old);
+            tx.Copy(core, Path.Combine(dir, proxy), OptimisedOrigin, release.Tag);
+            tx.Copy(forwarder, Path.Combine(dir, OptimisedForwarder), OptimisedOrigin, release.Tag);
+            if (runtime is not null) tx.Copy(runtime, runtimeDest, "DLSS-NR", runtimeVersion);
+
+            // Des reglages deja ajustes dans ce fork sont gardes ; la configuration d'un autre
+            // OptiScaler est remplacee (et sauvegardee) par celle du fork, prereglee.
+            if (!OptiScalerConfig.IsOptimised(dir))
+                tx.WriteText(Path.Combine(dir, "OptiScaler.ini"),
+                    OptiScalerConfig.Preset(File.ReadAllText(shippedIni), OptimisedPreset), OptimisedOrigin, release.Tag);
+
+            var written = tx.Commit();
+            if (!written.Success)
+            {
+                DllDetector.Inspect(game);
+                return written;
+            }
+
+            if (addons.Count > 0)
+                ReShadeConfig.CleanUp(dir, addons.Select(p => Path.GetFileName(p)!), removeMfgSection: false);
+
+            DllDetector.Inspect(game);
+            progress?.Report(100);
+
+            Log.Info(Src, $"{OptimisedOrigin} {release.Tag} installed as {proxy}: {written.FilesChanged} file(s), " +
+                          $"neural runtime {(runtime is null ? "kept" : runtimeVersion)}");
+            return new InstallResult(true, Loc.T("dlss5.optimised.ok", release.Tag, proxy), written.FilesChanged);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Log.Error(Src, $"{OptimisedOrigin} install failed: {ex.Message}");
             return new InstallResult(false, Loc.T("err.install_failed", ex.Message));
         }
     }

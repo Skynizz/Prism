@@ -166,6 +166,81 @@ public static class OptiScalerConfig
         catch { return false; }
     }
 
+    /// <summary>
+    /// Fichier du fork OptiScaler DLSS 5 : sa section [DlssNr] est la seule a porter CompareKey
+    /// (la touche de comparaison en jeu).
+    /// </summary>
+    public static bool IsOptimised(string dir) => Read(dir, "DlssNr", "CompareKey") is not null;
+
+    /// <summary>
+    /// Texte d'un OptiScaler.ini livre, avec ces cles fixees. Seules les lignes actives sont
+    /// remplacees : une ligne commentee peut n'etre qu'un exemple de la notice, et la remplacer
+    /// laisserait la vraie cle plus bas. Une cle absente est ajoutee en fin de sa section.
+    /// </summary>
+    public static string Preset(string text, IReadOnlyList<(string Section, string Key, string Value)> keys)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n').ToList();
+        if (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
+
+        var output = new List<string>(lines.Count + keys.Count);
+        var written = new HashSet<(string, string)>();
+        string? section = null;
+
+        void AddMissing(string? sec)
+        {
+            if (sec is null) return;
+            // Au-dessus des lignes vides qui separent les sections, sinon la cle semble
+            // appartenir a la suivante.
+            var insert = output.Count;
+            while (insert > 0 && string.IsNullOrWhiteSpace(output[insert - 1])) insert--;
+            foreach (var (s, k, v) in keys)
+            {
+                if (!s.Equals(sec, StringComparison.OrdinalIgnoreCase) || !written.Add((s, k))) continue;
+                output.Insert(insert++, $"{k}={v}");
+            }
+        }
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
+            {
+                AddMissing(section);
+                section = trimmed[1..^1];
+                output.Add(line);
+                continue;
+            }
+
+            var eq = line.IndexOf('=');
+            if (section is not null && eq > 0 && !trimmed.StartsWith(';'))
+            {
+                var name = line[..eq].Trim();
+                var match = keys.FirstOrDefault(k =>
+                    k.Section.Equals(section, StringComparison.OrdinalIgnoreCase) &&
+                    k.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+                if (match.Key is not null)
+                {
+                    output.Add($"{match.Key}={match.Value}");
+                    written.Add((match.Section, match.Key));
+                    continue;
+                }
+            }
+
+            output.Add(line);
+        }
+        AddMissing(section);
+
+        // Sections que le fichier n'a pas du tout.
+        foreach (var group in keys.Where(k => !written.Contains((k.Section, k.Key))).GroupBy(k => k.Section))
+        {
+            output.Add("");
+            output.Add($"[{group.Key}]");
+            output.AddRange(group.Select(k => $"{k.Key}={k.Value}"));
+        }
+
+        return string.Join("\r\n", output) + "\r\n";
+    }
+
     private static bool HasSection(List<string> lines, string section)
         => lines.Any(l => l.Trim().Equals($"[{section}]", StringComparison.OrdinalIgnoreCase));
 

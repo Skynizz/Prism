@@ -703,6 +703,11 @@ public sealed class GameDetailViewModel : ObservableObject
                 var nr = Path.Combine(dir, "nvngx_dlssnr.dll");
                 return FrameGenService.LoadedOptiScaler(dir) is not null && OptiScalerConfig.IsFork(dir)
                        && File.Exists(nr) && Dlss5PackageInstaller.IsTrustedRuntime(nr);
+            case Dlss5Backend.OptiScalerDlss5:
+                // Le fork lui-meme (sa configuration), son relais, et le runtime qui convient au GPU.
+                return FrameGenService.LoadedOptiScaler(dir) is not null && OptiScalerConfig.IsOptimised(dir)
+                       && File.Exists(Path.Combine(dir, Dlss5Service.OptimisedForwarder))
+                       && Dlss5Checks.Where(c => c.Label == "NEURAL RT").All(c => c.State == UiStatus.Ready);
             case Dlss5Backend.Bridge:
                 return Game.HasDlss5Bridge && Game.HasNeuralRuntime;
             default:
@@ -1383,7 +1388,8 @@ public sealed class GameDetailViewModel : ObservableObject
         Refresh();
         if (!await InstallDlss5Async()) return;
 
-        // Voie OptiScaler : tout ce que le paquet sait faire, sans restriction.
+        // Voie OptiScaler : tout ce que le paquet sait faire, sans restriction. OptiScaler DLSS 5
+        // arrive deja preregle, et ses reglages ajustes en jeu ne doivent pas etre retouches.
         if (option.Backend is Dlss5Backend.OptiScalerNr or Dlss5Backend.OptiScalerMultipass)
             ApplyOptiProfile(OptiProfile.Full);
     }

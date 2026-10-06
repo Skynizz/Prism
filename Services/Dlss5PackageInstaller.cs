@@ -39,6 +39,15 @@ public sealed class Dlss5PackageInstaller
         => Authenticode.Verify(path).IsNvidia || NeuralRuntimePins.IsKnown(DownloadService.Sha256Cached(path));
 
     /// <summary>
+    /// Le runtime qui s'initialise sur ce GPU : l'original signe NVIDIA sur RTX 50, une build
+    /// epinglee sur RTX 20 a 40 (l'original y echoue, 0xBAD00001).
+    /// </summary>
+    public static bool IsRuntimeFor(string path, bool nativeGpu)
+        => File.Exists(path) && (nativeGpu
+            ? Authenticode.Verify(path).IsNvidia
+            : NeuralRuntimePins.IsKnown(DownloadService.Sha256Cached(path)));
+
+    /// <summary>
     /// Dossiers d'ou le jeu charge Streamline. Streamline cherche ses plugins et les DLL NGX a
     /// cote de sl.interposer.dll — a cote de l'executable par defaut, ou dans le chemin que le
     /// jeu lui donne. Chacun de ces dossiers recoit la pile entiere. Un jeu sans Streamline la
@@ -90,6 +99,43 @@ public sealed class Dlss5PackageInstaller
     }
 
     private sealed record PackageFile(string Source, string Name, RhiRepoService.Release From);
+
+    /// <summary>GPU a MFG natif (RTX 50) : celui ou le runtime neural d'origine s'initialise.</summary>
+    public bool NativeGpu => _gpu().SupportsNativeMfg;
+
+    /// <summary>
+    /// Le runtime neural de ce GPU, seul, sans le reste de la pile : la voie OptiScaler DLSS 5
+    /// n'a besoin ni de Streamline ni d'addon. Telecharge depuis rhi-repo, extrait dans le cache
+    /// et verifie (signature NVIDIA ou empreinte epinglee) ; rien n'est pose dans le jeu ici.
+    /// </summary>
+    public async Task<(string? Path, string Version, string? Error)> NeuralRuntimeAsync(
+        IProgress<double>? progress = null, CancellationToken ct = default)
+    {
+        if (!_rhi.IsLoaded) await _rhi.LoadAsync(ct);
+
+        var native = NativeGpu;
+        var tag = native ? RhiRepoService.NeuralRuntimeOriginal : RhiRepoService.NeuralRuntimePatched;
+        var release = _rhi.ByTag(tag);
+        if (release is null) return (null, tag, Loc.T("dlss5.err.missing", tag));
+
+        var root = Path.Combine(AppPaths.ComponentCache, "rhi", AppPaths.Sanitize(release.Tag));
+        var zip = Path.Combine(root, release.AssetName);
+        await _downloads.DownloadAsync(release.Url, zip, null, progress, ct);
+
+        var extract = Path.Combine(root, "files");
+        if (!Directory.Exists(extract) || !Directory.EnumerateFiles(extract, "*", SearchOption.AllDirectories).Any())
+            await ArchiveExtractor.ExtractAsync(zip, extract, ct);
+
+        var file = ArchiveExtractor.FindFile(extract, NeuralRuntimeFile);
+        if (file is null) return (null, release.Version, Loc.T("dlss5.err.pack_incomplete", NeuralRuntimeFile));
+        if (!IsRuntimeFor(file, native))
+        {
+            Log.Error(Src, $"Neural runtime rejected ({release.Tag}): unknown checksum or signature");
+            return (null, release.Version, Loc.T("dlss5.err.pin", NeuralRuntimeFile));
+        }
+
+        return (file, release.Version, null);
+    }
 
     /// <summary>Versions de la pile, pour les textes : « 310.9.1 » et « 2.14.1.0 ».</summary>
     public static (string Dlss, string Streamline) StackVersions()

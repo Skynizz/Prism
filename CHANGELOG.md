@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.0
+
+### New
+
+- **OptiScaler DLSS 5, in one click.** A new DLSS 5 path, recommended on DirectX 12: the optimised
+  OptiScaler fork [`Skynizz/optiscaler-dlss5`](https://github.com/Skynizz/optiscaler-dlss5). The
+  model runs before DLSS Super Resolution and an edit cache reuses its work between frames: in
+  Control Resonant (RTX 4070, 1440p) the Quality preset renders 46.7 fps against 34.4 for the stock
+  DLSS-NR pass, with less flicker. *Install* places the fork under a free proxy name (or in place of
+  an OptiScaler already loaded), its forwarder, an `OptiScaler.ini` preset to Quality, and the neural
+  runtime your GPU needs: the driver's own on RTX 50, the pinned `rhi-repo` build on RTX 20 to 40.
+  No ReShade, no Streamline. The archive is checked against its published SHA-256 and everything
+  goes in one transaction, so a failed step leaves the game untouched. Settings tuned in game are
+  kept on reinstall. A RenoDX DLSS add-on placed by Prism is set aside in the same step; *Remove*
+  puts everything back, the previous OptiScaler included. In game: Insert, then the DLSS 5 tab,
+  and F6 compares with the stock pass live.
+- The diagnostic flags OptiScaler's neural pass running next to a RenoDX DLSS add-on: the model
+  would run twice.
+
+### Changed
+
+- On DirectX 12 the default DLSS 5 path is now OptiScaler DLSS 5. RenoDX DLSS · ShortFuse stays
+  recommended on DirectX 11.
+
 ## 1.2.0
 
 ### New

@@ -17,7 +17,12 @@ public enum Dlss5Backend
     /// Addon « DLSS Tool » de ShortFuse, l'auteur de RenoDX, avec la pile complete. C'est la
     /// methode recommandee pour la plupart des jeux ayant DLSS.
     /// </summary>
-    ShortFuse
+    ShortFuse,
+    /// <summary>
+    /// OptiScaler DLSS 5 : fork optimise (cache d'edition, passe avant l'upscaler), pose d'un
+    /// geste avec le runtime neural du GPU. La voie recommandee en DirectX 12.
+    /// </summary>
+    OptiScalerDlss5
 }
 
 /// <summary>

@@ -47,6 +47,12 @@ public static class ConflictService
             list.Add(new ModConflict("conflict-optiscaler", UiStatus.Error, Loc.T("conflict.optiscaler_double"),
                 string.Join(" + ", opti), DiagnosisFix.Clean));
 
+        // La passe neurale d'OptiScaler allumee a cote d'un addon RenoDX DLSS : le modele tourne deux fois.
+        if (opti.Count > 0 && dlssAddons.Count > 0 &&
+            string.Equals(OptiScalerConfig.Read(dir, "DlssNr", "Enabled"), "true", StringComparison.OrdinalIgnoreCase))
+            list.Add(new ModConflict("conflict-nr-opti", UiStatus.Error, Loc.T("conflict.nr_double"),
+                $"{dlssAddons[0].FileName} + {opti[0]} (DLSS-NR)", DiagnosisFix.None));
+
         // Nom reserve a un chargeur de mods du jeu (Cyberpunk : winmm.dll pour RED4ext, version.dll pour CET).
         foreach (var name in ModRules.ReservedProxies(dir))
         {

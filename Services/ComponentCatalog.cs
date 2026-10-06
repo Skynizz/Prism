@@ -51,6 +51,8 @@ public sealed class ComponentCatalog
                 FrameGenOptions.Sm75Repo, ComponentRole.FrameGen),
             Entry("streamline", "NVIDIA Streamline SDK", "https://github.com/NVIDIA-RTX/Streamline",
                 StreamlineService.Repo, ComponentRole.Runtime),
+            Entry("optiscaler-dlss5", "OptiScaler DLSS 5", "https://github.com/Skynizz/optiscaler-dlss5",
+                Dlss5Service.OptimisedRepo, ComponentRole.Runtime),
             Entry("optinr", "OptiScaler DLSSNR", "https://github.com/Dagherbou/OptiScaler_DLSSNR",
                 Dlss5Service.OptiNrRepo, ComponentRole.Runtime),
             Entry("multipass", "OptiScaler PreSR Multipass", "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass",
